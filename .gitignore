@@ -1,0 +1,15 @@
+.DS_Store
+.venv/
+__pycache__/
+*.pyc
+
+# PHP
+/app/vendor/
+/app/composer.phar
+/app/.phpunit.result.cache
+
+# Frontend build tooling and generated output (app/public/index.php and
+# app/public/.htaccess are hand-written and stay tracked).
+/app/frontend/node_modules/
+/app/public/assets/
+/app/public/index.html
