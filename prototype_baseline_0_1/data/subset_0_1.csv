@@ -1,0 +1,14 @@
+Diagnose,Kennzeichen,Bezeichnung,Kurzbezeichnung
+J44.0,,Chronische obstruktive Lungenkrankheit mit akuter Infektion der unteren Atemwege,Chronische obstruktive Lungenkrankheit mit akuter Infektion der unteren Atemwege
+J44.00,,Chronische obstruktive Lungenkrankheit mit akuter Infektion der unteren Atemwege: FEV1 < 35 % des Sollwertes,COPD mit akuter Infektion der unteren Atemwege: FEV1 < 35 % des Sollwertes
+J44.01,,Chronische obstruktive Lungenkrankheit mit akuter Infektion der unteren Atemwege: FEV1 >= 35 % und < 50 % des Sollwertes,COPD mit akuter Infektion der unteren Atemwege: FEV1 >= 35 % und < 50 % des Sollwertes
+J44.02,,Chronische obstruktive Lungenkrankheit mit akuter Infektion der unteren Atemwege: FEV1 >= 50 % und < 70 % des Sollwertes,COPD mit akuter Infektion der unteren Atemwege: FEV1 >= 50 % und < 70 % des Sollwertes
+J44.03,,Chronische obstruktive Lungenkrankheit mit akuter Infektion der unteren Atemwege: FEV1 >= 70 % des Sollwertes,COPD mit akuter Infektion der unteren Atemwege: FEV1 >= 70 % des Sollwertes
+J44.09,,Chronische obstruktive Lungenkrankheit mit akuter Infektion der unteren Atemwege: FEV1 nicht näher bezeichnet,COPD mit akuter Infektion der unteren Atemwege: FEV1 nicht näher bezeichnet
+J44.1,,"Chronische obstruktive Lungenkrankheit mit akuter Exazerbation, nicht näher bezeichnet","Chronische obstruktive Lungenkrankheit mit akuter Exazerbation, nicht näher bezeichnet"
+J44.10,,"Chronische obstruktive Lungenkrankheit mit akuter Exazerbation, nicht näher bezeichnet: FEV1 < 35 % des Sollwertes","COPD mit akuter Exazerbation, nicht näher bezeichnet: FEV1 < 35 % des Sollwertes"
+J44.11,,"Chronische obstruktive Lungenkrankheit mit akuter Exazerbation, nicht näher bezeichnet: FEV1 >= 35 % und < 50 % des Sollwertes","COPD mit akuter Exazerbation, nicht näher bezeichnet: FEV1 >= 35 % und < 50 % des Sollwertes"
+J44.12,,"Chronische obstruktive Lungenkrankheit mit akuter Exazerbation, nicht näher bezeichnet: FEV1 >= 50 % und < 70 % des Sollwertes","COPD mit akuter Exazerbation, nicht näher bezeichnet: FEV1 >= 50 % und < 70 % des Sollwertes"
+J44.13,,"Chronische obstruktive Lungenkrankheit mit akuter Exazerbation, nicht näher bezeichnet: FEV1 >= 70 % des Sollwertes","COPD mit akuter Exazerbation, nicht näher bezeichnet: FEV1 >= 70 % des Sollwertes"
+J44.19,,"Chronische obstruktive Lungenkrankheit mit akuter Exazerbation, nicht näher bezeichnet: FEV1 nicht näher bezeichnet","COPD mit akuter Exazerbation, nicht näher bezeichnet: FEV1 nicht näher bezeichnet"
+Z01.6,!,"Röntgenuntersuchung, anderenorts nicht klassifiziert","Röntgenuntersuchung, anderenorts nicht klassifiziert"

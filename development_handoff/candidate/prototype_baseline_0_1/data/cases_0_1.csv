@@ -1,0 +1,5 @@
+case_baseline_id,case_id,subset_baseline_id,short_description,encounter_setting,diagnosis_role,inpatient_lkf_scored,copd_base_code,fev1_stable_pct_predicted,intended_use,source_locator
+CASEBASE-0.1,CASE-001,SUBSET-0.1,Documented COPD with acute lower-respiratory infection; stable-phase FEV1 = 55% predicted,inpatient,main,,J44.0,55.00,learner_visible,"SRC-AT-DOC-2026:pp.12,26,34; SRC-AT-DIAGLIST-2026:rows 3884-3889"
+CASEBASE-0.1,CASE-002,SUBSET-0.1,Documented COPD with acute exacerbation; stable-phase FEV1 = exactly 50% predicted,inpatient,main,,J44.1,50.00,learner_visible,"SRC-AT-DOC-2026:pp.12,26,34; SRC-AT-DIAGLIST-2026:rows 3890-3895"
+CASEBASE-0.1,CASE-003,SUBSET-0.1,Ordinary hospital-outpatient radiography/CT context corresponding to the official Z01.6! example,hospital_outpatient,main,false,,,learner_visible,"SRC-AT-DOC-2026:pp.18,22; SRC-AT-DIAGLIST-2026:row 12683"
+CASEBASE-0.1,CASE-004,SUBSET-0.1,Paired hospital-outpatient status fixture with inpatient-LKF scoring active for the Z01.6! candidate,hospital_outpatient,main,true,,,verification_only,"SRC-AT-DOC-2026:pp.10-11,18; SRC-AT-DIAGLIST-2026:row 12683"

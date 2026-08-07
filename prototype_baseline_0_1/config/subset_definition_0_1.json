@@ -1,0 +1,54 @@
+{
+  "subset_baseline_id": "SUBSET-0.1",
+  "source": {
+    "source_id": "SRC-AT-DIAGLIST-2026",
+    "file_name": "DIAGLIST2026.xlsx",
+    "worksheet": "DIAGLIST2026",
+    "sha256": "66713da5d63afcd37b0152ae7058f2188bf34d557bfa06ad4ce008825fb94a4b",
+    "expected_unique_diagnose_count": 13298
+  },
+  "output_fields": [
+    "Diagnose",
+    "Kennzeichen",
+    "Bezeichnung",
+    "Kurzbezeichnung"
+  ],
+  "normalization": {
+    "Diagnose": "trim_surrounding_whitespace",
+    "Kennzeichen": "trim_surrounding_whitespace_and_emit_blank_for_null",
+    "Bezeichnung": "preserve_source_text",
+    "Kurzbezeichnung": "preserve_source_text"
+  },
+  "selected_codes": [
+    "J44.0",
+    "J44.00",
+    "J44.01",
+    "J44.02",
+    "J44.03",
+    "J44.09",
+    "J44.1",
+    "J44.10",
+    "J44.11",
+    "J44.12",
+    "J44.13",
+    "J44.19",
+    "Z01.6"
+  ],
+  "required_rule_targets": [
+    "J44.02",
+    "J44.12"
+  ],
+  "outside_subset_controls": [
+    {
+      "code": "Z01.8",
+      "expected_marker": "!",
+      "purpose": "known-valid Austrian 2026 control for outside_active_subset handling"
+    }
+  ],
+  "output": {
+    "relative_path": "data/subset_0_1.csv",
+    "encoding": "utf-8",
+    "line_ending": "LF",
+    "row_order": "selected_codes"
+  }
+}

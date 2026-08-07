@@ -1,0 +1,8 @@
+# Non-secret application-source configuration. Values are deliberately
+# unquoted KEY=value pairs so stack.sh can parse this file without executing it.
+APP_GIT_URL=https://github.com/OWNER/REPOSITORY.git
+APP_GIT_REF=main
+APP_GIT_REF_TYPE=branch
+APP_GIT_USERNAME=YOUR_GIT_USERNAME
+APP_GIT_TOKEN_FILE=.secrets/git-token
+APP_SOURCE_DIR=.runtime/app

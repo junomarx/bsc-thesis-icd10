@@ -1,0 +1,16 @@
+*
+!Dockerfile.bootstrap
+!baseline_manifest.json
+!mysql_schema.sql
+!data/
+!data/subset_0_1.csv
+!data/cases_0_1.csv
+!data/case_code_domain_0_1.csv
+!scripts/
+!scripts/runtime_data.py
+!scripts/apply_mysql_schema.py
+!scripts/load_mysql.py
+!scripts/bootstrap_mysql.py
+!tests/
+!tests/test_runtime_contract.py
+!tests/test_mysql_persistence.py

@@ -1,0 +1,20 @@
+{
+  "prototype_baseline_id": "PROTOBASE-0.1",
+  "model_baseline_id": "MODELBASE-0.1",
+  "requirements_catalogue_version": "0.5",
+  "source_register_version": "0.4",
+  "domain_baseline_id": "DOMBASE-0.1",
+  "rule_baseline_id": "RULEBASE-0.1",
+  "case_plan_id": "CASEPLAN-0.1",
+  "case_baseline_id": "CASEBASE-0.1",
+  "reference_response_baseline_id": "RCBASE-0.1",
+  "subset_baseline_id": "SUBSET-0.1",
+  "catalogue_edition": "ICD-10 BMASGPK 2026",
+  "diaglist_source_id": "SRC-AT-DIAGLIST-2026",
+  "diaglist_file": "DIAGLIST2026.xlsx",
+  "diaglist_worksheet": "DIAGLIST2026",
+  "diaglist_sha256": "66713da5d63afcd37b0152ae7058f2188bf34d557bfa06ad4ce008825fb94a4b",
+  "interaction_cardinality": "one_submitted_code_per_evaluation_request",
+  "verification_oracle_runtime_access": false,
+  "date": "2026-08-06"
+}

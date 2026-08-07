@@ -1,0 +1,54 @@
+name: icd-learning-prototype
+
+services:
+  db:
+    image: mysql:8.4.8
+    environment:
+      MYSQL_DATABASE: ${ICD_DB_NAME:?ICD_DB_NAME is required}
+      MYSQL_USER: ${ICD_DB_USER:?ICD_DB_USER is required}
+      MYSQL_PASSWORD: ${ICD_DB_PASSWORD:?ICD_DB_PASSWORD is required}
+      MYSQL_ROOT_PASSWORD: ${ICD_DB_ROOT_PASSWORD:?ICD_DB_ROOT_PASSWORD is required}
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping --host=127.0.0.1 --user=root --password=\"$${MYSQL_ROOT_PASSWORD}\" --silent"]
+      interval: 2s
+      timeout: 5s
+      retries: 30
+      start_period: 15s
+    restart: unless-stopped
+
+  bootstrap:
+    build:
+      context: ../prototype_baseline_0_1
+      dockerfile: Dockerfile.bootstrap
+    environment:
+      ICD_DB_HOST: db
+      ICD_DB_PORT: "3306"
+      ICD_DB_NAME: ${ICD_DB_NAME:?ICD_DB_NAME is required}
+      ICD_DB_USER: ${ICD_DB_USER:?ICD_DB_USER is required}
+      ICD_DB_PASSWORD: ${ICD_DB_PASSWORD:?ICD_DB_PASSWORD is required}
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: "no"
+
+  app:
+    build:
+      context: ${APP_SOURCE_DIR:-.runtime/app}
+      dockerfile: Dockerfile
+    environment:
+      ICD_DB_HOST: db
+      ICD_DB_PORT: "3306"
+      ICD_DB_NAME: ${ICD_DB_NAME:?ICD_DB_NAME is required}
+      ICD_DB_USER: ${ICD_DB_USER:?ICD_DB_USER is required}
+      ICD_DB_PASSWORD: ${ICD_DB_PASSWORD:?ICD_DB_PASSWORD is required}
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "${APP_HTTP_PORT:-8080}:80"
+    restart: unless-stopped
+
+volumes:
+  mysql_data:
