@@ -217,7 +217,7 @@ The final schema must be able to represent, where applicable:
 
 ### 10.3 Minimum DIAGLIST implications
 
-The downstream `CASEPLAN-0.1` resolves `OPEN-DAT-01` for the working prototype. Four DIAGLIST source fields are retained:
+The downstream `CASEPLAN-0.1` resolved `OPEN-DAT-01` for the working prototype on 6 August 2026 (unchanged by `CASEPLAN-0.2`'s later pre-freeze case/RC expansion, which added no new field). Four DIAGLIST source fields are retained:
 
 - `Diagnose` for the code identifier;
 - `Kennzeichen` for `PAT-STATUS-01`;

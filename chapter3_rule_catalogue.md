@@ -7,7 +7,7 @@
 **Upstream domain baseline:** `chapter3_domain_error_taxonomy_and_classification_baseline.md`, `DOMBASE-0.1`  
 **Upstream requirements:** `chapter3_requirements_catalogue.md`, catalogue version 0.5  
 **Upstream source register:** `chapter3_input_source_baseline_register.md`, register version 0.4
-**Downstream case/subset plan:** `chapter3_reference_case_coverage_plan.md`, `CASEPLAN-0.1` / `SUBSET-0.1`
+**Downstream case/subset plan:** `chapter3_reference_case_coverage_plan.md`, `CASEPLAN-0.2` (supersedes `CASEPLAN-0.1`) / `SUBSET-0.1`
 **Downstream data/interaction model:** `chapter3_data_model_and_interaction_baseline.md`, `MODELBASE-0.1`
 **Downstream technical test baseline:** `chapter3_test_catalogue.md`, `TESTBASE-0.1`
 
@@ -333,7 +333,7 @@ Every one of the four `PAT-*` elements has exactly one terminal classification r
 
 ## 10. Coverage obligations and downstream planning
 
-The rule catalogue determines the coverage cells from which case count must be derived. `CASEPLAN-0.1` now maps these obligations to the first `CASE-*`/`RC-*` estimate and to separate targeted-test obligations:
+The rule catalogue determines the coverage cells from which case count must be derived. `CASEPLAN-0.2` (which superseded the first estimate, `CASEPLAN-0.1`, via the pre-freeze coverage review) now maps these obligations to the `CASE-*`/`RC-*` suite and to separate targeted-test obligations:
 
 | Rule / boundary | Required evidence | Working test destination |
 |---|---|---|
@@ -348,7 +348,7 @@ The rule catalogue determines the coverage cells from which case count must be d
 
 These entries are coverage requirements, not eight mandatory base cases. The COPD case can generate several independent `RC-*` variants, and pure derivation/boundary checks may be better represented as `TEST-*` rather than additional learner vignettes.
 
-`CASEPLAN-0.1` operationalises this distinction with a 13-record `SUBSET-0.1`, four planned base cases and fourteen atomic `RC-*` variants. Pure mapping, gate, additional status-branch and terminal-policy checks remain targeted `TEST-*` obligations rather than being converted into redundant clinical vignettes.
+`CASEPLAN-0.2` operationalises this distinction with a 13-record `SUBSET-0.1`, eight base cases and eighteen atomic `RC-*` variants (the original `CASEPLAN-0.1` plan had four base cases and fourteen variants, before the pre-freeze coverage review added the remaining FEV1-band and inpatient-status coverage). Pure mapping, gate, additional status-branch and terminal-policy checks remain targeted `TEST-*` obligations rather than being converted into redundant clinical vignettes.
 
 ## 11. Explicit non-rules and exclusions
 
@@ -377,4 +377,4 @@ An acceptable alternative is not an error rule. It is represented in the predefi
 - rule/unit/reference tests demonstrate the fixed precedence and deterministic behaviour; and
 - any later rule change increments the rule baseline and triggers impact analysis over linked `RC-*`, `TEST-*` and results.
 
-The coverage-driven planning step is represented by `CASEPLAN-0.1`, and its subset/case records have been materialised as candidate `MODELBASE-0.1` files for working `SUBSET-0.1`, `CASEBASE-0.1`, and `RCBASE-0.1` artefacts. `TESTBASE-0.1` binds every rule/control obligation above to a targeted test specification. The next dependent work is implementation binding: first adopt/recheck the candidate data artefacts, then map the concrete PHP rule/evaluation paths, persistence/API interfaces, and learner workflow to these test contracts while the independent `RCBASE-*` oracle remains outside the runtime classification-data path.
+The coverage-driven planning step is represented by `CASEPLAN-0.2` (supersedes `CASEPLAN-0.1`), and its subset/case records have been materialised, adopted, and executed as `MODELBASE-0.1` files for working `SUBSET-0.1`, `CASEBASE-0.2`, and `RCBASE-0.2` artefacts. `TESTBASE-0.1` binds every rule/control obligation above to a targeted test specification, now bound to the actual PHP implementation (`app/src/Rules/*.php`, `app/tests/`) rather than remaining a planned mapping. The independent `RCBASE-*` oracle remains outside the runtime classification-data path (verified by `TEST-ARC-01`).

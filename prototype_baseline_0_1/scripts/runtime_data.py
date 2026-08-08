@@ -18,8 +18,8 @@ from typing import Any
 RUNTIME_FILES = {
     "manifest": "baseline_manifest.json",
     "catalogue": "data/subset_0_1.csv",
-    "cases": "data/cases_0_1.csv",
-    "case_code_domain": "data/case_code_domain_0_1.csv",
+    "cases": "data/cases_0_2.csv",
+    "case_code_domain": "data/case_code_domain_0_2.csv",
 }
 
 CATALOGUE_FIELDS = ["Diagnose", "Kennzeichen", "Bezeichnung", "Kurzbezeichnung"]

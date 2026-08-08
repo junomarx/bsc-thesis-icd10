@@ -7,7 +7,7 @@ RUN pip install --no-cache-dir mysql-connector-python==26.7.0
 # Runtime bootstrap inputs and code are copied explicitly. In particular, the
 # RCBASE verification oracle is not present in this image.
 COPY baseline_manifest.json mysql_schema.sql ./
-COPY data/subset_0_1.csv data/cases_0_1.csv data/case_code_domain_0_1.csv ./data/
+COPY data/subset_0_1.csv data/cases_0_2.csv data/case_code_domain_0_2.csv ./data/
 COPY scripts/runtime_data.py scripts/apply_mysql_schema.py scripts/load_mysql.py scripts/bootstrap_mysql.py ./scripts/
 COPY tests/test_runtime_contract.py tests/test_mysql_persistence.py ./tests/
 

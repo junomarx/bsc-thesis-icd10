@@ -9,10 +9,12 @@ use PHPUnit\Framework\Attributes\DataProvider;
 /**
  * TEST-RC-01: complete reference-response conformance.
  *
- * This test harness reads verification/reference_responses_0_1.csv directly;
- * the running application never does (TEST-ARC-01). For each of the 14
- * RC-* rows it sends only case_id and submitted_code through the real
- * evaluation boundary and compares the result with the external oracle.
+ * This test harness reads verification/reference_responses_0_2.csv directly;
+ * the running application never does (TEST-ARC-01). For each of the 18
+ * RC-* rows (14 original plus 4 added by the pre-freeze coverage review,
+ * see chapter3_reference_case_coverage_plan.md CASEPLAN-0.2) it sends only
+ * case_id and submitted_code through the real evaluation boundary and
+ * compares the result with the external oracle.
  */
 final class ReferenceResponseTest extends DatabaseTestCase
 {
@@ -51,7 +53,7 @@ final class ReferenceResponseTest extends DatabaseTestCase
 
     public static function referenceResponses(): array
     {
-        $path = dirname(__DIR__, 3) . '/prototype_baseline_0_1/verification/reference_responses_0_1.csv';
+        $path = dirname(__DIR__, 3) . '/prototype_baseline_0_1/verification/reference_responses_0_2.csv';
         $handle = fopen($path, 'r');
         $header = fgetcsv($handle, escape: '\\');
         $vectors = [];

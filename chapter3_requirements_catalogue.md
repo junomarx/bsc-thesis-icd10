@@ -7,8 +7,8 @@
 **Upstream baseline:** `chapter3_input_source_baseline_register.md`, register version 0.4  
 **Domain/classification baseline:** `chapter3_domain_error_taxonomy_and_classification_baseline.md`, `DOMBASE-0.1`
 **Rule baseline:** `chapter3_rule_catalogue.md`, `RULEBASE-0.1`
-**Case/subset planning baseline:** `chapter3_reference_case_coverage_plan.md`, `CASEPLAN-0.1` / `SUBSET-0.1`
-**Data/interaction baseline:** `chapter3_data_model_and_interaction_baseline.md`, `MODELBASE-0.1` / `CASEBASE-0.1` / `RCBASE-0.1`
+**Case/subset planning baseline:** `chapter3_reference_case_coverage_plan.md`, `CASEPLAN-0.2` (supersedes `CASEPLAN-0.1`) / `SUBSET-0.1`
+**Data/interaction baseline:** `chapter3_data_model_and_interaction_baseline.md`, `MODELBASE-0.1` / `CASEBASE-0.2` / `RCBASE-0.2`
 **Technical test baseline:** `chapter3_test_catalogue.md`, `TESTBASE-0.1`
 
 ## 1. Purpose and control rule
@@ -31,8 +31,8 @@ A downstream element must not acquire stronger authority than its basis. In part
 | `REQ-*` | Requirement derived for this project | Records below |
 | `PAT-*` | Frozen coding-response pattern used to derive executable decision rules | `PAT-DEPTH-01`, `PAT-SPEC-01`, `PAT-EVID-01`, `PAT-STATUS-01` |
 | `RULE-*` | Executable or inspectable decision rule specified in `RULEBASE-0.1` | Working baseline; not yet verification-frozen |
-| `CASE-*` | Synthetic base case | Working IDs and first estimate in `CASEPLAN-0.1`; not yet verification-frozen |
-| `RC-*` | Submitted-code/reference-response variant belonging to a base case | Working expectations in `CASEPLAN-0.1`; not yet verification-frozen |
+| `CASE-*` | Synthetic base case | Working IDs in `CASEPLAN-0.2` (first estimate was `CASEPLAN-0.1`, expanded by the pre-freeze coverage review); not yet verification-frozen |
+| `RC-*` | Submitted-code/reference-response variant belonging to a base case | Working expectations in `CASEPLAN-0.2`; not yet verification-frozen |
 | `TEST-*` | Targeted software test | Working specifications in `TESTBASE-0.1`; not yet verification-frozen |
 
 Exact printed-page and dataset locators remain in the working source register and must be carried into rules/reference expectations where a concrete source claim depends on them. The eventual thesis-facing citation can omit the pinpoint locator according to the supervisor-requested HCW presentation convention without deleting that internal provenance.
@@ -156,7 +156,7 @@ The requirement baseline is ready to freeze when:
 - the final included error-pattern taxonomy and source-backed `suboptimal` criteria remain fixed to a versioned domain baseline (`DOMBASE-0.1` currently satisfies this condition);
 - the `SUBSET-0.1` four-field DIAGLIST whitelist and 13-record selection are reproducibly regenerated from the frozen source, or any later change is explicitly versioned; hospital-setting rule activation is already fixed by `DOMBASE-0.1`;
 - the single-code interaction cardinality fixed in `MODELBASE-0.1` remains reflected by the API/UI and reference-response schema;
-- the `CASEPLAN-0.1` estimate of four base cases and fourteen atomic response variants is adopted for the frozen suite or any material change is justified against the declared coverage matrix;
+- the `CASEPLAN-0.2` suite of eight base cases and eighteen atomic response variants (expanded from `CASEPLAN-0.1`'s four/fourteen by the pre-freeze coverage review resolving the gap noted in `ICD_PROTOTYPE_DEVELOPMENT_BRIEF.md` §23.2) is adopted for the frozen suite, or any further material change is justified against the declared coverage matrix;
 - the targeted technical coverage in `TESTBASE-0.1`, or a justified later revision, is bound to the as-built implementation before the principal run;
 - every mandatory requirement has a planned verification path or an explicitly documented gap;
 - the unresolved external-expert-review question has either been answered or is conservatively handled without expanding the evaluation claim; and

@@ -2,14 +2,14 @@
 
 **Document status:** Working implementation-facing control artefact  
 **Model baseline:** `MODELBASE-0.1`  
-**Date:** 6 August 2026  
-**Proposed working prototype baseline:** `PROTOBASE-0.1`  
+**Date:** 6 August 2026; case/expectation baselines superseded 7 August 2026  
+**Proposed working prototype baseline:** `PROTOBASE-0.2` (supersedes `PROTOBASE-0.1`)  
 **Upstream source register:** `chapter3_input_source_baseline_register.md`, register version 0.4  
 **Upstream domain baseline:** `chapter3_domain_error_taxonomy_and_classification_baseline.md`, `DOMBASE-0.1`  
 **Upstream requirements:** `chapter3_requirements_catalogue.md`, catalogue version 0.5  
 **Upstream rule baseline:** `chapter3_rule_catalogue.md`, `RULEBASE-0.1`  
-**Upstream case/subset plan:** `chapter3_reference_case_coverage_plan.md`, `CASEPLAN-0.1` / `SUBSET-0.1`  
-**Working candidate case/expectation baselines:** `CASEBASE-0.1` / `RCBASE-0.1`
+**Upstream case/subset plan:** `chapter3_reference_case_coverage_plan.md`, `CASEPLAN-0.2` (supersedes `CASEPLAN-0.1`) / `SUBSET-0.1`  
+**Working candidate case/expectation baselines:** `CASEBASE-0.2` / `RCBASE-0.2` (supersede `CASEBASE-0.1` / `RCBASE-0.1`)
 **Downstream technical test baseline:** `chapter3_test_catalogue.md`, `TESTBASE-0.1`
 
 ## 1. Purpose
@@ -30,7 +30,7 @@ This is an artefact-scope decision, not an Austrian coding rule. A synthetic vig
 
 The decision is required by the current evidence/model boundary. `RULEBASE-0.1` classifies an atomic relation between one case and one submitted code. Supporting multi-code answers would require additional, presently unspecified semantics for partial correctness, code roles, duplicate/ordering behaviour, and combination-level precedence. Those semantics must not be invented by combining per-code outputs after the fact. Adding multi-code responses therefore requires an explicit later requirement/model/rule revision.
 
-`CASE-004` is fixed as `verification_only` in `CASEBASE-0.1`. It is not exposed as a learner task in the initial prototype because its purpose is to exercise the formal prohibited-status branch and no alternative main diagnosis is asserted.
+`CASE-004` is fixed as `verification_only` in `CASEBASE-0.1`; the pre-freeze coverage review (7 August 2026) added `CASE-008` under the same designation in the superseding `CASEBASE-0.2`, exercising the inpatient branch of the same status prohibition. Neither is exposed as a learner task in the initial prototype because their purpose is to exercise the formal prohibited-status branch and no alternative main diagnosis is asserted.
 
 ## 3. Authority and data-separation boundary
 
@@ -39,34 +39,43 @@ Three data layers must remain distinguishable.
 | Layer | Contents | Runtime access | Authority role |
 |---|---|---|---|
 | Catalogue/reference data | the 13 records in `SUBSET-0.1` plus source/version metadata | yes | machine-readable representation of the selected Austrian source records |
-| Case/model data | `CASEBASE-0.1` case facts, case-specific response domains, and explicitly declared acceptable codes | yes | inputs to the artefact rules; synthetic project specification |
-| Verification oracle | `RCBASE-0.1`: predefined expected class, rule, criterion and explanation obligations for the 14 `RC-*` variants | **no** | independent test expectation against which runtime output is compared |
+| Case/model data | `CASEBASE-0.2` case facts, case-specific response domains, and explicitly declared acceptable codes | yes | inputs to the artefact rules; synthetic project specification |
+| Verification oracle | `RCBASE-0.2`: predefined expected class, rule, criterion and explanation obligations for the 18 `RC-*` variants | **no** | independent test expectation against which runtime output is compared |
 
 The case-specific `is_acceptable` relation is a legitimate runtime model input because `RULE-CORRECT-01` explicitly depends on a predefined acceptable set. It does **not** imply that every `is_acceptable = false` relation is incorrect: the classification still comes from the rule model. By contrast, `expected_class`, `determining_rule`, `pattern_id`, expected criterion and required explanation elements belong only to the verification oracle and must not be imported into the application database or read by the evaluation endpoint.
 
 This separation prevents a circular test in which the application is given the answer key against which it is supposedly being verified.
 
-## 4. Candidate physical artefacts for `PROTOBASE-0.1`
+## 4. Physical artefacts for `PROTOBASE-0.2`
 
-The working files below were materialised as implementation-facing candidates.
-Their presence does not establish that they have been adopted or successfully
-executed in the actual application repository:
+The working files below were originally materialised as implementation-facing
+candidates and were subsequently adopted, executed, and verified in the actual
+application repository (`docs/CHANGELOG.md`, 2026-08-07 entries); their
+presence is no longer merely candidate status. The `cases`/`case_code_domain`/
+`reference_responses` files were superseded on 7 August 2026 by `_0_2`
+counterparts after the pre-freeze coverage review — both generations remain
+on disk (the project's immutable-baseline design keeps prior versions rather
+than overwriting them), but the runtime loader (`scripts/runtime_data.py`)
+and the current oracle test harness now point at the `_0_2` files:
 
 | File | Baseline role |
 |---|---|
-| `prototype_baseline_0_1/baseline_manifest.json` | binds all working baseline/version identifiers and the frozen DIAGLIST checksum |
+| `prototype_baseline_0_1/baseline_manifest.json` | binds all working baseline/version identifiers and the frozen DIAGLIST checksum; currently identifies `PROTOBASE-0.2`/`CASEBASE-0.2`/`RCBASE-0.2` |
 | `prototype_baseline_0_1/config/subset_definition_0_1.json` | machine-readable extraction contract: source identity, four-field whitelist, selected/control codes, and normalization policy |
-| `prototype_baseline_0_1/data/subset_0_1.csv` | reproducible 13-record application subset from DIAGLIST |
-| `prototype_baseline_0_1/data/cases_0_1.csv` | four synthetic case records (`CASEBASE-0.1`) |
-| `prototype_baseline_0_1/data/case_code_domain_0_1.csv` | 14 eligible case-code relations and the explicit acceptable-set membership |
+| `prototype_baseline_0_1/data/subset_0_1.csv` | reproducible 13-record application subset from DIAGLIST (unchanged by the coverage review) |
+| `prototype_baseline_0_1/data/cases_0_1.csv` | **superseded** — the original four synthetic case records (`CASEBASE-0.1`), retained as history only |
+| `prototype_baseline_0_1/data/cases_0_2.csv` | **current** — eight synthetic case records (`CASEBASE-0.2`: the original four plus `CASE-005`-`CASE-008` from the pre-freeze coverage review) |
+| `prototype_baseline_0_1/data/case_code_domain_0_1.csv` | **superseded** — the original 14 eligible case-code relations, retained as history only |
+| `prototype_baseline_0_1/data/case_code_domain_0_2.csv` | **current** — 18 eligible case-code relations and the explicit acceptable-set membership |
 | `prototype_baseline_0_1/mysql_schema.sql` | implementation-facing relational schema contract |
 | `prototype_baseline_0_1/scripts/prepare_subset.py` | deterministic source-to-subset preparation and source-identity checks |
-| `prototype_baseline_0_1/scripts/runtime_data.py` | runtime-only input allowlist, parsing, normalization, and structural validation |
+| `prototype_baseline_0_1/scripts/runtime_data.py` | runtime-only input allowlist, parsing, normalization, and structural validation; `RUNTIME_FILES` currently points at the `_0_2` case/domain CSVs |
 | `prototype_baseline_0_1/scripts/apply_mysql_schema.py` | applies the runtime DDL to a deliberately empty MySQL target and checks the resulting table set |
 | `prototype_baseline_0_1/scripts/load_mysql.py` | transactional, immutable-baseline MySQL data loader; never reads `RCBASE-*` |
 | `prototype_baseline_0_1/tests/test_runtime_contract.py` | database-independent input-boundary and normalized-model checks |
 | `prototype_baseline_0_1/tests/test_mysql_persistence.py` | live MySQL assertions for `TEST-DAT-02`; does not read `RCBASE-*` |
-| `prototype_baseline_0_1/verification/reference_responses_0_1.csv` | independent 14-row verification oracle (`RCBASE-0.1`); excluded from runtime imports |
+| `prototype_baseline_0_1/verification/reference_responses_0_1.csv` | **superseded** — the original independent 14-row verification oracle (`RCBASE-0.1`), retained as history only |
+| `prototype_baseline_0_1/verification/reference_responses_0_2.csv` | **current** — independent 18-row verification oracle (`RCBASE-0.2`); excluded from runtime imports |
 
 The DIAGLIST source workbook itself remains the authoritative frozen input. These files are derived project artefacts and must not be described as replacing the Austrian source.
 
@@ -162,10 +171,10 @@ Before this working model is promoted, the following checks are mandatory:
 
 1. `subset_0_1.csv` contains exactly 13 unique codes and matches the frozen DIAGLIST values after the declared normalization.
 2. Every `case_code_domain` code exists in `SUBSET-0.1`, and every relation has an existing parent case.
-3. `CASEBASE-0.1` contains four cases; `CASE-004` is the only `verification_only` case.
-4. The two COPD response domains contain exactly six codes each; `CASE-003/004` contain one relation each.
-5. The declared acceptable sets are exactly `{J44.02}`, `{J44.12}`, `{Z01.6}`, and the empty set for `CASE-004`.
-6. `RCBASE-0.1` contains exactly 14 unique `RC-*` rows and each row maps to one runtime case-code relation.
+3. `CASEBASE-0.2` contains eight cases; `CASE-004` and `CASE-008` are the only `verification_only` cases.
+4. The two original COPD response domains contain exactly six codes each; `CASE-003/004/005/006/007/008` contain one relation each.
+5. The declared acceptable sets are exactly `{J44.02}`, `{J44.12}`, `{Z01.6}`, `{J44.00}`, `{J44.11}`, `{J44.03}`, and the empty set for `CASE-004` and `CASE-008`.
+6. `RCBASE-0.2` contains exactly 18 unique `RC-*` rows and each row maps to one runtime case-code relation.
 7. Every oracle rule/pattern/criterion identifier exists in the frozen upstream specifications.
 8. No verification-only expected-output column/table is present in the runtime MySQL schema or runtime import set.
 9. The application can be configured from the baseline manifest without changing a source-derived rule silently.

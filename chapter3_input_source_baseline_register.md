@@ -296,14 +296,14 @@ A synthetic case is therefore **test input**, not authority. Its expected result
 - [x] Hospital-sector `!` status behaviour is the only selected setting-dependent executable rule in the current domain baseline.
 - [x] Extramural-specific executable coding behaviour is excluded from the current domain baseline; extramural sources remain context/provenance material.
 - [x] `REQ-DAT-04` and the working `SUBSET-0.1`/`MODELBASE-0.1` specification fix the candidate import whitelist to `Diagnose`, `Kennzeichen`, `Bezeichnung`, and `Kurzbezeichnung` with explicit normalization.
-- [x] `CASEPLAN-0.1` defines a working coverage matrix and derives the candidate 13-record subset, four base cases, and 14 response variants. These are working design outputs, not a final verification freeze.
+- [x] `CASEPLAN-0.1` defines a working coverage matrix and derives the candidate 13-record subset, four base cases, and 14 response variants. These are working design outputs, not a final verification freeze. *(Superseded 7 August 2026 by `CASEPLAN-0.2`, which expanded this to eight base cases and 18 response variants after the pre-freeze coverage review below — see `chapter3_reference_case_coverage_plan.md` §1.1.)*
 
 ### Required before the data/subset baseline can be declared frozen
 
-- [ ] Adopt and recheck the working four-field whitelist, source projection, and selected records in the actual implementation environment; any as-built change requires explicit justification and versioning.
-- [ ] Perform the pre-freeze coverage review required by `REQ-VER-02`, including the documented question of whether additional integration/reference cases are needed beyond the working four-case/14-response design.
-- [ ] Record the final as-built case-linked subset and derived-data identities after reproduction from the frozen source; do not inherit exploratory derived-data hashes as project evidence.
-- [ ] Assign a frozen source-set version (for example `SRCBASE-1.0`) before predefined reference-case expectations are locked for final verification.
+- [x] Adopt and recheck the working four-field whitelist, source projection, and selected records in the actual implementation environment; any as-built change requires explicit justification and versioning. *(Done: `prepare_subset.py --check-existing` and `validate_baseline.py` both reproduce `SUBSET-0.1` byte-for-byte from the frozen `DIAGLIST2026.xlsx`; recorded in `docs/CHANGELOG.md`, 2026-08-07.)*
+- [x] Perform the pre-freeze coverage review required by `REQ-VER-02`, including the documented question of whether additional integration/reference cases are needed beyond the working four-case/14-response design. *(Done 7 August 2026: adopted the suggested expansion — `CASE-005`-`CASE-008` / `RC-005-01`-`RC-008-01` under `CASEBASE-0.2`/`RCBASE-0.2` — closing the FEV1-suffix and inpatient-status-branch gaps at full integration level. See `chapter3_reference_case_coverage_plan.md` §1.1 and `docs/CHANGELOG.md`.)*
+- [x] Record the final as-built case-linked subset and derived-data identities after reproduction from the frozen source; do not inherit exploratory derived-data hashes as project evidence. *(Done: `output_sha256` for `subset_0_1.csv` and the `canonical_digest` for the `CASEBASE-0.2` runtime dataset were both recomputed live from the frozen source/current data files in this environment, not carried over from an earlier sandbox run; recorded in `docs/CHANGELOG.md`.)*
+- [ ] Assign a frozen source-set version (for example `SRCBASE-1.0`) before predefined reference-case expectations are locked for final verification. *(Not yet due — this is the actual freeze step; see `docs/REQUIREMENTS_TRACEABILITY.md` §2.5 `REQ-CFG-01`.)*
 
 ### Open supervisory item outside the data/source freeze
 

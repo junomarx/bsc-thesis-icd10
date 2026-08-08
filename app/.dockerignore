@@ -1,8 +1,0 @@
-vendor/
-frontend/node_modules/
-frontend/dist/
-tests/
-phpunit.xml
-router.php
-composer.phar
-.phpunit.result.cache

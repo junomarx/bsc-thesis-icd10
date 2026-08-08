@@ -1,12 +1,21 @@
-# PROTOBASE-0.1 Candidate Data Import and Persistence Scaffold
+# PROTOBASE-0.2 Data Import and Persistence Scaffold
 
-**Status:** exploratory/candidate implementation material. The files in this
-directory were prepared outside the actual application repository. Their
-presence does not establish that the pipeline has been adopted, executed, or
-verified in the project. Run and record the applicable checks after adoption;
-do not inherit historical sandbox verdicts.
+**Status:** adopted and executed. This directory's pipeline has been adopted
+into the actual application repository, executed against the frozen source
+and a real MySQL instance, and its observations are recorded in
+`docs/CHANGELOG.md` (2026-08-07) — it is no longer exploratory/candidate
+material, and the checks below are not a hypothetical "after adoption" step.
+The baseline was originally materialised as `PROTOBASE-0.1` (four cases,
+14 reference responses) and superseded on 7 August 2026 by `PROTOBASE-0.2`
+(eight cases, 18 reference responses) via the pre-freeze coverage review
+required by `REQ-VER-02` — see `chapter3_reference_case_coverage_plan.md`
+§1.1. `data/subset_0_1.csv` and its `_0_1`-suffixed siblings from the
+original baseline remain on disk as retained history (this project's
+immutable-baseline design never deletes a superseded version); the current
+runtime loader and test harness read the `_0_2` case/domain/reference files
+described below.
 
-This directory proposes a working, reproducible data baseline for the Austrian ICD-10 BMASGPK 2026 educational prototype. The data pipeline has one strict direction:
+This directory implements a working, reproducible data baseline for the Austrian ICD-10 BMASGPK 2026 educational prototype. The data pipeline has one strict direction:
 
 ```text
 frozen DIAGLIST2026.xlsx
@@ -19,9 +28,9 @@ scripts/prepare_subset.py
         v
 data/subset_0_1.csv
         +
-data/cases_0_1.csv
+data/cases_0_2.csv
         +
-data/case_code_domain_0_1.csv
+data/case_code_domain_0_2.csv
         |
         v
 scripts/load_mysql.py
@@ -30,7 +39,7 @@ scripts/load_mysql.py
 MySQL runtime tables
 ```
 
-`verification/reference_responses_0_1.csv` is outside this path. It is an independent verification oracle and is never imported into the runtime database.
+`verification/reference_responses_0_2.csv` is outside this path. It is an independent verification oracle and is never imported into the runtime database.
 
 ## 1. Preparation step
 
@@ -60,7 +69,7 @@ The broader baseline audit remains:
 python validate_baseline.py /path/to/DIAGLIST2026.xlsx
 ```
 
-Unlike the runtime loader, that audit is allowed to inspect the independent `RCBASE-0.1` fixture because its purpose is to verify the specification package itself. It must not be imported by application code.
+Unlike the runtime loader, that audit is allowed to inspect the independent `RCBASE-0.2` fixture because its purpose is to verify the specification package itself. It must not be imported by application code.
 
 ## 3. Runtime-input preflight
 
@@ -70,7 +79,7 @@ Before using a database, the loader can validate only the inputs it is actually 
 python scripts/load_mysql.py --check-only
 ```
 
-This reads exactly four files: `baseline_manifest.json`, `data/subset_0_1.csv`, `data/cases_0_1.csv`, and `data/case_code_domain_0_1.csv`. There is no filesystem discovery/glob and no verification-oracle path.
+This reads exactly four files: `baseline_manifest.json`, `data/subset_0_1.csv`, `data/cases_0_2.csv`, and `data/case_code_domain_0_2.csv`. There is no filesystem discovery/glob and no verification-oracle path.
 
 The preflight checks identifiers, allowed field names, uniqueness, foreign relations, case context flags, acceptable-response representation, and runtime baseline consistency. It also emits a canonical digest of the normalized runtime dataset for configuration/audit use.
 
@@ -123,8 +132,8 @@ The runtime database contains only:
 
 - baseline/version metadata;
 - the 13 selected catalogue records;
-- the four synthetic case definitions;
-- the 14 defined case-code relations and their explicit `is_acceptable` membership.
+- the eight synthetic case definitions;
+- the 18 defined case-code relations and their explicit `is_acceptable` membership.
 
 It does not contain expected feedback classes, expected determining rules, expected criterion keys, expected explanation elements, or the `RC-*` answer key. Learner-attempt history is also outside the present scope.
 
@@ -150,7 +159,7 @@ python -m unittest -v tests/test_mysql_persistence.py
 
 It queries the live database independently of the loader and verifies the runtime table boundary, baseline identity, row/domain counts, acceptable sets, rule-relevant case values, orphan absence, and active foreign-key enforcement. It does not read the `RCBASE-*` oracle.
 
-No execution result is asserted by this handoff. After the candidate scaffold is adopted, execute the schema application, first import, identical re-import and persistence suite in the actual project environment and retain those observations as development evidence. The principal frozen verification must later execute the applicable checks again against the identified final baseline.
+The schema application, first import, identical re-import, and persistence suite have all been executed against a real MySQL instance in the actual project environment, with observations retained as development evidence in `docs/CHANGELOG.md` (2026-08-07). The principal frozen verification must still execute the applicable checks again against the identified final baseline once that freeze happens.
 
 ## 9. Compose bootstrap coordinator
 

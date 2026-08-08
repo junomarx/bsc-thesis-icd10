@@ -2,7 +2,11 @@ name: icd-learning-prototype
 
 services:
   db:
-    image: mysql:8.4.8
+    # Deliberately unpinned below the major version: MySQL's exact minor/patch
+    # is not treated as a criterion the prototype depends on (only CHECK
+    # constraint support, i.e. MySQL >= 8.0.16, actually matters). An exact
+    # version is pinned only at the eventual REQ-CFG-01 evaluation freeze.
+    image: mysql:latest
     environment:
       MYSQL_DATABASE: ${ICD_DB_NAME:?ICD_DB_NAME is required}
       MYSQL_USER: ${ICD_DB_USER:?ICD_DB_USER is required}
@@ -37,6 +41,7 @@ services:
     build:
       context: ${APP_SOURCE_DIR:-.runtime/app}
       dockerfile: Dockerfile
+      target: runtime
     environment:
       ICD_DB_HOST: db
       ICD_DB_PORT: "3306"

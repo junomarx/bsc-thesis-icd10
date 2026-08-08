@@ -18,7 +18,7 @@ host checkout (.runtime/app)
           v
        app build ---------------------+
                                       |
-db: MySQL 8.4.8 <--- bootstrap         |  app: PHP/React image
+db: MySQL (latest) <--- bootstrap      |  app: PHP/React image
   persistent volume     one-shot       +----> http://localhost:8080
 ```
 

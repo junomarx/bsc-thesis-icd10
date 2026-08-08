@@ -68,5 +68,5 @@ CREATE TABLE case_code_domain (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- There is deliberately no reference_response/expected_class table here.
--- RCBASE-0.1 is an external verification fixture and must not be a runtime
+-- RCBASE-0.2 is an external verification fixture and must not be a runtime
 -- input to the classification endpoint.

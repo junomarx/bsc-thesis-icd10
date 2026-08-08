@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Structural/source-integrity checks for PROTOBASE-0.1.
+"""Structural/source-integrity checks for PROTOBASE-0.2.
 
 This script is deliberately read-only. It checks the derived working artefacts
 against the frozen DIAGLIST source and against the declared case/oracle model.
@@ -30,9 +30,16 @@ EXPECTED_ACCEPTABLE = {
     "CASE-002": {"J44.12"},
     "CASE-003": {"Z01.6"},
     "CASE-004": set(),
+    "CASE-005": {"J44.00"},
+    "CASE-006": {"J44.11"},
+    "CASE-007": {"J44.03"},
+    "CASE-008": set(),
 }
-EXPECTED_DOMAIN_SIZES = {"CASE-001": 6, "CASE-002": 6, "CASE-003": 1, "CASE-004": 1}
-EXPECTED_CLASSES = Counter({"incorrect": 9, "correct": 3, "suboptimal": 2})
+EXPECTED_DOMAIN_SIZES = {
+    "CASE-001": 6, "CASE-002": 6, "CASE-003": 1, "CASE-004": 1,
+    "CASE-005": 1, "CASE-006": 1, "CASE-007": 1, "CASE-008": 1,
+}
+EXPECTED_CLASSES = Counter({"incorrect": 10, "correct": 6, "suboptimal": 2})
 EXPECTED_RULES = {
     "RULE-DEPTH-01", "RULE-EVID-01", "RULE-SPEC-01",
     "RULE-CORRECT-01", "RULE-STATUS-01",
@@ -68,9 +75,9 @@ def main() -> None:
     manifest = json.loads((base / "baseline_manifest.json").read_text(encoding="utf-8"))
     subset_definition = json.loads((base / "config" / "subset_definition_0_1.json").read_text(encoding="utf-8"))
     subset = read_csv(base / "data" / "subset_0_1.csv")
-    cases = read_csv(base / "data" / "cases_0_1.csv")
-    domain = read_csv(base / "data" / "case_code_domain_0_1.csv")
-    oracle = read_csv(base / "verification" / "reference_responses_0_1.csv")
+    cases = read_csv(base / "data" / "cases_0_2.csv")
+    domain = read_csv(base / "data" / "case_code_domain_0_2.csv")
+    oracle = read_csv(base / "verification" / "reference_responses_0_2.csv")
 
     require(sha256(args.diaglist) == EXPECTED_SHA256, "DIAGLIST SHA-256 mismatch")
     require(manifest["diaglist_sha256"] == EXPECTED_SHA256, "manifest checksum mismatch")
@@ -100,12 +107,12 @@ def main() -> None:
         require(row["Kurzbezeichnung"] == src["Kurzbezeichnung"], f"short designation mismatch: {code}")
 
     case_ids = {row["case_id"] for row in cases}
-    require(len(cases) == 4 and case_ids == set(EXPECTED_DOMAIN_SIZES), "CASEBASE-0.1 identity/count mismatch")
+    require(len(cases) == 8 and case_ids == set(EXPECTED_DOMAIN_SIZES), "CASEBASE-0.2 identity/count mismatch")
     verification_only = {row["case_id"] for row in cases if row["intended_use"] == "verification_only"}
-    require(verification_only == {"CASE-004"}, "CASE-004 must be the only verification-only case")
+    require(verification_only == {"CASE-004", "CASE-008"}, "CASE-004 and CASE-008 must be the only verification-only cases")
 
     relations = {(row["case_id"], row["code"]) for row in domain}
-    require(len(domain) == 14 and len(relations) == 14, "case-code domain must contain 14 unique relations")
+    require(len(domain) == 18 and len(relations) == 18, "case-code domain must contain 18 unique relations")
     by_case: dict[str, list[dict[str, str]]] = defaultdict(list)
     for row in domain:
         require(row["case_id"] in case_ids, f"orphan case-code relation: {row['case_id']}")
@@ -118,7 +125,7 @@ def main() -> None:
         require(observed == expected, f"acceptable set mismatch for {case}")
 
     rc_ids = {row["rc_id"] for row in oracle}
-    require(len(oracle) == 14 and len(rc_ids) == 14, "RCBASE-0.1 must contain 14 unique RC rows")
+    require(len(oracle) == 18 and len(rc_ids) == 18, "RCBASE-0.2 must contain 18 unique RC rows")
     require(Counter(row["expected_class"] for row in oracle) == EXPECTED_CLASSES, "RC class distribution mismatch")
     require(all(row["expected_evaluation_status"] == "classified" for row in oracle), "all current RC rows must be classified")
     require(all((row["case_id"], row["submitted_code"]) in relations for row in oracle), "oracle contains undefined case-code relation")
@@ -140,11 +147,11 @@ def main() -> None:
     forbidden_runtime_tokens = ("expected_class", "expected_evaluation_status", "determining_rule", "reference_response")
     require(not any(token in create_statements.lower() for token in forbidden_runtime_tokens), "verification-answer field/table leaked into runtime schema")
 
-    print("PROTOBASE-0.1 validation: PASS")
+    print("PROTOBASE-0.2 validation: PASS")
     print("  DIAGLIST checksum and 13,298-code source identity: PASS")
     print("  SUBSET-0.1: 13 unique records, exact normalized source projection: PASS")
-    print("  CASEBASE-0.1: 4 cases; response domain: 14 relations: PASS")
-    print("  RCBASE-0.1: 14 expectations (3 correct / 2 suboptimal / 9 incorrect): PASS")
+    print("  CASEBASE-0.2: 8 cases; response domain: 18 relations: PASS")
+    print("  RCBASE-0.2: 18 expectations (6 correct / 2 suboptimal / 10 incorrect): PASS")
     print("  Oracle-to-runtime separation: PASS")
 
 

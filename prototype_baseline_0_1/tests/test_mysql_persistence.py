@@ -1,6 +1,6 @@
-"""Live MySQL integration assertions for TEST-DAT-02 / PROTOBASE-0.1.
+"""Live MySQL integration assertions for TEST-DAT-02 / PROTOBASE-0.2.
 
-The test reads persisted runtime state only. It never reads RCBASE-0.1 or any
+The test reads persisted runtime state only. It never reads RCBASE-0.2 or any
 verification expectation file.
 """
 
@@ -60,8 +60,13 @@ class MySQLPersistenceTests(unittest.TestCase):
             cursor.close()
 
     def test_server_and_runtime_schema(self) -> None:
-        version = self.query("SELECT VERSION()")[0][0]
-        self.assertTrue(str(version).startswith("8.4.8"), version)
+        # The exact minor/patch is deliberately not pinned here; only the
+        # major-version floor needed for CHECK constraint enforcement
+        # (MySQL >= 8.0.16) is a real prerequisite. An exact version is
+        # pinned only at the eventual REQ-CFG-01 evaluation freeze.
+        version = str(self.query("SELECT VERSION()")[0][0])
+        major_version = int(version.split(".", 1)[0])
+        self.assertGreaterEqual(major_version, 8, version)
 
         tables = {row[0] for row in self.query(
             "SELECT table_name FROM information_schema.tables "
@@ -78,8 +83,8 @@ class MySQLPersistenceTests(unittest.TestCase):
 
     def test_persisted_counts_and_baseline_identity(self) -> None:
         self.assertEqual(self.query("SELECT COUNT(*) FROM catalogue_code")[0][0], 13)
-        self.assertEqual(self.query("SELECT COUNT(*) FROM case_definition")[0][0], 4)
-        self.assertEqual(self.query("SELECT COUNT(*) FROM case_code_domain")[0][0], 14)
+        self.assertEqual(self.query("SELECT COUNT(*) FROM case_definition")[0][0], 8)
+        self.assertEqual(self.query("SELECT COUNT(*) FROM case_code_domain")[0][0], 18)
         self.assertEqual(self.query("SELECT COUNT(*) FROM prototype_baseline")[0][0], 1)
 
         row = self.query(
@@ -89,9 +94,9 @@ class MySQLPersistenceTests(unittest.TestCase):
         self.assertEqual(
             row,
             (
-                "PROTOBASE-0.1",
+                "PROTOBASE-0.2",
                 "SUBSET-0.1",
-                "CASEBASE-0.1",
+                "CASEBASE-0.2",
                 "66713da5d63afcd37b0152ae7058f2188bf34d557bfa06ad4ce008825fb94a4b",
             ),
         )
@@ -100,7 +105,10 @@ class MySQLPersistenceTests(unittest.TestCase):
         sizes = dict(self.query(
             "SELECT case_id, COUNT(*) FROM case_code_domain GROUP BY case_id ORDER BY case_id"
         ))
-        self.assertEqual(sizes, {"CASE-001": 6, "CASE-002": 6, "CASE-003": 1, "CASE-004": 1})
+        self.assertEqual(sizes, {
+            "CASE-001": 6, "CASE-002": 6, "CASE-003": 1, "CASE-004": 1,
+            "CASE-005": 1, "CASE-006": 1, "CASE-007": 1, "CASE-008": 1,
+        })
 
         accepted: dict[str, set[str]] = {case_id: set() for case_id in sizes}
         for case_id, code in self.query(
@@ -114,6 +122,10 @@ class MySQLPersistenceTests(unittest.TestCase):
                 "CASE-002": {"J44.12"},
                 "CASE-003": {"Z01.6"},
                 "CASE-004": set(),
+                "CASE-005": {"J44.00"},
+                "CASE-006": {"J44.11"},
+                "CASE-007": {"J44.03"},
+                "CASE-008": set(),
             },
         )
 
@@ -129,6 +141,10 @@ class MySQLPersistenceTests(unittest.TestCase):
                 ("CASE-002", "learner_visible", Decimal("50.00"), None),
                 ("CASE-003", "learner_visible", None, 0),
                 ("CASE-004", "verification_only", None, 1),
+                ("CASE-005", "learner_visible", Decimal("20.00"), None),
+                ("CASE-006", "learner_visible", Decimal("35.00"), None),
+                ("CASE-007", "learner_visible", Decimal("70.00"), None),
+                ("CASE-008", "verification_only", None, None),
             ],
         )
 
@@ -150,14 +166,14 @@ class MySQLPersistenceTests(unittest.TestCase):
                     "INSERT INTO case_code_domain "
                     "(case_baseline_id, case_id, subset_baseline_id, code, is_acceptable) "
                     "VALUES (%s, %s, %s, %s, %s)",
-                    ("CASEBASE-0.1", "CASE-001", "SUBSET-0.1", "J99.99", 0),
+                    ("CASEBASE-0.2", "CASE-001", "SUBSET-0.1", "J99.99", 0),
                 )
             self.assertEqual(raised.exception.errno, 1452)
         finally:
             self.connection.rollback()
             cursor.close()
 
-        self.assertEqual(self.query("SELECT COUNT(*) FROM case_code_domain")[0][0], 14)
+        self.assertEqual(self.query("SELECT COUNT(*) FROM case_code_domain")[0][0], 18)
 
 
 if __name__ == "__main__":

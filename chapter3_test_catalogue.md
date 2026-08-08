@@ -7,15 +7,15 @@
 **Upstream requirements:** `chapter3_requirements_catalogue.md`, catalogue version 0.5  
 **Upstream domain baseline:** `chapter3_domain_error_taxonomy_and_classification_baseline.md`, `DOMBASE-0.1`  
 **Upstream rule baseline:** `chapter3_rule_catalogue.md`, `RULEBASE-0.1`  
-**Upstream case/subset plan:** `chapter3_reference_case_coverage_plan.md`, `CASEPLAN-0.1` / `SUBSET-0.1`  
-**Upstream data/interaction model:** `chapter3_data_model_and_interaction_baseline.md`, `MODELBASE-0.1` / `CASEBASE-0.1` / `RCBASE-0.1`  
-**Prototype working baseline:** `PROTOBASE-0.1`
+**Upstream case/subset plan:** `chapter3_reference_case_coverage_plan.md`, `CASEPLAN-0.2` (supersedes `CASEPLAN-0.1`) / `SUBSET-0.1`  
+**Upstream data/interaction model:** `chapter3_data_model_and_interaction_baseline.md`, `MODELBASE-0.1` / `CASEBASE-0.2` / `RCBASE-0.2`  
+**Prototype working baseline:** `PROTOBASE-0.2` (supersedes `PROTOBASE-0.1`)
 
 ## 1. Purpose and claim boundary
 
 This catalogue converts the technical coverage obligations already fixed by the requirements, rule, case, and data-model baselines into a finite test specification. It is deliberately targeted at the responsibilities that are central to the artefact: reproducible data preparation, rule predicates and boundaries, evaluation guards, precedence, persistence/API integration, reference-response conformance, deterministic behaviour, and the minimal learner workflow.
 
-The catalogue does not validate Austrian coding rules independently. Source-derived expected behaviour enters through `RULEBASE-0.1` and the independently predefined `RCBASE-0.1`; the software is tested for conformance to those baselines. Passing this suite therefore supports a claim of technical/model conformance within the bounded prototype, not clinical validity, learning effectiveness, usability, acceptance, or comprehensive ICD-10 correctness.
+The catalogue does not validate Austrian coding rules independently. Source-derived expected behaviour enters through `RULEBASE-0.1` and the independently predefined `RCBASE-0.2`; the software is tested for conformance to those baselines. Passing this suite therefore supports a claim of technical/model conformance within the bounded prototype, not clinical validity, learning effectiveness, usability, acceptance, or comprehensive ICD-10 correctness.
 
 No observed final result is recorded here. `TESTBASE-0.1` defines what is to be checked before the principal verification run. Execution records, deviations, corrections, reruns, and final verdicts belong to the later verification record/results.
 
@@ -51,7 +51,7 @@ Pure technical fixtures used to isolate a branch, such as a case object with a d
 | `TEST-CORRECT-01` | unit / decision table | predefined acceptance | `RULE-CORRECT-01`, `REQ-RUL-03` |
 | `TEST-PREC-01` | unit / control | precedence, retained hard matches, terminal gap | `RULE-PREC-01`, `REQ-RUL-04` |
 | `TEST-API-01` | API integration / negative | one-code request contract and validation boundary | `REQ-INT-01`, `REQ-RUL-05` |
-| `TEST-RC-01` | API/service integration / parameterised reference | all 14 predefined reference responses | `RCBASE-0.1`, `REQ-VER-02`, `REQ-VER-03`, `REQ-FBK-01` |
+| `TEST-RC-01` | API/service integration / parameterised reference | all 18 predefined reference responses | `RCBASE-0.2`, `REQ-VER-02`, `REQ-VER-03`, `REQ-FBK-01` |
 | `TEST-DET-01` | integration / repeatability | deterministic evaluation on unchanged baseline | `REQ-ARC-02` |
 | `TEST-E2E-01` | end-to-end / parameterised | learner case-to-feedback workflow across all three classes | `REQ-INT-01`, `REQ-FBK-01`, `REQ-FBK-02` |
 | `TEST-E2E-02` | end-to-end / scope guard | exclusion of verification-only case from learner presentation | `MODELBASE-0.1`, `REQ-SCP-01`, `REQ-ARC-01` |
@@ -73,9 +73,9 @@ The supplied candidate `prototype_baseline_0_1/validate_baseline.py` and determi
 
 ### `TEST-DAT-02` - runtime persistence and relation integrity
 
-**Purpose.** Verify that the MySQL state used by the evaluator is the intended physical representation of `SUBSET-0.1` and `CASEBASE-0.1`.
+**Purpose.** Verify that the MySQL state used by the evaluator is the intended physical representation of `SUBSET-0.1` and `CASEBASE-0.2`.
 
-**Required assertions after import.** The runtime contains 13 catalogue rows, four case rows, and 14 case-code-domain relations; each relation resolves to an existing case and catalogue record; response-domain sizes are 6/6/1/1 for `CASE-001` to `CASE-004`; accepted sets are exactly `{J44.02}`, `{J44.12}`, `{Z01.6}`, and the empty set for `CASE-004`; only `CASE-004` is `verification_only`; the two COPD cases retain their 55.00% and 50.00% stable-phase FEV1 values; and the two hospital-outpatient cases retain respectively `false` and `true` for the inpatient-LKF-scoring flag.
+**Required assertions after import.** The runtime contains 13 catalogue rows, eight case rows, and 18 case-code-domain relations; each relation resolves to an existing case and catalogue record; response-domain sizes are 6/6/1/1/1/1/1/1 for `CASE-001` to `CASE-008`; accepted sets are exactly `{J44.02}`, `{J44.12}`, `{Z01.6}`, `{J44.00}`, `{J44.11}`, `{J44.03}`, and the empty set for `CASE-004` and `CASE-008`; only `CASE-004` and `CASE-008` are `verification_only`; the two original COPD cases retain their 55.00% and 50.00% stable-phase FEV1 values (the three cases added by the pre-freeze coverage review retain 20.00%, 35.00%, and 70.00% respectively); and the hospital-outpatient cases retain respectively `false` and `true` for the inpatient-LKF-scoring flag, while the inpatient cases (including the review-added `CASE-008`) carry no such flag.
 
 **Pass condition.** The persisted state is value-equivalent to the versioned runtime input artefacts and satisfies the declared foreign-key/model relations.
 
@@ -172,7 +172,7 @@ For each positive vector, required feedback semantics include the unspecified re
 
 ### `TEST-CORRECT-01` - declared acceptance
 
-`CASE-001 + J44.02` and `CASE-003 + Z01.6` must reach `accepted_response` only after gate, hard, and graded rules clear. A non-accepted code must not match `RULE-CORRECT-01` merely because another rule happens not to classify it. No acceptable-alternative vector is added because `CASEBASE-0.1` deliberately contains no source-bounded alternative-equivalence case.
+`CASE-001 + J44.02` and `CASE-003 + Z01.6` must reach `accepted_response` only after gate, hard, and graded rules clear. A non-accepted code must not match `RULE-CORRECT-01` merely because another rule happens not to classify it. No acceptable-alternative vector is added because `CASEBASE-0.2` deliberately contains no source-bounded alternative-equivalence case.
 
 ### `TEST-PREC-01` - precedence and terminal policy
 
@@ -245,13 +245,13 @@ For every vector, the learner can view the synthetic case, select/search and sub
 
 ### `TEST-E2E-02` - verification-only case boundary
 
-`CASE-004` must not be offered through the learner-facing case list/navigation in the initial prototype. It remains available to the technical verification harness/evaluation layer as required by `RC-004-01`. The test therefore verifies UI intended-use filtering without deleting the underlying verification fixture.
+`CASE-004` (and, since the pre-freeze coverage review, `CASE-008`) must not be offered through the learner-facing case list/navigation in the initial prototype. Both remain available to the technical verification harness/evaluation layer as required by `RC-004-01`/`RC-008-01`. The test therefore verifies UI intended-use filtering without deleting the underlying verification fixture.
 
 ## 8. Configuration and regression control
 
 ### `TEST-CFG-01` - evaluated baseline identity
 
-Before the principal run, the evaluation record must bind the exact source register, catalogue/subset, domain, requirements, rule, model, case/reference-response, test specification, application revision, database state, and relevant execution-environment versions. Runtime identifiers must agree with the frozen evaluation manifest. The current working identifiers are `SUBSET-0.1`, `DOMBASE-0.1`, `RULEBASE-0.1`, `MODELBASE-0.1`, `CASEBASE-0.1`, `RCBASE-0.1`, `TESTBASE-0.1`, and `PROTOBASE-0.1`; final verification may promote these to frozen versions rather than silently changing their contents.
+Before the principal run, the evaluation record must bind the exact source register, catalogue/subset, domain, requirements, rule, model, case/reference-response, test specification, application revision, database state, and relevant execution-environment versions. Runtime identifiers must agree with the frozen evaluation manifest. The current working identifiers are `SUBSET-0.1`, `DOMBASE-0.1`, `RULEBASE-0.1`, `MODELBASE-0.1`, `CASEBASE-0.2`, `RCBASE-0.2`, `TESTBASE-0.1`, and `PROTOBASE-0.2`; final verification may promote these to frozen versions rather than silently changing their contents.
 
 **Pass condition.** The executed software/data state can be unambiguously related to the recorded baseline. A material post-freeze change creates a new version and triggers impact-based reruns.
 
@@ -289,7 +289,7 @@ Every rule therefore has a direct targeted path. Domain-level `RC-*` coverage re
 | `REQ-INT-01` | `TEST-API-01`, `TEST-E2E-01` |
 | `REQ-ARC-01/02` | `TEST-ARC-01`, `TEST-DET-01`, integration/reference tests |
 | `REQ-CFG-01`, `REQ-TRC-01` | `TEST-CFG-01` plus traceability/baseline inspection |
-| `REQ-VER-01/02` | `CASEPLAN-0.1` coverage audit plus `TEST-RC-01`; these are methodological coverage requirements rather than standalone unit tests |
+| `REQ-VER-01/02` | `CASEPLAN-0.2` coverage audit plus `TEST-RC-01`; these are methodological coverage requirements rather than standalone unit tests |
 | `REQ-VER-03/04` | `TEST-ARC-01`, `TEST-RC-01`, and the complete `TESTBASE-*` inventory |
 | `REQ-VER-05/06` | verification-procedure/conformance baseline and eventual execution/deviation records, not a software-test predicate |
 | `REQ-VER-07` | thesis/appendix inspection, not a software test |
@@ -306,7 +306,7 @@ The following are not gaps in `TESTBASE-0.1` unless the corresponding scope chan
 - no performance, load, scalability, penetration, production-availability, or regulatory test without a corresponding prototype requirement;
 - no exhaustive Austrian ICD-10 catalogue test beyond the frozen subset/source-preparation controls;
 - no extramural coding-rule test because no extramural-specific executable rule is active;
-- no acceptable-alternative equivalence test because no such source-bounded case is included in `CASEBASE-0.1`;
+- no acceptable-alternative equivalence test because no such source-bounded case is included in `CASEBASE-0.2`;
 - no multi-code aggregation test because the interaction model explicitly excludes multi-code responses; `TEST-API-01` instead verifies rejection of multi-code request shapes;
 - no `not_in_frozen_version` runtime distinction while the application retains only the active subset rather than a full-version membership index; and
 - no natural multi-hard-rule clinical case because the frozen subset supplies none. `TEST-PREC-01` verifies the controller semantics without manufacturing a domain judgement.
