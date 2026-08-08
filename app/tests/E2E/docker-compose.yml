@@ -1,0 +1,35 @@
+# Selenium infrastructure for TEST-E2E-01/02, kept separate from
+# prototype_stack/compose.yaml deliberately: Selenium is test tooling, not
+# part of the deployed learner-facing stack, so it must never start as a
+# side effect of `stack.sh up`.
+#
+# Usage (from this directory), against a stack already started via
+# prototype_stack/stack.sh or docker compose (see app/tests/E2E/README.md):
+#
+#   docker compose up -d
+#   cd ../../.. && ICD_E2E_BASE_URL=http://127.0.0.1:8080 \
+#     php app/vendor/bin/phpunit -c app/phpunit.xml --testsuite e2e
+#   docker compose down
+
+services:
+  selenium:
+    # selenium/standalone-chrome has no official linux/arm64 build (Chrome
+    # for Testing isn't built for arm64 Linux); seleniarm/standalone-chromium
+    # is the community arm64 equivalent (Chromium instead of Chrome - same
+    # WebDriver protocol, irrelevant to what these tests assert). Default is
+    # the arm64 image (this project's development host is Apple Silicon);
+    # CI (GitHub-hosted ubuntu-latest runners, amd64) overrides
+    # SELENIUM_IMAGE to the official selenium/standalone-chrome:latest —
+    # see .github/workflows/ci.yml.
+    image: ${SELENIUM_IMAGE:-seleniarm/standalone-chromium:latest}
+    shm_size: 2gb
+    ports:
+      - "4444:4444" # WebDriver endpoint
+      - "7900:7900" # noVNC, for watching the browser live if useful
+    extra_hosts:
+      # Lets the browser reach the app's published host port as
+      # host.docker.internal:8080 regardless of how the app was started
+      # (prototype_stack Compose or a bare `php -S`) or which OS this runs
+      # on (Docker Desktop provides this automatically; host-gateway makes
+      # it work on Linux too, Docker Engine >= 20.10).
+      - "host.docker.internal:host-gateway"
