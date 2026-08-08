@@ -520,6 +520,45 @@ file the PHP test harness actually reads travels with it. `.dockerignore`
 needed a narrow `!`-negation to let that one file back into the build
 context despite the blanket `prototype_baseline_0_1/` exclusion above it.
 
+### 10.7 Native AMD64 and ARM64 image publication
+
+The first real user-guide installation attempt on an Apple Silicon Mac found
+a distribution defect that earlier local testing had not exercised:
+`docker compose pull` downloaded `mysql:latest`, but both project-owned
+normal-use tags failed with `no matching manifest for linux/arm64/v8`.
+Registry inspection confirmed that `app`, `dev`, and `bootstrap` each
+contained a `linux/amd64` image and a provenance attestation, but no ARM64
+image. The Dockerfiles themselves were not the limitation: native ARM64
+builds of `bootstrap` and `runtime` completed and ran successfully on the
+same machine.
+
+Two responses were considered:
+
+1. Put `platform: linux/amd64` in the Compose services. This would make the
+   existing tags pull through Docker Desktop's emulation, but permanently
+   force Apple Silicon users onto the slower non-native image even after an
+   ARM64 image became available.
+2. Publish a proper multi-platform index and let Docker select the matching
+   image. This keeps one stable tag per service while running natively on both
+   common desktop/server architectures.
+
+The second option is the implementation. Following Docker's
+[multi-platform GitHub Actions pattern](https://docs.docker.com/build/ci/github-actions/multi-platform/),
+`publish-images` sets up QEMU and Buildx, and every `build-push-action` call
+targets `linux/amd64,linux/arm64`. A final registry check inspects each
+published OCI index and fails the job unless both architectures are present.
+The Compose file deliberately contains no forced `platform:` value.
+
+There are two distinct verification levels to preserve in status claims:
+
+- **Executed locally:** native ARM64 `bootstrap` and `runtime` builds, the
+  ordered `db` → `bootstrap` → `app` startup, `/api/health`, and `/api/cases`.
+- **Pending external execution:** replacement of the existing AMD64-only GHCR
+  indexes. That requires this workflow revision to reach `main` and complete
+  its authenticated publish job. Until then, the documented
+  `docker compose build bootstrap app` fallback is the working Apple Silicon
+  installation path.
+
 ## 11. Current status and known gaps
 
 - The reference-suite breadth question flagged in
@@ -544,18 +583,13 @@ context despite the blanket `prototype_baseline_0_1/` exclusion above it.
 - CI now exists (§10.6, `.github/workflows/ci.yml`) and a self-contained,
   publishable Docker bundle (§10.6, `docker-compose.yml`) has been built and
   verified end-to-end locally (85/85 tests, fully containerized, zero host
-  PHP/Composer/Node/Python dependencies). Two real runs on GitHub Actions
-  infrastructure so far (see [CHANGELOG.md](CHANGELOG.md)) both passed
-  `python-checks`, `php-unit`, and `backend-integration` unmodified but
-  failed `e2e` — not a timing problem as first assumed, but the wait
-  step's `grep` never matching the real Selenium grid's pretty-printed
-  `"ready": true` (with a space) response; fixed with a `jq`-based check,
-  **not yet re-verified**. `publish-images` is gated on `e2e` and
-  correctly skipped rather than running early on both runs. GHCR packages
-  are private by default under a personal account; making them public for
-  anonymous `docker pull`
-  is a one-time step in GitHub's package settings after the first
-  successful publish.
+  PHP/Composer/Node/Python dependencies). The workflow has since completed
+  far enough to publish all three GHCR tags, and anonymous registry
+  inspection confirms that they are public. The publication exposed the
+  Apple Silicon gap described in §10.7: the currently visible indexes are
+  AMD64-only. Native ARM64 source builds and startup are verified; the
+  corrected two-architecture registry indexes remain pending until the
+  revised publish job next completes on `main`.
 
 ## 12. Traceability quick-reference
 

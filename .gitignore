@@ -13,3 +13,11 @@ __pycache__/
 /app/frontend/node_modules/
 /app/public/assets/
 /app/public/index.html
+
+# LaTeX user-guide intermediates (source and compiled PDF stay tracked).
+/docs/USER_GUIDE.aux
+/docs/USER_GUIDE.fdb_latexmk
+/docs/USER_GUIDE.fls
+/docs/USER_GUIDE.log
+/docs/USER_GUIDE.out
+/docs/USER_GUIDE.toc

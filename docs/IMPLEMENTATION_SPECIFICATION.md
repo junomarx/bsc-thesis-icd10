@@ -417,10 +417,11 @@ image (tests + dev Composer dependencies included) plus Selenium behind a
 
 | Task | Command |
 |---|---|
-| Build everything locally (before any image is published) | `docker compose build` |
+| Build the normal-use images locally (native host architecture) | `docker compose build bootstrap app` |
+| Build the optional test image locally | `docker compose --profile test build test` |
 | Bring up the app (db → bootstrap → app, correctly ordered via `depends_on: condition: service_completed_successfully`) | `docker compose up -d --wait app` |
 | Run the *entire* test suite (unit+integration+e2e) fully containerized, no host PHP/Composer/Node/Python needed | `docker compose --profile test up -d --wait selenium && docker compose --profile test run --rm test` |
-| Pull everything once published (no local build, no repo clone) | `docker compose pull` |
+| Pull the published images (Docker selects the host's AMD64 or ARM64 variant) | `docker compose pull` |
 | Override any published image tag | `APP_IMAGE=... APP_DEV_IMAGE=... BOOTSTRAP_IMAGE=...` env vars, or edit the `image:` lines directly |
 
 Published image tags (built and pushed by `.github/workflows/ci.yml`'s
@@ -433,14 +434,22 @@ jobs pass):
 | `ghcr.io/junomarx/bsc-thesis-icd10:dev` | `dev` | Runtime + dev Composer deps + `app/tests/` — this is what the bundle's `test` service runs |
 | `ghcr.io/junomarx/bsc-thesis-icd10-bootstrap:latest` | — (`prototype_baseline_0_1/Dockerfile.bootstrap`) | The Python data-pipeline bootstrap image |
 
-**Not yet independently verified:** the `publish-images` job's actual push
-to GHCR — that can only be proven by running on real GitHub Actions
-infrastructure (the real `GITHUB_TOKEN` isn't available locally), which
-requires pushing this work to GitHub first. Every individual build command
-the job runs was verified locally (§6.5's own local-build row, above).
-GHCR packages default to private under a personal account; making one
-public for anonymous `docker pull` is a one-time step in that package's
-GitHub settings after the first successful publish.
+Each tag is an OCI multi-platform index with required
+`linux/amd64` and `linux/arm64` variants. The `publish-images` job installs
+QEMU before Buildx, passes both values through each build action's
+`platforms` input, and queries all three registry manifests after publication;
+the job fails unless both Linux architectures are present for every tag.
+This preserves native execution on Apple Silicon instead of forcing an
+AMD64 `platform:` override and emulation in `docker-compose.yml`.
+
+**Publication state at the time this contract was added:** the three public
+GHCR tags had been published successfully, but registry inspection showed
+that the pre-fix indexes contained only `linux/amd64` (plus provenance
+attestations). The next successful `main` publication must replace them with
+the two-architecture indexes described above. Until that happens, Apple
+Silicon users can run `docker compose build bootstrap app` and receive native
+ARM64 images from the checkout; this fallback has been executed successfully
+on an ARM64 Docker daemon.
 
 ## 7. Test inventory (file/method → upstream `TEST-*`)
 

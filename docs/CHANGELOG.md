@@ -13,6 +13,46 @@ Reference `REQ-*`/`RULE-*`/`TEST-*` identifiers where a change implements or
 affects one. Every entry should let a reader answer "what changed, why, and
 was it actually tested" without opening the diff.
 
+## 2026-08-08 — User-facing LaTeX guide established
+
+Project-owner request to make installation and day-to-day prototype use a
+documented, maintained part of the artefact before returning to the remaining
+implementation work.
+
+### Added
+
+- `docs/USER_GUIDE.tex` and compiled `docs/USER_GUIDE.pdf`: an eight-page
+  user guide that begins with a quick introduction and Docker Compose
+  installation procedure, then covers the real learner workflow, feedback
+  meanings, start/stop/update/reset operations, optional full-suite testing,
+  troubleshooting, data/privacy boundaries, and a command summary.
+- The default installation path uses the published GHCR images from the root
+  `docker-compose.yml`; a source-build fallback, macOS/Linux and PowerShell
+  port overrides, and an explicit warning around destructive volume reset are
+  included.
+
+### Changed
+
+- `README.md`, `docs/README.md`, and `HANDOFF.md` now link the guide and its
+  LaTeX source so a new user or contributor can discover it from the normal
+  project entry points. `docs/README.md` also records the reproducible build
+  and cleanup commands.
+- `CLAUDE.md` now requires any user-visible installation, workflow, test,
+  operational, or troubleshooting change to update `USER_GUIDE.tex` and
+  regenerate `USER_GUIDE.pdf` in the same turn.
+- `.gitignore` excludes only the guide's LaTeX intermediate files while
+  keeping its source and compiled PDF trackable.
+
+### Verified
+
+- `latexmk -pdf -interaction=nonstopmode -halt-on-error -outdir=docs
+  docs/USER_GUIDE.tex`: clean two-pass build with no LaTeX warnings,
+  undefined references, underfull boxes, or overfull boxes; output confirmed
+  as an eight-page A4 PDF with embedded Type 1 fonts.
+- Rendered and visually inspected all eight PDF pages, including the title
+  page, table of contents, code blocks, caution boxes, cross-references, and
+  final command table.
+
 ## 2026-08-08 — First real GitHub Actions runs: found and fixed the actual Selenium-grid check bug
 
 Closed the one deviation the previous entry flagged as unverified: pushed

@@ -75,7 +75,7 @@ duplicate that reasoning, only the pointer to it.
 | `REQ-ARC-01` | ✅ Verified | Layering in `DEVELOPMENT_DOCUMENTATION.md` §5.1; `TEST-ARC-01` (`ArchitectureIsolationTest.php`) asserts both the schema and the PHP source itself never reference the verification oracle. |
 | `REQ-ARC-02` | ✅ Verified | `TEST-DET-01` (`DeterminismTest.php`): repeated correct/suboptimal/incorrect/gate-failure requests against an unchanged baseline return byte-identical bodies. |
 | `REQ-IMP-01` | ✅ Verified | Stack matches (React/PHP/MySQL/Python); the two infrastructure deviations (MySQL version pinning, `Dockerfile` location) are recorded with rationale in `DEVELOPMENT_DOCUMENTATION.md` §10.1-§10.2, not silent. |
-| `REQ-DOC-01` | ✅ Verified | This documentation set (`docs/DEVELOPMENT_DOCUMENTATION.md`, `docs/IMPLEMENTATION_SPECIFICATION.md`) traces one response end to end (§3 of the specification) and covers architecture, data structures, and rule responsibility. |
+| `REQ-DOC-01` | ✅ Verified | `docs/USER_GUIDE.pdf` covers installation and operation; `docs/DEVELOPMENT_DOCUMENTATION.md` and `docs/IMPLEMENTATION_SPECIFICATION.md` trace one response end to end (§3 of the specification) and cover architecture, data structures, rule responsibility, and the native AMD64/ARM64 distribution contract. |
 
 ### 2.5 Traceability and configuration control (catalogue §8)
 

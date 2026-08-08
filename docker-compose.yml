@@ -16,6 +16,10 @@
 #
 # Local build (before anything is published): `docker compose build`
 # After publishing (see .github/workflows/ci.yml): `docker compose pull`
+# The three project-owned tags are published for linux/amd64 + linux/arm64;
+# do not force a service `platform`, because Docker should select the native
+# image (especially on Apple Silicon). If an older tag lacks arm64, use
+# `docker compose build bootstrap app` until the next publish replaces it.
 
 name: bsc-thesis-icd10
 

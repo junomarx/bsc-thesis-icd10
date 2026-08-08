@@ -14,12 +14,14 @@ wasn't cleaned up.
 
 ## Documentation upkeep (required, not optional)
 
-`docs/` holds four living documents that must stay in sync with the code,
-not be written once and left to drift:
+`docs/` holds five living documentation sources, plus the compiled user-guide
+PDF, that must stay in sync with the code rather than being written once and
+left to drift:
 
 | When you... | ...update |
 |---|---|
 | Make any material implementation change (new feature, fixed bug, changed contract, added test, container/build change) | `docs/CHANGELOG.md` — always, dated entry, same day's work can share a section |
+| Change anything user-visible in installation, startup/shutdown, the learner workflow, test commands, operational cautions, or troubleshooting | `docs/USER_GUIDE.tex` and regenerated `docs/USER_GUIDE.pdf` — update and compile both in the same turn |
 | Change a schema, rule, API endpoint/shape, frontend contract, build/deploy setup, or anything else `docs/IMPLEMENTATION_SPECIFICATION.md` describes | `docs/IMPLEMENTATION_SPECIFICATION.md` — keep it matching the code exactly |
 | Make a new architectural/technology/design decision, or deviate from an existing one | `docs/DEVELOPMENT_DOCUMENTATION.md` — add the decision *and* its rationale, don't just note that something changed |
 | Implement or change anything that satisfies (or newly leaves ungapped) a `REQ-*` from `chapter3_requirements_catalogue.md` | `docs/REQUIREMENTS_TRACEABILITY.md` — update that requirement's row; don't let it drift out of sync the way `chapter3_requirements_catalogue.md` itself once did (see its `CASEPLAN-0.2` cross-reference fix in `docs/CHANGELOG.md`) |
@@ -30,7 +32,7 @@ did the thing, not reconstructed later from memory. If a change is purely
 internal refactoring with no observable contract change, a short
 `CHANGELOG.md` entry still applies; the specification doesn't need touching.
 
-`docs/README.md` explains how the four documents relate to each other and
+`docs/README.md` explains how the documents relate to each other and
 to the upstream `chapter3_*.md` control artefacts. Read it once if you
 haven't touched this repo before.
 
@@ -67,6 +69,11 @@ and run it" bundle — `docker compose up` for the app, `docker compose
 is a *separate* file from `prototype_stack/compose.yaml` (the stack.sh
 deployment scaffold) on purpose — see
 `docs/DEVELOPMENT_DOCUMENTATION.md` §10.6 before touching either.
+All three project-owned GHCR tags are required to publish both
+`linux/amd64` and `linux/arm64`; do not remove the QEMU setup, either value
+from `platforms:`, or the post-publish manifest check. Do not force
+`platform: linux/amd64` in the Compose bundle: native Apple Silicon support
+is intentional (see the same document §10.7).
 
 ## Testing tooling
 
