@@ -13,6 +13,68 @@ Reference `REQ-*`/`RULE-*`/`TEST-*` identifiers where a change implements or
 affects one. Every entry should let a reader answer "what changed, why, and
 was it actually tested" without opening the diff.
 
+## 2026-08-08 — Apple Silicon installation failure: native multi-platform publication
+
+The project owner tested the new user guide on macOS/Apple Silicon. The
+documented `docker compose pull` stopped after pulling MySQL because the
+project-owned `app` and `bootstrap` tags had no `linux/arm64/v8` manifest.
+This was a real distribution defect in the advertised installation path, not
+a local Docker configuration problem.
+
+### Fixed
+
+- `.github/workflows/ci.yml`'s `publish-images` job now sets up QEMU and
+  Buildx, and builds each of the `runtime`, `dev`, and `bootstrap` tags for
+  both `linux/amd64` and `linux/arm64`. Docker's maintained actions were
+  advanced to their current major versions (`setup-qemu`/`setup-buildx`/
+  `login` v4, `build-push` v7) as part of the corrected publication path.
+- The job now inspects all three GHCR indexes after pushing and uses `jq` to
+  require both Linux architectures. A single-architecture publication can no
+  longer finish successfully while silently breaking the documented install.
+
+### Changed
+
+- `docs/USER_GUIDE.tex` revision 0.2 and regenerated
+  `docs/USER_GUIDE.pdf` now state the AMD64/ARM64 contract, explain the exact
+  `no matching manifest for linux/arm64/v8` error, and provide the verified
+  native fallback: `docker compose build bootstrap app` followed by
+  `docker compose up -d --wait app`. The optional test-image build path is
+  also explicit.
+- `docs/IMPLEMENTATION_SPECIFICATION.md` §6.5 defines the two-platform image
+  contract and its registry assertion; `docs/DEVELOPMENT_DOCUMENTATION.md`
+  §10.7 records the decision to publish native images rather than force
+  `linux/amd64` emulation; `HANDOFF.md`, `CLAUDE.md`,
+  `docs/REQUIREMENTS_TRACEABILITY.md`, and the root Compose commentary were
+  updated to preserve the same invariant.
+
+### Verified
+
+- On the affected ARM64 Docker daemon, `docker buildx imagetools inspect`
+  confirmed that all three current project tags contain `linux/amd64` only;
+  `mysql:latest` and `seleniarm/standalone-chromium:latest` both contain
+  native ARM64 variants, isolating the defect to the project publication.
+- `docker compose build bootstrap app`: both images built as `arm64`.
+  `docker compose up -d --wait app`: MySQL became healthy, bootstrap exited
+  0, and the app started; `/api/health` returned `{"status":"ok"}` and
+  `/api/cases` returned the synthetic case list.
+- `docker compose --profile test build test` produced a native ARM64 test
+  image; the containerized suite then passed **85/85 tests, 492 assertions**,
+  including the Selenium browser tests.
+- `actionlint .github/workflows/ci.yml`, `docker compose config --quiet`, and
+  the user-guide LaTeX build all pass. The revised PDF is nine A4 pages with
+  no LaTeX warnings, undefined references, underfull boxes, or overfull boxes;
+  the changed pages were rendered and visually inspected.
+- Real GitHub Actions run
+  [31257017708](https://github.com/junomarx/bsc-thesis-icd10/actions/runs/31257017708)
+  passed all four test jobs, built and pushed all three image indexes, and
+  passed the new two-architecture assertion. Independent inspection found
+  `linux/amd64` and `linux/arm64` in every live tag.
+- The exact originally failing command, `docker compose pull`, then completed
+  on the affected ARM64 daemon. `docker compose up -d --wait app` recreated
+  `app` and `bootstrap` from the published ARM64 digests; bootstrap exited 0,
+  MySQL was healthy, `/api/health` returned OK, and six learner-visible cases
+  loaded.
+
 ## 2026-08-08 — User-facing LaTeX guide established
 
 Project-owner request to make installation and day-to-day prototype use a
@@ -101,13 +163,17 @@ real for the first time.
   `curl 127.0.0.1:4444/status` reproduces the exact pretty-printed
   `"ready": true` response shape that broke the old `grep` pattern.
 
-### Deviations
+### Verified (third run, after the `jq` fix)
 
-- **Still not independently verified**: the `e2e` job passing for real
-  (blocked on the `jq`-based fix above) and, downstream of that, the
-  `publish-images` job's actual push to GHCR (it's gated on `e2e` passing,
-  so it correctly skipped on both runs so far rather than running with
-  unmet preconditions).
+- Run [31257358358](https://github.com/junomarx/bsc-thesis-icd10/actions/runs/31257358358):
+  all five jobs passed — `python-checks`, `php-unit`, `backend-integration`,
+  `e2e` (including the Selenium-grid wait step), and `publish-images`. This
+  closes the last open deviation from the two entries above: the CI
+  workflow and the self-contained bundle are now verified end to end on
+  real GitHub Actions infrastructure, not just locally and under `act`.
+  GHCR packages remain private by default under a personal account — no
+  action needed unless anonymous `docker pull` is wanted, at which point
+  it's a one-time visibility change in GitHub's package settings.
 
 ## 2026-08-08 — Self-contained publishable bundle + CI publish job
 

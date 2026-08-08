@@ -11,7 +11,7 @@ const CLASS_LABELS = {
 function CaseList({ cases, onSelect, loading, error }) {
   return (
     <section>
-      <h1>Austrian ICD-10 coding practice (educational prototype)</h1>
+      <h1>ICD-10 coding practice (prototype)</h1>
       <p className="disclaimer">
         Synthetic teaching cases only. This tool does not diagnose patients, does not
         provide clinical decision support, and is not used for official coding,

@@ -200,8 +200,8 @@ Docker selects the matching variant automatically.
   If \texttt{docker compose pull} reports
   \texttt{no matching manifest for linux/arm64/v8}, the registry still has an
   older, AMD64-only publication. Use the native source-build procedure in
-  Section~\ref{sec:local-build}; it works without emulation while the corrected
-  multi-platform tags are being published.
+  Section~\ref{sec:local-build}; it works without emulation and does not depend
+  on the registry containing the current multi-platform release.
 }
 
 Open \url{http://localhost:8080} in a browser.
@@ -455,8 +455,8 @@ the bootstrap log contains the cause.
 This error means the selected registry tag does not contain an image for the
 computer's architecture. It was observed on Apple Silicon with the project's
 original AMD64-only publication. The publishing workflow now produces both
-AMD64 and ARM64 variants, but an older tag can remain visible until the next
-successful main-branch publish completes.
+AMD64 and ARM64 variants. Update the checkout and retry the pull if a custom,
+cached, or historical tag still exposes the earlier single-architecture index.
 
 Run the native fallback from Section~\ref{sec:local-build}:
 

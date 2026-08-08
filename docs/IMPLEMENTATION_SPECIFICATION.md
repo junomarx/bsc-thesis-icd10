@@ -442,14 +442,16 @@ the job fails unless both Linux architectures are present for every tag.
 This preserves native execution on Apple Silicon instead of forcing an
 AMD64 `platform:` override and emulation in `docker-compose.yml`.
 
-**Publication state at the time this contract was added:** the three public
-GHCR tags had been published successfully, but registry inspection showed
-that the pre-fix indexes contained only `linux/amd64` (plus provenance
-attestations). The next successful `main` publication must replace them with
-the two-architecture indexes described above. Until that happens, Apple
-Silicon users can run `docker compose build bootstrap app` and receive native
-ARM64 images from the checkout; this fallback has been executed successfully
-on an ARM64 Docker daemon.
+**Publication verification:** GitHub Actions run
+[31257017708](https://github.com/junomarx/bsc-thesis-icd10/actions/runs/31257017708)
+completed successfully on 8 August 2026. Its final assertion found both
+required architectures in all three published indexes; an independent
+`docker buildx imagetools inspect` check confirmed the same. On an ARM64
+Docker daemon, the exact user-guide sequence `docker compose pull` followed
+by `docker compose up -d --wait app` then selected the published ARM64
+variants, loaded the baseline, returned `{"status":"ok"}`, and exposed the
+learner-visible cases. `docker compose build bootstrap app` remains the
+registry-independent native fallback.
 
 ## 7. Test inventory (file/method → upstream `TEST-*`)
 

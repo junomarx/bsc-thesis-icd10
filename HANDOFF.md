@@ -4,7 +4,7 @@
 **Audience:** a developer, contractor, or coding agent with no access to the conversation that produced this state — read this first, before touching anything.
 **Supersedes:** the status/progress sections of `development_handoff/handoff/ICD_PROTOTYPE_DEVELOPMENT_BRIEF.md` and `CODEX_VSCODE_CONTINUATION_INSTRUCTION.md` (dated 7 August 2026, in `development_handoff/`, which is now an intentionally-preserved historical archive, not the live project state). This document exists precisely because that earlier handoff was once itself overstated and had to be corrected (`development_handoff/handoff/CODEX_HANDOFF_CORRECTION_PROMPT.md`) — every claim below was independently re-verified (not just recalled) on 8 August 2026 before being written down; see §7.
 **Revised later the same day:** §3/§4/§5/§6/§8 were updated after this snapshot's own "immediate next step" (CI) landed, plus a self-contained publishable Docker bundle added as a follow-up. §1/§2/§7 are unchanged from the original snapshot. See `docs/CHANGELOG.md`'s two `2026-08-08` entries for the full detail this revision summarizes, and §7's added paragraph for how this specific revision was checked.
-**Latest same-day update:** a maintained LaTeX/PDF user guide was added, and its first Apple Silicon installation trial exposed AMD64-only GHCR manifests. Native ARM64 source builds and startup are verified; CI now defines two-architecture publication, pending its next `main` run. See `docs/CHANGELOG.md` and `docs/DEVELOPMENT_DOCUMENTATION.md` §10.7.
+**Latest same-day update:** a maintained LaTeX/PDF user guide was added, and its first Apple Silicon installation trial exposed AMD64-only GHCR manifests. The defect is closed: native ARM64 builds/tests pass, real CI published dual-architecture indexes, and the exact documented pull-and-start sequence now succeeds on Apple Silicon. See `docs/CHANGELOG.md` and `docs/DEVELOPMENT_DOCUMENTATION.md` §10.7.
 
 ## 1. What this project is
 
@@ -51,8 +51,8 @@ Everything below was independently re-confirmed on 8 August 2026 (not just recal
 - **Docker**: `Dockerfile` at the **repository root** (not `app/` — moved deliberately, see §4) builds a multi-stage image (Node build stage → Composer stage → `php:8.4-apache` runtime, no permanent Node service). `prototype_stack/compose.yaml` runs `db` (MySQL) + `bootstrap` (one-shot loader) + `app`.
 - **Full PHP test suite: 85/85 passing as of the last full run** (49 unit, 31 integration, 5 e2e). Independently re-confirmed subsets on 8 Aug: unit 49/49, e2e 5/5 (integration/persistence correctly skipped in that specific re-check because the compose `db` service isn't published to the host port — see §7, this is by design, not a failure).
 - **`TEST-E2E-01`/`TEST-E2E-02`**: real Selenium suite (`app/tests/E2E/`, `php-webdriver/webdriver`), not a manual script — drives an actual browser against the actual deployed stack.
-- **CI**: `.github/workflows/ci.yml`, five jobs (`python-checks`, `php-unit`, `backend-integration`, `e2e`, `publish-images`) on every push/PR. Real GitHub execution has published all three project images to public GHCR tags. The publishing contract now builds and verifies `linux/amd64` plus `linux/arm64`; this revision still needs its first `main` execution before the registry contains the new ARM64 variants.
-- **Self-contained publishable bundle**: `docker-compose.yml` at the repo root (distinct from `prototype_stack/compose.yaml`) — `docker compose up` brings up `db`→`bootstrap`→`app` correctly ordered in one command (unlike the `prototype_stack` deployment scaffold in §6, which still needs a 3-step manual sequence), and `docker compose --profile test up`/`run --rm test` runs the entire suite fully containerized. Verified end to end: **85/85 tests, 492 assertions**, zero host PHP/Composer/Node/Python required. Full rationale: `docs/DEVELOPMENT_DOCUMENTATION.md` §10.6. On Apple Silicon, `docker compose build bootstrap app` has additionally been verified to produce native ARM64 images and a healthy running application while the corrected GHCR indexes are pending.
+- **CI**: `.github/workflows/ci.yml`, five jobs (`python-checks`, `php-unit`, `backend-integration`, `e2e`, `publish-images`) on every push/PR. Run [31257017708](https://github.com/junomarx/bsc-thesis-icd10/actions/runs/31257017708) passed every job and published all three public GHCR tags for `linux/amd64` plus `linux/arm64`; its post-publish manifest assertion also passed.
+- **Self-contained publishable bundle**: `docker-compose.yml` at the repo root (distinct from `prototype_stack/compose.yaml`) — `docker compose up` brings up `db`→`bootstrap`→`app` correctly ordered in one command (unlike the `prototype_stack` deployment scaffold in §6, which still needs a 3-step manual sequence), and `docker compose --profile test up`/`run --rm test` runs the entire suite fully containerized. Verified end to end: **85/85 tests, 492 assertions**, zero host PHP/Composer/Node/Python required. Full rationale: `docs/DEVELOPMENT_DOCUMENTATION.md` §10.6. On Apple Silicon, both native source builds and the public-image `docker compose pull` path are verified; the latter selected ARM64 images and started a healthy application.
 - **Requirements traceability**: all 31 `REQ-*` entries audited; zero undeclared gaps (`docs/REQUIREMENTS_TRACEABILITY.md`).
 
 ## 4. Notable decisions since the 7 August brief (don't re-litigate these without reading why first)
@@ -73,18 +73,17 @@ Full rationale for each is in `docs/DEVELOPMENT_DOCUMENTATION.md` §10; this is 
   - `OPEN-RQ-01` — final wording of the thesis research question.
   - `OPEN-EVAL-01` — whether independent domain-expert review is required beyond internal technical verification.
 - **No exact git commit is pinned.** `stack.sh verify --frozen` requires a 40-hex commit SHA; development has used the moving `main` branch throughout, correctly (brief §17 distinguishes this explicitly).
-- **The corrected multi-platform images are not published yet.** The existing public GHCR indexes were inspected and contain AMD64 only. The workflow fix, native ARM64 builds, and ARM64 runtime path are verified locally, but only the next successful `main` publish can replace the registry tags and prove the final two-architecture indexes externally.
 
 ## 6. How to resume the environment
 
-**The root Compose bundle is currently running at `http://localhost:8080`.** It was started during Apple Silicon installation verification from native ARM64 `bootstrap` and `app` builds; `db` is healthy, `bootstrap` exited 0, `/api/health` returns `{"status":"ok"}`, and `/api/cases` returns the case list. Check `docker compose ps -a` rather than assuming this state will persist across sessions.
+**The root Compose bundle is currently running at `http://localhost:8080`.** It was recreated during Apple Silicon installation verification from the newly published ARM64 `bootstrap` and `app` variants; `db` is healthy, `bootstrap` exited 0, `/api/health` returns `{"status":"ok"}`, and `/api/cases` returns the case list. Check `docker compose ps -a` rather than assuming this state will persist across sessions.
 
 Two ways to bring the stack up, depending on what you're doing:
 
 **A. The self-contained bundle (`docker-compose.yml`, repo root) — simplest, no `.env` required:**
 
 ```bash
-docker compose pull                           # after the multi-architecture tags are published
+docker compose pull                           # selects AMD64 or ARM64 natively
 docker compose up -d --wait app              # db → bootstrap → app, correctly ordered, one command
 curl http://127.0.0.1:8080/api/health         # {"status":"ok"}
 
@@ -127,14 +126,14 @@ Before writing this, a 4-agent read-only verification workflow independently re-
 OCI indexes for all three project tags, reproduced their missing ARM64
 manifests, built `bootstrap` and `runtime` natively on an ARM64 Docker daemon,
 started the full normal-use dependency chain, and checked both `/api/health`
-and `/api/cases`. The revised GitHub Actions YAML passed `actionlint`; the
-new registry publication itself remains pending as stated in §5.
+and `/api/cases`. The revised GitHub Actions YAML passed `actionlint`; real
+run 31257017708 then passed all jobs, published and asserted both
+architectures for every tag, and the exact ARM64 pull-and-start procedure
+succeeded independently afterward.
 
 ## 8. Immediate next step
 
-The in-repository Apple Silicon fix is complete. The immediate external step is
-the project owner's choice to commit and push it so `publish-images` can
-replace the AMD64-only GHCR indexes and its new manifest assertion can verify
-both architectures. After that, remaining work returns to the separately
-identified implementation/documentation plan and the two supervisor-level
-freeze decisions (`OPEN-RQ-01`, `OPEN-EVAL-01`).
+The Apple Silicon distribution fix and its external verification are complete.
+Remaining work returns to the separately identified
+implementation/documentation plan and the two supervisor-level freeze
+decisions (`OPEN-RQ-01`, `OPEN-EVAL-01`).

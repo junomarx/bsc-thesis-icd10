@@ -549,15 +549,17 @@ targets `linux/amd64,linux/arm64`. A final registry check inspects each
 published OCI index and fails the job unless both architectures are present.
 The Compose file deliberately contains no forced `platform:` value.
 
-There are two distinct verification levels to preserve in status claims:
+Both verification levels are now executed:
 
 - **Executed locally:** native ARM64 `bootstrap` and `runtime` builds, the
-  ordered `db` → `bootstrap` → `app` startup, `/api/health`, and `/api/cases`.
-- **Pending external execution:** replacement of the existing AMD64-only GHCR
-  indexes. That requires this workflow revision to reach `main` and complete
-  its authenticated publish job. Until then, the documented
-  `docker compose build bootstrap app` fallback is the working Apple Silicon
-  installation path.
+  native ARM64 `dev` image, ordered `db` → `bootstrap` → `app` startup,
+  `/api/health`, `/api/cases`, and the full 85-test suite.
+- **Executed externally:** GitHub Actions run
+  [31257017708](https://github.com/junomarx/bsc-thesis-icd10/actions/runs/31257017708)
+  passed all test and publication jobs. Its registry assertion passed for all
+  three tags; independent manifest inspection and the exact
+  `docker compose pull`/startup sequence on ARM64 confirmed that the live
+  indexes now select native ARM64 images.
 
 ## 11. Current status and known gaps
 
@@ -585,11 +587,10 @@ There are two distinct verification levels to preserve in status claims:
   verified end-to-end locally (85/85 tests, fully containerized, zero host
   PHP/Composer/Node/Python dependencies). The workflow has since completed
   far enough to publish all three GHCR tags, and anonymous registry
-  inspection confirms that they are public. The publication exposed the
-  Apple Silicon gap described in §10.7: the currently visible indexes are
-  AMD64-only. Native ARM64 source builds and startup are verified; the
-  corrected two-architecture registry indexes remain pending until the
-  revised publish job next completes on `main`.
+  inspection confirms that they are public. The Apple Silicon gap described
+  in §10.7 is closed: every live project index contains AMD64 and ARM64, the
+  CI assertion passed, and the documented pull-and-start path was executed
+  successfully on ARM64.
 
 ## 12. Traceability quick-reference
 
