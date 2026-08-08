@@ -1,0 +1,33 @@
+# Build context is the repository root (see Dockerfile). The `runtime`
+# target COPYs app/frontend, app/composer.*, app/docker, app/src, and
+# app/public/index.php+.htaccess; the `dev` target additionally COPYs
+# app/tests and app/phpunit.xml (kept OUT of `runtime` regardless of what's
+# in the build context — see the Dockerfile's per-stage COPY lists, not this
+# file, for what each image actually contains). Everything below is excluded
+# purely to keep the context small and avoid stale local build output.
+
+.git/
+.venv/
+__pycache__/
+*.pyc
+.DS_Store
+
+development_handoff/
+docs/
+prototype_baseline_0_1/
+# Exception: the `dev` target's test harness needs the RC-* oracle CSV at a
+# host-checkout-relative path (see Dockerfile) — nothing else in this
+# directory (the Python pipeline itself) is copied into any image.
+!prototype_baseline_0_1/verification/
+!prototype_baseline_0_1/verification/reference_responses_0_2.csv
+prototype_stack/
+latex/
+
+app/vendor/
+app/frontend/node_modules/
+app/frontend/dist/
+app/router.php
+app/composer.phar
+app/.phpunit.result.cache
+app/public/assets/
+app/public/index.html

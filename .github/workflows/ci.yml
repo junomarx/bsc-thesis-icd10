@@ -1,0 +1,254 @@
+name: CI
+
+# Closes the "no CI" gap noted in docs/DEVELOPMENT_DOCUMENTATION.md and
+# HANDOFF.md §5. Five jobs, matching the project's own test taxonomy
+# (docs/IMPLEMENTATION_SPECIFICATION.md §7) plus one publish step:
+#   python-checks        TEST-DAT-01, TEST-runtime-contract (no DB)
+#   php-unit              TEST-MAP/GATE/STATUS/DEPTH/EVID/SPEC/CORRECT/PREC-01
+#   backend-integration   TEST-DAT-02, TEST-API-01, TEST-RC-01, TEST-DET-01, TEST-ARC-01
+#   e2e                   TEST-E2E-01, TEST-E2E-02 (real browser, real deployed stack)
+#   publish-images        builds docker-compose.yml's three images and pushes
+#                         them to GHCR, only after all four test jobs pass,
+#                         only on main - see docs/DEVELOPMENT_DOCUMENTATION.md
+#                         §10.6 for why this exists (self-contained pull-and-
+#                         run bundle, project owner's request).
+#
+# CI-only throwaway credentials below are not secrets - the database and
+# stack they configure exist only for the lifetime of one job run.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  python-checks:
+    name: Python data pipeline (no DB)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Python dependencies
+        run: pip install pandas openpyxl
+
+      - name: Reproduce SUBSET-0.1 from the frozen source (TEST-DAT-01)
+        working-directory: prototype_baseline_0_1
+        run: python scripts/prepare_subset.py ../development_handoff/sources/core/DIAGLIST2026.xlsx --check-existing
+
+      - name: Runtime contract tests (database-independent)
+        working-directory: prototype_baseline_0_1
+        run: python -m unittest -v tests.test_runtime_contract
+
+  php-unit:
+    name: PHP unit tests (rule engine, no DB)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.4"
+          extensions: pdo, pdo_mysql, json
+          coverage: none
+
+      - name: Composer install
+        working-directory: app
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      - name: PHPUnit unit suite
+        working-directory: app
+        run: vendor/bin/phpunit --testsuite unit
+
+  backend-integration:
+    name: Python persistence + PHP integration (live MySQL)
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:latest
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: icd_ci
+          MYSQL_USER: icd_ci
+          MYSQL_PASSWORD: icd_ci_password
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -proot"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+    env:
+      ICD_DB_HOST: 127.0.0.1
+      ICD_DB_PORT: 3306
+      ICD_DB_NAME: icd_ci
+      ICD_DB_USER: icd_ci
+      ICD_DB_PASSWORD: icd_ci_password
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Python MySQL driver
+        run: pip install mysql-connector-python
+
+      - name: Apply schema (TEST-DAT-02 precondition)
+        working-directory: prototype_baseline_0_1
+        run: python scripts/apply_mysql_schema.py
+
+      - name: Load PROTOBASE-0.2 baseline
+        working-directory: prototype_baseline_0_1
+        run: python scripts/load_mysql.py
+
+      - name: Python persistence tests (TEST-DAT-02)
+        working-directory: prototype_baseline_0_1
+        run: python -m unittest -v tests.test_mysql_persistence
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.4"
+          extensions: pdo, pdo_mysql, json
+          coverage: none
+
+      - name: Composer install
+        working-directory: app
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      - name: PHPUnit integration suite (TEST-API-01, TEST-RC-01, TEST-DET-01, TEST-ARC-01)
+        working-directory: app
+        run: vendor/bin/phpunit --testsuite integration
+
+  e2e:
+    name: Selenium end-to-end (real browser, deployed stack)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Write CI-only stack .env
+        run: |
+          cat > prototype_stack/.env <<EOF
+          ICD_DB_NAME=icd_ci
+          ICD_DB_USER=icd_ci
+          ICD_DB_PASSWORD=icd_ci_password
+          ICD_DB_ROOT_PASSWORD=ci_root_password
+          APP_HTTP_PORT=8080
+          EOF
+
+      - name: Build app + bootstrap images
+        working-directory: prototype_stack
+        env:
+          APP_SOURCE_DIR: ..
+        run: docker compose --env-file .env -f compose.yaml build bootstrap app
+
+      - name: Start MySQL
+        working-directory: prototype_stack
+        env:
+          APP_SOURCE_DIR: ..
+        run: docker compose --env-file .env -f compose.yaml up -d --wait db
+
+      - name: Run bootstrap (schema + load PROTOBASE-0.2)
+        working-directory: prototype_stack
+        env:
+          APP_SOURCE_DIR: ..
+        run: docker compose --env-file .env -f compose.yaml run --rm --no-deps bootstrap
+
+      - name: Start app
+        working-directory: prototype_stack
+        env:
+          APP_SOURCE_DIR: ..
+        run: docker compose --env-file .env -f compose.yaml up -d --wait app
+
+      - name: Verify app is reachable
+        run: curl -sf --retry 5 --retry-delay 2 http://127.0.0.1:8080/api/health
+
+      - name: Start Selenium (official amd64 image - GitHub-hosted runners are amd64)
+        working-directory: app/tests/E2E
+        env:
+          SELENIUM_IMAGE: selenium/standalone-chrome:latest
+        run: docker compose up -d
+
+      - name: Wait for Selenium grid
+        run: |
+          for _ in $(seq 1 30); do
+            curl -sf http://127.0.0.1:4444/status | grep -q '"ready":true' && exit 0
+            sleep 2
+          done
+          echo "Selenium grid did not become ready in time" >&2
+          exit 1
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.4"
+          extensions: pdo, pdo_mysql, json
+          coverage: none
+
+      - name: Composer install
+        working-directory: app
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      - name: Run Selenium E2E suite (TEST-E2E-01, TEST-E2E-02)
+        working-directory: app
+        env:
+          ICD_E2E_SELENIUM_URL: http://127.0.0.1:4444
+          ICD_E2E_BROWSER_BASE_URL: http://host.docker.internal:8080
+          ICD_E2E_BASE_URL: http://127.0.0.1:8080
+        run: vendor/bin/phpunit --testsuite e2e
+
+      - name: Tear down (always, even on failure)
+        if: always()
+        run: |
+          (cd app/tests/E2E && docker compose down) || true
+          (cd prototype_stack && APP_SOURCE_DIR=.. docker compose --env-file .env -f compose.yaml down -v) || true
+
+  publish-images:
+    name: Build and publish images (GHCR)
+    runs-on: ubuntu-latest
+    needs: [python-checks, php-unit, backend-integration, e2e]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # Three images, matching docker-compose.yml's `image:` references
+      # exactly - that file is what a puller actually runs, so its tags are
+      # the source of truth this job must produce.
+      - name: Build and push runtime image (docker-compose.yml app service)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Dockerfile
+          target: runtime
+          push: true
+          tags: ghcr.io/${{ github.repository_owner }}/bsc-thesis-icd10:latest
+
+      - name: Build and push dev/test image (docker-compose.yml test service)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Dockerfile
+          target: dev
+          push: true
+          tags: ghcr.io/${{ github.repository_owner }}/bsc-thesis-icd10:dev
+
+      - name: Build and push bootstrap image (docker-compose.yml bootstrap service)
+        uses: docker/build-push-action@v6
+        with:
+          context: ./prototype_baseline_0_1
+          file: ./prototype_baseline_0_1/Dockerfile.bootstrap
+          push: true
+          tags: ghcr.io/${{ github.repository_owner }}/bsc-thesis-icd10-bootstrap:latest

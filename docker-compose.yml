@@ -1,0 +1,123 @@
+# Published, self-contained bundle: everything needed to run and test the
+# prototype without cloning this repository — `docker compose pull` fetches
+# code+dependencies+tests as prebuilt images; `docker compose up` runs the
+# app; `docker compose --profile test run --rm test` runs the full suite.
+#
+# This is deliberately separate from prototype_stack/compose.yaml, which is
+# the stack.sh-managed *deployment* scaffold (git-synced source, required
+# .env secrets, no test tooling in its `app` image — see
+# docs/DEVELOPMENT_DOCUMENTATION.md §10.2/§10.5 for why that stays minimal).
+# This file trades that careful-freeze workflow for zero-friction "just pull
+# and run": sensible defaults baked in, no .env required, and it bundles the
+# `dev` image (tests + dev dependencies included) alongside Selenium behind
+# a Compose profile so a bare `docker compose up` still starts only the
+# learner-facing app, matching the same "test tooling never starts by
+# default" principle used everywhere else in this project.
+#
+# Local build (before anything is published): `docker compose build`
+# After publishing (see .github/workflows/ci.yml): `docker compose pull`
+
+name: bsc-thesis-icd10
+
+services:
+  db:
+    image: mysql:latest
+    environment:
+      MYSQL_DATABASE: ${ICD_DB_NAME:-icd_learning}
+      MYSQL_USER: ${ICD_DB_USER:-icd_app}
+      MYSQL_PASSWORD: ${ICD_DB_PASSWORD:-icd_app_password}
+      MYSQL_ROOT_PASSWORD: ${ICD_DB_ROOT_PASSWORD:-icd_root_password}
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping --host=127.0.0.1 --user=root --password=\"$${MYSQL_ROOT_PASSWORD}\" --silent"]
+      interval: 2s
+      timeout: 5s
+      retries: 30
+      start_period: 15s
+    restart: unless-stopped
+
+  bootstrap:
+    image: ${BOOTSTRAP_IMAGE:-ghcr.io/junomarx/bsc-thesis-icd10-bootstrap:latest}
+    build:
+      context: ./prototype_baseline_0_1
+      dockerfile: Dockerfile.bootstrap
+    environment:
+      ICD_DB_HOST: db
+      ICD_DB_PORT: "3306"
+      ICD_DB_NAME: ${ICD_DB_NAME:-icd_learning}
+      ICD_DB_USER: ${ICD_DB_USER:-icd_app}
+      ICD_DB_PASSWORD: ${ICD_DB_PASSWORD:-icd_app_password}
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: "no"
+
+  app:
+    image: ${APP_IMAGE:-ghcr.io/junomarx/bsc-thesis-icd10:latest}
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: runtime
+    environment:
+      ICD_DB_HOST: db
+      ICD_DB_PORT: "3306"
+      ICD_DB_NAME: ${ICD_DB_NAME:-icd_learning}
+      ICD_DB_USER: ${ICD_DB_USER:-icd_app}
+      ICD_DB_PASSWORD: ${ICD_DB_PASSWORD:-icd_app_password}
+    depends_on:
+      db:
+        condition: service_healthy
+      bootstrap:
+        condition: service_completed_successfully
+    ports:
+      - "${APP_HTTP_PORT:-8080}:80"
+    restart: unless-stopped
+
+  # Everything below is test tooling. It never starts on a bare
+  # `docker compose up` — only via `--profile test` (or naming the service
+  # explicitly), mirroring app/tests/E2E/docker-compose.yml's separation.
+
+  selenium:
+    profiles: ["test"]
+    image: ${SELENIUM_IMAGE:-seleniarm/standalone-chromium:latest}
+    shm_size: 2gb
+    ports:
+      - "${SELENIUM_WEBDRIVER_PORT:-4444}:4444"
+      - "${SELENIUM_NOVNC_PORT:-7900}:7900"
+
+  test:
+    profiles: ["test"]
+    image: ${APP_DEV_IMAGE:-ghcr.io/junomarx/bsc-thesis-icd10:dev}
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: dev
+    environment:
+      ICD_DB_HOST: db
+      ICD_DB_PORT: "3306"
+      ICD_DB_NAME: ${ICD_DB_NAME:-icd_learning}
+      ICD_DB_USER: ${ICD_DB_USER:-icd_app}
+      ICD_DB_PASSWORD: ${ICD_DB_PASSWORD:-icd_app_password}
+      # Both point at the app service's Compose DNS name, not
+      # 127.0.0.1/host.docker.internal — db/app/selenium/test all share this
+      # one Compose network, unlike the split dev-machine setup in
+      # app/tests/E2E/README.md.
+      ICD_E2E_BASE_URL: http://app
+      ICD_E2E_BROWSER_BASE_URL: http://app
+      ICD_E2E_SELENIUM_URL: http://selenium:4444
+    working_dir: /var/www/html
+    entrypoint: ["php", "vendor/bin/phpunit"]
+    command: ["--testsuite", "unit,integration,e2e"]
+    depends_on:
+      db:
+        condition: service_healthy
+      bootstrap:
+        condition: service_completed_successfully
+      app:
+        condition: service_started
+      selenium:
+        condition: service_started
+
+volumes:
+  mysql_data:

@@ -1,0 +1,65 @@
+# syntax=docker/dockerfile:1
+
+# Lives at the repository root (rather than app/Dockerfile) so that
+# prototype_stack/stack.sh's `sync` can pull this same repository as the
+# "application source" and find a Dockerfile at the checkout root, as its
+# doctor/up commands require. See docs/DEVELOPMENT_DOCUMENTATION.md §10.2.
+#
+# Node is used only in this build stage to compile the React frontend; the
+# runtime image below runs no permanent Node service (brief, Section 17).
+FROM node:22-alpine AS frontend-build
+WORKDIR /app/frontend
+COPY app/frontend/package.json app/frontend/package-lock.json* ./
+RUN npm ci
+COPY app/frontend/ ./
+RUN npm run build
+
+FROM composer:2 AS vendor
+WORKDIR /app
+COPY app/composer.json app/composer.lock* ./
+RUN composer install --no-dev --no-interaction --optimize-autoloader --no-scripts --no-progress
+
+# Same install, but keeping dev dependencies (phpunit/phpunit,
+# php-webdriver/webdriver) — only the `dev` target below uses this.
+FROM composer:2 AS vendor-dev
+WORKDIR /app
+COPY app/composer.json app/composer.lock* ./
+RUN composer install --no-interaction --no-scripts --no-progress
+
+FROM php:8.4-apache AS base
+RUN docker-php-ext-install pdo_mysql \
+    && a2enmod rewrite \
+    && rm -f /etc/apache2/sites-enabled/000-default.conf
+
+COPY app/docker/apache-vhost.conf /etc/apache2/sites-enabled/000-default.conf
+
+WORKDIR /var/www/html
+COPY app/public/index.php app/public/.htaccess ./public/
+COPY --from=frontend-build /app/public/. ./public/
+
+EXPOSE 80
+
+# Self-contained "everything" image for publishing (docs/DEVELOPMENT_DOCUMENTATION.md
+# §10.6): runtime plus dev dependencies and the full test suite, so
+# `docker pull` + the published docker-compose.yml bundle gets you code,
+# dependencies, and tests together — not only the running app. Built only
+# via an explicit `--target dev`; never used for actual deployment.
+FROM base AS dev
+COPY --from=vendor-dev /app/vendor ./vendor
+COPY app/src ./src
+COPY app/tests ./tests
+COPY app/composer.json app/composer.lock* app/phpunit.xml ./
+# ReferenceResponseTest.php locates the RC-* oracle via a path relative to
+# its own file (repo-root-relative, matching the host checkout layout); the
+# container has no sibling prototype_baseline_0_1/ directory otherwise, so
+# only the one oracle CSV the test harness actually reads is placed at the
+# equivalent path here (never the Python pipeline itself, which stays out
+# of this image).
+COPY prototype_baseline_0_1/verification/reference_responses_0_2.csv /var/www/prototype_baseline_0_1/verification/reference_responses_0_2.csv
+
+# Lean deployment image: no dev dependencies, no test files. Last stage, so
+# a bare `docker build` (no --target) safely defaults to this one — the
+# image `prototype_stack/compose.yaml`'s `app` service builds/runs.
+FROM base AS runtime
+COPY --from=vendor /app/vendor ./vendor
+COPY app/src ./src
