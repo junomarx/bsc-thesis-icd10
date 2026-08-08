@@ -544,14 +544,16 @@ context despite the blanket `prototype_baseline_0_1/` exclusion above it.
 - CI now exists (§10.6, `.github/workflows/ci.yml`) and a self-contained,
   publishable Docker bundle (§10.6, `docker-compose.yml`) has been built and
   verified end-to-end locally (85/85 tests, fully containerized, zero host
-  PHP/Composer/Node/Python dependencies). **Not yet independently verified**:
-  the `publish-images` CI job's actual push to GHCR, which can only be
-  proven by running on real GitHub Actions infrastructure with the real
-  `GITHUB_TOKEN` — that requires pushing this work to GitHub, which wasn't
-  done as part of writing it (see [CHANGELOG.md](CHANGELOG.md)). GHCR
-  packages are private by default under a personal account; making them
-  public for anonymous `docker pull` is a one-time step in GitHub's package
-  settings after the first successful publish.
+  PHP/Composer/Node/Python dependencies). The first real run on GitHub
+  Actions infrastructure (see [CHANGELOG.md](CHANGELOG.md)) passed
+  `python-checks`, `php-unit`, and `backend-integration` unmodified but
+  failed `e2e` on a Selenium-grid readiness timeout that only a real
+  (non-`act`) runner could surface; fixed by widening that timeout, **not
+  yet re-verified**. `publish-images` is gated on `e2e` and correctly
+  skipped rather than running early. GHCR packages are private by default
+  under a personal account; making them public for anonymous `docker pull`
+  is a one-time step in GitHub's package settings after the first
+  successful publish.
 
 ## 12. Traceability quick-reference
 

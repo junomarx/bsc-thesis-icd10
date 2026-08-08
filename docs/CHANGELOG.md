@@ -13,6 +13,49 @@ Reference `REQ-*`/`RULE-*`/`TEST-*` identifiers where a change implements or
 affects one. Every entry should let a reader answer "what changed, why, and
 was it actually tested" without opening the diff.
 
+## 2026-08-08 — First real GitHub Actions run: found and fixed a Selenium-grid timeout
+
+Closed the one deviation the previous entry flagged as unverified: pushed
+the accumulated working-tree state (this session's baseline 0.2/E2E work,
+the CI workflow, the bundle, and the docs set) to `origin/main` as three
+commits on top of the project owner's own `f1b927f`, triggering CI for
+real for the first time.
+
+### Fixed
+
+- `.github/workflows/ci.yml`, `e2e` job, "Wait for Selenium grid" step: the
+  real run's `python-checks`, `php-unit`, and `backend-integration` jobs
+  all passed on the first try, but `e2e` failed — isolated (via the Actions
+  API's per-step conclusions) to exactly this one step; every step before
+  it, including starting the Selenium container itself, succeeded. The
+  60-second budget (30 attempts × 2s) that was never exercised against a
+  real GitHub-hosted runner (only dry-run via `act`, which cannot pull the
+  amd64-only `selenium/standalone-chrome` image on this arm64 development
+  machine — see the prior entry's `HANDOFF.md` caveat) was too tight for a
+  cold-started Selenium container on shared runner hardware. Raised to 180
+  seconds (90 × 2s) and added `docker compose logs selenium` / a final
+  `curl` to the failure path so a second occurrence would leave real
+  evidence in the run log instead of just "did not become ready in time".
+  Not yet re-verified against a real run (next push will show whether 180s
+  is enough) — see Deviations.
+
+### Verified
+
+- `actionlint .github/workflows/ci.yml`: clean after the fix.
+- Real run `python-checks`, `php-unit`, `backend-integration` jobs: all
+  passed unmodified on the first real GitHub Actions execution (run
+  [31249835326](https://github.com/junomarx/bsc-thesis-icd10/actions/runs/31249835326)) —
+  the workflow syntax, service-container MySQL setup, and Composer/PHPUnit
+  steps all work as designed on real infrastructure, not just under `act`.
+
+### Deviations
+
+- **Still not independently verified**: the `e2e` job passing for real
+  (blocked on the timeout fix above) and, downstream of that, the
+  `publish-images` job's actual push to GHCR (it's gated on `e2e` passing,
+  so it correctly skipped on this run rather than running with unmet
+  preconditions).
+
 ## 2026-08-08 — Self-contained publishable bundle + CI publish job
 
 Project owner's follow-up request: publish the whole project as something

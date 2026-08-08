@@ -174,11 +174,13 @@ jobs:
 
       - name: Wait for Selenium grid
         run: |
-          for _ in $(seq 1 30); do
+          for _ in $(seq 1 90); do
             curl -sf http://127.0.0.1:4444/status | grep -q '"ready":true' && exit 0
             sleep 2
           done
           echo "Selenium grid did not become ready in time" >&2
+          curl -s http://127.0.0.1:4444/status || true
+          docker compose -f app/tests/E2E/docker-compose.yml logs selenium || true
           exit 1
 
       - uses: shivammathur/setup-php@v2
