@@ -1597,3 +1597,28 @@ commit. This was already true before today's correction; it is now stated
 explicitly rather than left implicit, in
 `docs/environment_manifest_0_1.json`'s `deliberately_not_recorded` note
 and `docs/CONFORMANCE_REPORT.md` §9.
+
+### 19.5 The reproducibility claim in §19.4 assumed a mechanism that had quietly stopped working
+
+Trying to evidence §19.4's fix (i.e. getting a CI run for `dev-freeze-2`)
+surfaced exactly the gap §19.4 had just written about, one layer deeper:
+`.github/workflows/ci.yml`'s `on.push.branches` still read `[main]` from
+whenever this repository's default branch was renamed to `master` - no
+push since then had triggered CI at all. Fixed (commit `2c65b0a`), but the
+resulting first run showed `publish-images` itself `skipped`: the same
+stale `main` reference, independently, in that job's own `if:` condition.
+Fixed too (commit `298ab53`). Two bugs of the identical shape, found only
+by trying to produce the evidence §19.4 claimed would exist, not by
+auditing the workflow file for the pattern once found - worth remembering
+alongside §19.4's own lesson (enumerate a pinning/config scope by tracing
+every reference, not by grepping the files already known about).
+
+Each fix got its own tag rather than moving the one before it -
+`dev-freeze-3` (the trigger fix), then `dev-freeze-4` (the
+`publish-images` fix) - same reasoning as `dev-freeze-2` itself. **`dev-freeze-4`
+(commit `298ab534e07caf87226a77e28c8a7734fe9dd8be`) is the tag to cite** -
+identical `PROTOBASE-1.0` software/pinning content to `dev-freeze-2`, plus
+a CI pipeline verified to actually run and publish, not merely assumed to.
+Full account, job-level breakdowns, and direct Actions URLs:
+`docs/CONFORMANCE_REPORT.md` §10, `docs/CHANGELOG.md`'s two same-dated
+entries.

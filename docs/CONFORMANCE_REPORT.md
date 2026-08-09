@@ -154,8 +154,29 @@ Per this run's zero-defect verdict, `docs/CHANGELOG.md`'s same-dated freeze entr
 2. Pinned `prototype_baseline/Dockerfile.bootstrap`'s `FROM` line to that digest on `master`; `develop`'s copy intentionally stays on the floating tag, consistent with the existing split (§2, `docs/DEVELOPMENT_DOCUMENTATION.md` §19.2).
 3. Added it as a seventh entry to `docs/environment_manifest_0_1.json`.
 4. Re-ran the full check battery from §4 against the corrected commit — see `freeze_evidence.zip` (regenerated) for the raw logs.
-5. Cut a **new** immutable git tag once the re-run confirmed zero defects, rather than moving `dev-freeze` — moving an already-pushed tag would silently rewrite what it had been cited as pointing to; a new tag makes the correction itself part of the visible history instead of erasing the gap it corrects.
+5. Cut a **new** immutable git tag once the re-run confirmed zero defects, rather than moving `dev-freeze` — moving an already-pushed tag would silently rewrite what it had been cited as pointing to; a new tag makes the correction itself part of the visible history instead of erasing the gap it corrects. That tag, `dev-freeze-2` (commit `0586034aeb2d7f81ecfc9512733a5efe55f59255`), is superseded in turn by §10 below — read on before citing it.
 
 Two other, smaller stale references from the earlier candidate-designation promotion (§7/§8 above) were found and fixed in the same pass: `.dockerignore`'s narrow re-inclusion exception still named the pre-rename `reference_responses_0_3_candidate.csv` (harmless in practice — the broader `!prototype_baseline/verification/` rule already re-included the renamed file, confirmed by an actual `docker build --no-cache --target dev`, not assumed), and a cosmetic CI step name (`Load PROTOBASE-0.3 baseline`) in `.github/workflows/ci.yml`.
 
 **Reproducibility clarification, per project-owner instruction:** this report's claim of a reproducible frozen result holds only for **building from source at the frozen/tagged commit** (`docker compose build`, using the pinned `Dockerfile`/`Dockerfile.bootstrap` above) — it does **not** hold for `docker compose pull` against `docker-compose.yml`'s own defaults (`ghcr.io/junomarx/bsc-thesis-icd10:latest`, `:dev`, `bsc-thesis-icd10-bootstrap:latest`). Those three project-owned tags are mutable: `.github/workflows/ci.yml`'s `publish-images` job overwrites `:latest`/`:dev` on every subsequent push to `master`, so a `pull` performed after any later push fetches that later commit's build, not this frozen one. This is now stated explicitly in `docs/environment_manifest_0_1.json`'s `deliberately_not_recorded` note. Nothing about this changes §1-§7 above — the six-plus-one base images were, and remain, the correct unit of "third-party dependency pinning"; the project's own published convenience tags were never claimed to be pinned, only (incompletely, until now) documented as intentionally not pinned.
+
+## 10. Second addendum, same day: CI's own trigger was broken, in two places, discovered while trying to evidence §9's fix
+
+Immediately after §9's correction was pushed, no CI run appeared for it — the reproducibility clarification §9 had just written in about `publish-images` overwriting `:latest`/`:dev` "on every subsequent push" turned out to assume a mechanism that had, in fact, stopped working.
+
+**Bug 1 — the top-level trigger:** `.github/workflows/ci.yml`'s `on.push.branches` still read `[main]`. This repository's default branch had been renamed to `master` at some earlier point (every commit cited throughout this document already pushes to `master` — `git branch -a` shows no `main` anywhere, locally or on the remote), and the workflow trigger was never updated to follow. Every push since that rename — including §9's own correction commit, `dev-freeze-2` (`0586034`) — succeeded silently without ever triggering CI. Fixed in commit `2c65b0a`.
+
+**Bug 2 — `publish-images`'s own condition:** fixing bug 1 restored CI runs, but the very first one (`2c65b0a`'s, run `31322888797`) showed `publish-images` as `skipped`, not `success`. A second, independent instance of the identical mistake: `if: github.event_name == 'push' && github.ref == 'refs/heads/main'`, the same nonexistent branch, in a second place the first fix didn't touch. Consequence: GHCR's three published tags had not actually been overwritten since the branch rename either — stale, not broken, but directly contradicting what §9 had just written about them. Fixed in commit `298ab53`.
+
+**Verified, not assumed:** the run for `298ab53` (`31323240780`) is the first fully-green, 5/5 result since the rename, `publish-images` included (`0:02:58`, `success`). Job-level breakdowns for all three runs in this sequence (`2c65b0a`, the still-`dev-freeze-3`-tagged `3010b5d`, and `298ab53`) are in `freeze_evidence.zip`'s `16_ci_run.log`, with direct Actions URLs.
+
+**Tag succession, cumulative:**
+
+| Tag | Commit | What it adds over the previous tag |
+|---|---|---|
+| `dev-freeze` | `7147b30` | Original pinning pass (six images) |
+| `dev-freeze-2` | `0586034` | §9: seventh image (`python:3.12-slim-bookworm`) pinned |
+| `dev-freeze-3` | `3010b5d` | Bug 1 fixed; CI runs again (but `publish-images` still skips) |
+| **`dev-freeze-4`** | **`298ab534e07caf87226a77e28c8a7734fe9dd8be`** | **Bug 2 fixed; first fully-green 5/5 run, `publish-images` included** |
+
+All four exist, pushed, unmoved — each an honest waypoint in the same debugging sequence, not a correction that erases the one before it. **Cite `dev-freeze-4` going forward.** Every earlier tag's own software/pinning content (`PROTOBASE-1.0`, all seven base images, `RCBASE-0.3`) is unchanged across all four — nothing in this section is a re-verification of application behaviour, only of the CI pipeline that evidences it. Full account: `docs/CHANGELOG.md`'s two same-dated entries, `docs/DEVELOPMENT_DOCUMENTATION.md` §19.4.
