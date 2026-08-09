@@ -184,8 +184,9 @@ evidence is intentionally not edited or relabelled.
 
 The corrected implementation and evidence are frozen at commit
 `8bb74b31596c3380c45b74643af63d744082be4e`, annotated tag `dev-freeze-5`.
-No GitHub-hosted CI result is claimed for this local correction; it has not
-been pushed in this run.
+The annotated tag is published on `origin`. No GitHub-hosted CI result is
+claimed for this correction because pushing a tag does not establish that the
+branch workflow ran against it.
 
 ## 1. What this project is
 

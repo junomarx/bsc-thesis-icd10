@@ -203,7 +203,7 @@ is a documentation-only follow-up to the tagged commit.
 - implementation/evidence commit: `8bb74b31596c3380c45b74643af63d744082be4e`
 - annotated tag: `dev-freeze-5`
 - tag target: `8bb74b31596c3380c45b74643af63d744082be4e`
-- remote/CI status: local only; not pushed; no 1.1 CI result claimed
+- remote/CI status: annotated tag pushed to `origin`; no 1.1 CI result claimed
 
 ## 9. Evidence integrity
 
