@@ -13,6 +13,28 @@ Reference `REQ-*`/`RULE-*`/`TEST-*` identifiers where a change implements or
 affects one. Every entry should let a reader answer "what changed, why, and
 was it actually tested" without opening the diff.
 
+## 2026-08-09 — Submit-answer button made mobile-friendly
+
+Project-owner feedback with an annotated screenshot: the submit button sat
+flush left, sized to its text, with no horizontal padding in its bar - a
+poor touch target on narrow screens.
+
+### Changed
+
+- `App.css`'s `.submit-bar`: horizontal padding added (was vertical-only),
+  laid out with `display: flex; justify-content: center`.
+- `.submit-bar button:not(.link-button)`: `width: 100%` with `max-width:
+  28rem` - spans nearly the full bar on mobile, caps to a centered,
+  reasonably-sized button on desktop rather than stretching edge to edge.
+
+### Verified
+
+- Real Selenium (not Playwright) screenshots against the actual running
+  `app` container at 390px (mobile) and 1200px (desktop) widths, via a
+  throwaway script per this project's browser-verification convention:
+  full-width padded button on mobile, centered capped-width button on
+  desktop, both confirmed visually.
+
 ## 2026-08-09 — CI's first real GitHub-hosted confirmation, and a multi-arch build hang fixed
 
 The project owner triggered the first real `push`-driven CI run since

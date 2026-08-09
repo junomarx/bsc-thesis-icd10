@@ -453,9 +453,11 @@ input[type='text'] {
   position: sticky;
   bottom: 0;
   background: var(--color-surface-alt);
-  padding: var(--space-3) 0;
+  padding: var(--space-4);
   margin-top: var(--space-2);
   border-top: 1px solid var(--color-border);
+  display: flex;
+  justify-content: center;
 }
 
 .submit-bar button:not(.link-button) {
@@ -466,6 +468,8 @@ input[type='text'] {
   padding: var(--space-3) var(--space-4);
   min-height: 2.75rem;
   cursor: pointer;
+  width: 100%;
+  max-width: 28rem;
 }
 
 .submit-bar button:disabled {
