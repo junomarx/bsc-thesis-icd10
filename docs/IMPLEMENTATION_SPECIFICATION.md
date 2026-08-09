@@ -64,7 +64,7 @@ app/
     Db.php                        PDO factory
     Bootstrap.php                 wires repositories + evaluator against one PDO connection
     Model/
-      BaselineIdentity.php        the single `prototype_baseline` row (PROTOBASE-1.0 identity, frozen §6.3)
+      BaselineIdentity.php        the single `prototype_baseline` row (PROTOBASE-1.1 identity; 1.0 freeze preserved §6.3)
       CatalogueRecord.php          one catalogue_code (SUBSET-0.2) row
       Patient.php                  one patient_definition row + ordered context items
       PatientContextItem.php       one patient_context_item row
@@ -287,13 +287,17 @@ final class EvaluationResult {
 ```
 
 Interpolated dynamic content inside both explanation strings comes from two
-places: computed values (codes, percentages — translated inline, e.g. via
-`Evaluator`'s private `encounterSettingDe()`/`suffixMeaningDe()` helpers)
-and `question_fact.learner_label` (data, authored in English only — no
-German-authored variant exists yet, so a cited fact label stays English
-inside an otherwise-German sentence when a `RULE-REL-HARD-01`/
-`RULE-REL-SPEC-01` explanation cites one; a known, logged limitation, not
-an oversight).
+places: computed values (codes and percentages, translated by strict helper
+mappings) and `LocalizedFactFormatter`, which converts a typed semantic
+`QuestionFact` (`fact_key` plus its value) to coordinated British-English and
+Austrian-German clauses. The formatter is deliberately independent of
+question IDs and ICD codes: all 58 relation/fact combinations in the current
+runtime data pass through this one value-aware mechanism. Unsupported
+key/value combinations throw `SpecificationGapException`; neither the
+English-only authoring aid `question_fact.learner_label` nor a raw fact key is
+ever used as learner-visible fallback text. `RULE-REL-HARD-01` and
+`RULE-REL-SPEC-01` therefore share the same localization boundary without
+changing their predicates, precedence, criteria, or terminal classes.
 
 ### 3.4 `none_of_above` and the cross-question leakage safeguard
 
@@ -382,9 +386,11 @@ like a nonexistent question would. On success:
 ```
 
 **Deliberately absent: raw `question_fact` rows.** `APIBASE-0.1` §5 fixes
-these as evaluator-internal, pre-submission data — `learner_label` is a
-post-submission explanation label, not a visibility flag. Confirmed against
-the materialized data that this is safe: every fact a learner needs is
+these as evaluator-internal, pre-submission data. `learner_label` is retained
+as English authoring metadata only; post-submission localized explanations
+are derived from typed fact keys and values by `LocalizedFactFormatter`
+(§3.3), not from that label. Confirmed against the materialized data that
+this is safe: every fact a learner needs is
 already stated in `prompt` and/or the patient's `context_items` (e.g.
 `Q-001-01`'s prompt states the FEV1 value directly). `options` here is the
 *displayed* set, not the evaluation domain (`REQ-MOD-06`) — a question may
@@ -503,21 +509,28 @@ key→template dictionary with `{placeholder}` interpolation. Default locale
 is detected from `navigator.languages` (first `de`/`en`-prefixed entry
 wins, else `en`) on first load, before any stored preference exists.
 
-This covers **UI chrome only** (buttons, labels, headings, the three-class
-legend, gate-reason messages). Two separate, additive lookups handle
-content the backend itself doesn't translate:
+The lookup is strict: an unsupported locale, unknown key, missing
+translation, or missing interpolation variable throws instead of silently
+displaying English or a machine token. It covers all UI chrome, including
+loading/error states, document title, tutorial, completion/review workflow,
+gate messages, footer, and appearance controls. The provider also keeps the
+document's `lang` attribute and localized title synchronized (`en-GB` or
+`de-AT`). Two strict, additive lookups handle content the backend itself does
+not translate:
 
 - `lib/contentTranslations.js` — German translations of `general_health_summary`,
   `patient_context_item.display_text`, and question `title`/`prompt`,
   keyed by the same `patient_id`/`context_item_id`/`question_id` the API
-  returns. Used only when `locale === 'de'`; falls back to the API's own
-  (English) text on any lookup miss.
+  returns. The current mapping is complete for all 6 patient summaries, 32
+  context items, and 25 learner questions; a missing German entry is a build
+  or test failure, not an English runtime fallback.
 - `lib/catalogueTranslations.js` — English titles for the 87 distinct
   ICD-10 codes actually displayed as a `question_option` (not the full
   99-row catalogue subset). Used only when `locale === 'en'`, for the
   reverse reason: the runtime catalogue is authored in German only (the
   Austrian BMASGPK edition), so English mode would otherwise show German
-  code names inside an English interface.
+  code names inside an English interface. All 87 displayed codes have an
+  explicit reviewed British-English designation; misses fail closed.
 
 Both are deliberately kept in the frontend, not the database or API — a
 `REQ-ARC-01` presentation concern, not a data-model change. Evaluator
@@ -763,10 +776,11 @@ re-verified while writing this section, not carried over from memory:
 
 | Suite | Command | Result |
 |---|---|---|
-| Unit | `php vendor/bin/phpunit --testsuite unit` (no DB) | **77/77 passing** |
-| Integration | `ICD_DB_*=... php vendor/bin/phpunit --testsuite integration` (needs a `MODELBASE-0.2`-loaded MySQL) | **160/160 passing, 2173 assertions** |
-| Unit + Integration | `--testsuite unit,integration` | **237/237 passing, 2290 assertions** |
-| E2E | `php vendor/bin/phpunit --testsuite e2e` (needs the app + Selenium running) | **9/9 passing, 59 assertions** |
+| Unit | `php vendor/bin/phpunit --testsuite unit` (no DB) | **83/83 passing, 130 assertions** |
+| Integration | `ICD_DB_*=... php vendor/bin/phpunit --testsuite integration` (needs a `MODELBASE-0.2`-loaded MySQL) | **163/163 passing**; all 143 oracle rows and 58 feedback-linked fact/relation combinations included |
+| Frontend localization | `npm run test:localization` in `app/frontend` | **4/4 passing**; also mandatory in the image build |
+| Unit + Integration | `--testsuite unit,integration` | **246/246 passing** |
+| E2E | `php vendor/bin/phpunit --testsuite e2e` (needs the app + Selenium running) | **12/12 passing**; complete bilingual traversal included |
 
 | `TEST-*` | Implementing file(s) |
 |---|---|
@@ -783,11 +797,13 @@ re-verified while writing this section, not carried over from memory:
 | `TEST-DET-01` | `Integration/DeterminismTest.php` |
 | `TEST-API-01` | `Integration/EvaluationApiTest.php` |
 | `TEST-RC-01` | `Integration/ReferenceResponseTest.php` — reads the 143-row `RCBASE-0.3` oracle (frozen, `reference_responses_0_3.csv`) directly |
+| *(localization correction)* | `Unit/LocalizationTest.php`, `Integration/LocalizationTest.php`, and `frontend/tests/localization.test.js`: value-aware clauses, strict localization assets, all 143 explanations, all 58 relation/fact combinations, and British-English presentation |
 | `TEST-E2E-01` | `E2E/LearnerWorkflowTest.php` |
 | `TEST-E2E-02` | `E2E/VerificationOnlyQuestionVisibilityTest.php` (renamed from `VerificationOnlyCaseVisibilityTest.php`) |
 | *(none — frontend-only)* | `E2E/ProgressBadgeTest.php`: the `sessionStorage` per-patient completion badge (§5.6) has no backend equivalent, so it has no upstream `TEST-*` identifier |
 | *(none — frontend-only)* | `E2E/TutorialTest.php`: first-visit auto-show, four-step Back/Next flow, dismissal persistence across reload, manual reopening, Escape/backdrop close, and focus restoration (§5.5) |
 | *(none — frontend-only)* | `E2E/ThemeTest.php`: deterministic light start, dark-mode application across the roster/tutorial, browser-storage persistence across reload, and switching back to light (§5.4) |
+| *(localization correction)* | `E2E/LocalizationWorkflowTest.php`: every patient, context row, learner question, displayed option set, tutorial and completion view in both locales, plus every learner-reachable determining rule and both `RULE-NOA-01` outcomes |
 
 **Provenance carried by `TEST-RC-01` specifically:** all 143 rows are now
 confirmed against genuine source, not reconstruction alone. 125 learner rows

@@ -1,0 +1,83 @@
+UTC 2026-08-09T18:02:20Z
+Local 2026-08-09T20:02:20+0200 CEST
+912e9923924b3958bd2dd1a7948d0d7be4a71869
+master
+dev-freeze
+dev-freeze-2
+dev-freeze-3
+dev-freeze-4
+Docker client 28.5.1; server 28.5.1
+Docker Compose version v2.40.2-desktop.1
+PHP 8.4.7 (cli) (built: May  6 2025 12:31:58) (NTS)
+Copyright (c) The PHP Group
+Built by Shivam Mathur
+Zend Engine v4.4.7, Copyright (c) Zend Technologies
+    with Zend OPcache v8.4.7, Copyright (c), by Zend Technologies
+v23.6.0
+11.4.2
+Python 3.11.7
+21c3f02697fe9b20028ec1121d28fce3389c027705372ae08c43f894b3342540  prototype_baseline/verification/reference_responses_0_3.csv
+prototype_baseline/Dockerfile.bootstrap:1:FROM python:3.12-slim-bookworm@sha256:4766d8b510c428e595d74b9cc5bbb2fae8e26316fffb4adc89908d79aacd58a2
+docker-compose.yml:35:    image: mysql@sha256:66aec17cd21a956029b83f083b813073859e8355dc1a00e55df6ba02f0e32345
+docker-compose.yml:52:    image: ${BOOTSTRAP_IMAGE:-ghcr.io/junomarx/bsc-thesis-icd10-bootstrap:latest}
+docker-compose.yml:68:    image: ${APP_IMAGE:-ghcr.io/junomarx/bsc-thesis-icd10:latest}
+docker-compose.yml:94:    image: ${SELENIUM_IMAGE:-seleniarm/standalone-chromium@sha256:d644a5f679e83e63344cee11c08fc2c7bf4acf43217434a8621a2bc85f7473a5}
+docker-compose.yml:102:    image: ${APP_DEV_IMAGE:-ghcr.io/junomarx/bsc-thesis-icd10:dev}
+Dockerfile:29:FROM --platform=$BUILDPLATFORM node:22-alpine@sha256:c610fcdfb1d5b4740dd70c284ed3cb16bb857e0f7166196e36a5501df7a3aa32 AS frontend-build
+Dockerfile:42:FROM --platform=$BUILDPLATFORM composer:2@sha256:4d71c3c2109c61d5415544264b59ad4087e4c5b7244481723664138fd36d5040 AS vendor
+Dockerfile:49:FROM --platform=$BUILDPLATFORM composer:2@sha256:4d71c3c2109c61d5415544264b59ad4087e4c5b7244481723664138fd36d5040 AS vendor-dev
+Dockerfile:54:FROM php:8.4-apache@sha256:5f8050825b2f3de4efb0d81149c86643a9ee9c0a74ed4595ca2ad69ebfeb35fb AS base
+Dockerfile:72:FROM base AS dev
+Dockerfile:88:FROM base AS runtime
+ M .dockerignore
+ M Dockerfile
+ M HANDOFF.md
+ M app/frontend/package.json
+ M app/frontend/src/App.jsx
+ M app/frontend/src/components/Footer.jsx
+ M app/frontend/src/components/PatientCard.jsx
+ M app/frontend/src/components/PatientDossier.jsx
+ M app/frontend/src/components/PatientReview.jsx
+ M app/frontend/src/components/PatientRoster.jsx
+ M app/frontend/src/components/QuestionView.jsx
+ M app/frontend/src/lib/catalogueTranslations.js
+ M app/frontend/src/lib/contentTranslations.js
+ M app/frontend/src/lib/i18n.jsx
+ M app/src/Bootstrap.php
+ M app/src/Config.php
+ M app/src/Evaluation/Evaluator.php
+ M app/tests/E2E/LearnerWorkflowTest.php
+ M app/tests/E2E/README.md
+ M app/tests/Integration/DatabaseTestCase.php
+ M app/tests/Integration/ReferenceResponseTest.php
+ M docs/CHANGELOG.md
+ M docs/DEVELOPMENT_DOCUMENTATION.md
+ M docs/IMPLEMENTATION_SPECIFICATION.md
+ M docs/README.md
+ M docs/REQUIREMENTS_TRACEABILITY.md
+ M docs/USER_GUIDE.pdf
+ D docs/USER_GUIDE.synctex.gz
+ M docs/USER_GUIDE.tex
+A  docs/chapter3/chapter_3_methods_and_practical_work_specification_bachelor_scope.md
+ M prototype_baseline/data/patient_context_items_0_1.csv
+ M prototype_baseline/data/patients_0_1.csv
+ M prototype_baseline/data/questions_0_1.csv
+ M prototype_baseline/materialization_digests.json
+ M prototype_baseline/persistence_candidate/README.md
+ M prototype_baseline/persistence_candidate/mysql_schema_0_2.sql
+ M prototype_baseline/persistence_candidate/runtime_manifest_0_2.json
+ M prototype_baseline/persistence_candidate/test_mysql_persistence_0_2.py
+ M prototype_baseline/persistence_candidate/test_runtime_contract_0_2.py
+ M prototype_baseline/review/materialized_dataset_review.xlsx
+?? app/frontend/scripts/
+?? app/frontend/tests/
+?? app/scripts/
+?? app/src/Evaluation/LocalizedFactFormatter.php
+?? app/tests/E2E/LocalizationWorkflowTest.php
+?? app/tests/Integration/LocalizationTest.php
+?? app/tests/Unit/LocalizationTest.php
+?? docs/LOCALIZATION_AUDIT.md
+?? docs/environment_manifest_0_2.json
+?? docs/evidence/
+?? docs/localization_inventory.json
+?? freeze_evidence.zip

@@ -13,6 +13,75 @@ Reference `REQ-*`/`RULE-*`/`TEST-*` identifiers where a change implements or
 affects one. Every entry should let a reader answer "what changed, why, and
 was it actually tested" without opening the diff.
 
+## 2026-08-09 — Comprehensive `de-AT` / `en-GB` localization correction (`PROTOBASE-1.1`)
+
+The post-freeze learner-surface audit found localization defects that the
+`PROTOBASE-1.0` predefined tests did not cover, most importantly German
+relation feedback that embedded the English-only `question_fact.learner_label`.
+The earlier frozen report and tags remain unchanged: its predefined checks
+found no deviations; it did not establish complete bilingual-string coverage.
+
+### Added
+
+- `LocalizedFactFormatter`, a value-aware fact-key/value formatter shared by
+  `RULE-REL-HARD-01` and `RULE-REL-SPEC-01`, with no question/code branches
+  and fail-closed handling for unsupported semantic values.
+- A reproducible 349-entry inventory (`docs/localization_inventory.json`) and
+  audit narrative (`docs/LOCALIZATION_AUDIT.md`) covering UI, 6 patient
+  summaries, 32 context records, 25 question titles/prompts, 87 displayed
+  codes, evaluator branches, 58 relation/fact combinations, and intentional
+  non-translations.
+- Four frontend localization-contract tests, six PHP unit tests, three PHP
+  integration tests, and three Selenium workflows for the complete bilingual
+  learner surface and learner-reachable feedback branches.
+
+### Changed
+
+- Frontend dictionaries and ID-keyed content/catalogue presentation lookups
+  now fail closed instead of silently falling back to English, German, a raw
+  key, a question ID, an enum value, or a backend error token. Browser title
+  and document language now follow `en-GB` / `de-AT`.
+- `RULE-CORRECT-01` and both `RULE-NOA-01` outcomes now use natural wording
+  about support from the documented information. Austrian-German grammar,
+  punctuation and clinical wording, and British-English spelling were
+  corrected across the learner surface.
+- Presentation-only data corrections changed three authoring CSV hashes and
+  the review workbook hash. The canonical runtime digest was re-derived and
+  pinned; the runtime identity advanced to `PROTOBASE-1.1`. Schema, rows,
+  option membership and evaluation semantics did not change.
+- The frontend image build now executes the localization-contract test before
+  producing the Vite bundle.
+
+### Fixed
+
+- German relation feedback no longer produces hybrids such as
+  `E03.4 ... Documented aetiology`; it states the represented semantic value
+  naturally in both locales.
+- Abstract fact labels such as `Current consciousness state` are no longer
+  shown in place of their value; feedback now states, for example, that the
+  patient remains unconscious.
+- Missing localized evaluator link/fact metadata can no longer degrade to a
+  humanised raw key; it raises an explicit specification gap.
+
+### Verified
+
+- Targeted pre-freeze runs passed: 83 unit tests / 130 assertions, 4 frontend
+  localization tests, 3 localization integration tests / 2,247 assertions,
+  and 3 localization Selenium tests / 1,070 assertions.
+- `RCBASE-0.3` remains byte-identical at SHA-256
+  `21c3f02697fe9b20028ec1121d28fce3389c027705372ae08c43f894b3342540`;
+  its 143 expected semantic results remain exact. The fresh full battery and
+  environment evidence are recorded in the separate 1.1 conformance report.
+
+### Deviations
+
+- Corrected presentation defects: mixed-language/abstract relation feedback,
+  permissive frontend fallback paths, localized error-state gaps, and several
+  Austrian-German/British-English wording defects.
+- No evaluation-semantic, oracle, schema, option-membership, scoring, layout,
+  architecture or source-domain deviation was introduced or found by this
+  correction.
+
 ## 2026-08-09 — `publish-images` had the same stale-branch bug, in its own `if:` condition
 
 The push-trigger fix (previous entry) restored CI runs, but the run it

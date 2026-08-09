@@ -1,0 +1,35 @@
+SUBSET-0.2 preparation: PASS
+  mode: checked
+  records: 99
+  source_sha256: 66713da5d63afcd37b0152ae7058f2188bf34d557bfa06ad4ce008825fb94a4b
+  output_sha256: 1ae5c0c7704cbf1b026fee09dea4db26955ec506def024dce709a0541cd40637
+Forward verification-design contract: PASS
+  learner expectations: 125 (100 code + 25 none_of_above)
+  legacy expectations: 18 (14 exact semantic carry-forward from RCBASE-0.1 + 4 confirmed by direct diff against the archived raw RCBASE-0.2 file)
+  candidate oracle: 143 rows; classes 33 correct / 20 suboptimal / 90 incorrect
+  runtime/oracle field separation: PASS
+  NOTE: this is design-data validation, not application verification
+Materialized forward-design validation: PASS
+  subset/patients/questions: 99/6/25
+  facts/domain/options: 60/100/120
+  learner-domain / retained-historical unique codes: 92/13 -> union 99
+  question counts: [3, 3, 3, 5, 5, 6]
+  none_of_above correct controls: ['Q-004-05', 'Q-005-05']
+  immediate-feedback cross-question code leakage: none
+  all J44 learner relations belong to: ['Q-001-01']
+  domain relation counts: {'accepted_reference': 25, 'fact_conflict': 52, 'less_specific_supported': 17, 'source_rule_resolved': 5, 'temporal_context_conflict': 1}
+  displayed relation counts: {'accepted_reference': 23, 'fact_conflict': 52, 'less_specific_supported': 17, 'source_rule_resolved': 2, 'temporal_context_conflict': 1}
+  NOTE: PASS means data-contract validation only; it is not application or thesis evaluation evidence.
+test_canonical_runtime_digest_is_frozen_at_protobase_1_1 (test_runtime_contract_0_2.RuntimeContractTests.test_canonical_runtime_digest_is_frozen_at_protobase_1_1) ... ok
+test_copd_learner_content_is_confined_to_one_patient (test_runtime_contract_0_2.RuntimeContractTests.test_copd_learner_content_is_confined_to_one_patient) ... ok
+test_learner_options_and_none_of_above_controls (test_runtime_contract_0_2.RuntimeContractTests.test_learner_options_and_none_of_above_controls) ... ok
+test_legacy_regression_fixture_shape_is_preserved (test_runtime_contract_0_2.RuntimeContractTests.test_legacy_regression_fixture_shape_is_preserved) ... ok
+test_normalized_component_counts (test_runtime_contract_0_2.RuntimeContractTests.test_normalized_component_counts) ... ok
+test_patient_difficulty_and_question_distribution (test_runtime_contract_0_2.RuntimeContractTests.test_patient_difficulty_and_question_distribution) ... ok
+test_runtime_allowlist_is_exact_and_oracle_free (test_runtime_contract_0_2.RuntimeContractTests.test_runtime_allowlist_is_exact_and_oracle_free) ... ok
+test_schema_has_nine_runtime_tables_and_no_oracle_columns (test_runtime_contract_0_2.RuntimeContractTests.test_schema_has_nine_runtime_tables_and_no_oracle_columns) ... ok
+
+----------------------------------------------------------------------
+Ran 8 tests in 0.006s
+
+OK

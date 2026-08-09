@@ -137,17 +137,13 @@ class RuntimeContractTests(unittest.TestCase):
         self.assertEqual(len(legacy_relations), 18)
         self.assertFalse(any(row[1].startswith("VQ-") for row in self.dataset.question_options))
 
-    def test_canonical_runtime_digest_is_frozen_at_protobase_1_0(self) -> None:
-        # Frozen value as of the PROTOBASE-1.0 development freeze
-        # (docs/CONFORMANCE_REPORT.md), reflecting `prototype_baseline_id`
-        # changing from `PROTOBASE-0.3` to `PROTOBASE-1.0` in
-        # runtime_manifest_0_2.json - the fourth and final update to this
-        # value in one day, following the VQ-005..008 `prompt`/
-        # `source_audit_ref` reconciliation immediately before it
-        # (docs/CHANGELOG.md).
+    def test_canonical_runtime_digest_is_frozen_at_protobase_1_1(self) -> None:
+        # PROTOBASE-1.1 changes only localized presentation text and the
+        # prototype identity. Evaluation relations, facts, options and the
+        # independently stored RCBASE-0.3 oracle remain unchanged.
         self.assertEqual(
             self.dataset.canonical_digest(),
-            "338cc21b533bfd2162f750c6d9608041962a4d49f4244853a9387e068c414331",
+            "63d7ddccc11b4e4c40a33d8dc8eec65e528a9786de2e8820a5b01ca58bc07008",
         )
 
     def test_schema_has_nine_runtime_tables_and_no_oracle_columns(self) -> None:

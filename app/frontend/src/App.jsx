@@ -6,6 +6,7 @@ import PatientRoster from './components/PatientRoster.jsx'
 import PatientReview from './components/PatientReview.jsx'
 import QuestionView from './components/QuestionView.jsx'
 import Tutorial from './components/Tutorial.jsx'
+import { useLocale } from './lib/i18n.jsx'
 import { shuffledOrder } from './lib/playthrough.js'
 import './App.css'
 
@@ -34,6 +35,7 @@ function isFirstTutorialVisit() {
 }
 
 export default function App() {
+  const { t } = useLocale()
   const [patients, setPatients] = useState([])
   const [loadingPatients, setLoadingPatients] = useState(true)
   const [patientsError, setPatientsError] = useState(null)
@@ -47,6 +49,7 @@ export default function App() {
   const [questionsById, setQuestionsById] = useState({})
   const [results, setResults] = useState({})
   const [submitting, setSubmitting] = useState(false)
+  const [workflowError, setWorkflowError] = useState(null)
 
   useEffect(() => {
     listPatients()
@@ -64,28 +67,48 @@ export default function App() {
   useEffect(() => {
     if (view !== 'playthrough' || currentQuestionId === null || questionsById[currentQuestionId]) return
 
-    getQuestion(currentQuestionId).then(({ status, body }) => {
-      if (status === 200) {
-        setQuestionsById((prev) => ({ ...prev, [currentQuestionId]: body }))
-      }
-    })
+    setWorkflowError(null)
+    getQuestion(currentQuestionId)
+      .then(({ status, body }) => {
+        if (status === 200) {
+          setQuestionsById((prev) => ({ ...prev, [currentQuestionId]: body }))
+          return
+        }
+        setWorkflowError(status === 404 ? 'question.notFound' : 'question.loadError')
+      })
+      .catch(() => setWorkflowError('question.loadError'))
   }, [view, currentQuestionId, questionsById])
 
   function selectPatient(patientId) {
-    getPatient(patientId).then(({ status, body }) => {
-      if (status !== 200) return
-      setActivePatient(body)
-      setOrderedQuestionIds(shuffledOrder(body.questions.map((q) => q.question_id)))
-      setCurrentIndex(0)
-      setResults({})
-      setView('playthrough')
-    })
+    setWorkflowError(null)
+    getPatient(patientId)
+      .then(({ status, body }) => {
+        if (status !== 200) {
+          setWorkflowError('patient.loadError')
+          return
+        }
+        setActivePatient(body)
+        setOrderedQuestionIds(shuffledOrder(body.questions.map((q) => q.question_id)))
+        setCurrentIndex(0)
+        setResults({})
+        setView('playthrough')
+      })
+      .catch(() => setWorkflowError('patient.loadError'))
   }
 
   function submitAnswer(response) {
     setSubmitting(true)
     evaluate(currentQuestionId, response)
-      .then(({ body }) => setResults((prev) => ({ ...prev, [currentQuestionId]: body })))
+      .then(({ status, body }) => {
+        const result = status === 200 || body?.evaluation_status === 'not_evaluated'
+          ? body
+          : { evaluation_status: 'not_evaluated', classification: null, reason: 'evaluation_failed' }
+        setResults((prev) => ({ ...prev, [currentQuestionId]: result }))
+      })
+      .catch(() => setResults((prev) => ({
+        ...prev,
+        [currentQuestionId]: { evaluation_status: 'not_evaluated', classification: null, reason: 'evaluation_failed' },
+      })))
       .finally(() => setSubmitting(false))
   }
 
@@ -120,6 +143,7 @@ export default function App() {
     setOrderedQuestionIds([])
     setCurrentIndex(0)
     setResults({})
+    setWorkflowError(null)
     setView('roster')
   }
 
@@ -152,7 +176,18 @@ export default function App() {
           onResetProgress={resetProgress}
           loading={loadingPatients}
           error={patientsError}
+          interactionError={workflowError}
         />
+      )}
+      {view === 'playthrough' && activePatient && !currentQuestion && (
+        <section className="question-view">
+          <p className={workflowError ? 'error' : undefined}>{t(workflowError ?? 'question.loading')}</p>
+          {workflowError && (
+            <button type="button" className="link-button" onClick={chooseAnother}>
+              {t('question.returnToRoster')}
+            </button>
+          )}
+        </section>
       )}
       {view === 'playthrough' && activePatient && currentQuestion && (
         <QuestionView

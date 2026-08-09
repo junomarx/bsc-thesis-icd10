@@ -1,7 +1,7 @@
 import PatientCard from './PatientCard.jsx'
 import { useLocale } from '../lib/i18n.jsx'
 
-export default function PatientRoster({ patients, completedPatientIds, onSelect, onResetProgress, loading, error }) {
+export default function PatientRoster({ patients, completedPatientIds, onSelect, onResetProgress, loading, error, interactionError }) {
   const { t } = useLocale()
   const allCompleted = patients.length > 0 && completedPatientIds.size >= patients.length
 
@@ -15,7 +15,8 @@ export default function PatientRoster({ patients, completedPatientIds, onSelect,
     <section>
       <h2>{t('roster.heading')}</h2>
       {loading && <p>{t('roster.loading')}</p>}
-      {error && <p className="error">{t('roster.error', { message: error })}</p>}
+      {error && <p className="error">{t('roster.error')}</p>}
+      {interactionError && <p className="error">{t(interactionError)}</p>}
       {!loading && !error && patients.length > 0 && (
         <div className="roster-progress-row">
           <p className="progress-summary">

@@ -1,8 +1,7 @@
 // German translations of runtime *content* (patient summaries, context
 // items, question titles/prompts) for the German UI locale. Keyed by the
-// same ids the API returns, so a lookup miss (e.g. a hidden
-// verification_only question, which is never rendered anyway) falls back
-// to the English text the backend sent rather than showing a blank.
+// same ids the API returns. A lookup miss is a localization contract error:
+// German mode must never silently resolve through English runtime content.
 //
 // This is presentation-only: it does not change QUESTIONBASE-0.1/
 // PATIENTBASE-0.1 runtime data, the evaluator, or anything the backend
@@ -40,7 +39,7 @@ export const CONTEXT_ITEM_DE = {
   'CTX-002-03': 'Panikstörung ist dokumentiert.',
   'CTX-002-04': 'Essentielle Hypertonie ist Teil der Vorgeschichte und derzeit kein Kodierziel.',
   'CTX-002-05': 'Gicht ist Teil der Vorgeschichte und derzeit kein Kodierziel.',
-  'CTX-003-01': 'Migräne mit Aura ist dokumentiert; die dargestellte Episode ist keine Status migrainosus.',
+  'CTX-003-01': 'Migräne mit Aura ist dokumentiert; die dargestellte Episode ist kein Status migrainosus.',
   'CTX-003-02': 'Postinfektiöse Hypothyreose ist dokumentiert.',
   'CTX-003-03': 'Generalisierte Angststörung ist dokumentiert.',
   'CTX-003-04': 'Endometriose ist in der Vorgeschichte vermerkt und derzeit kein Kodierziel.',
@@ -96,7 +95,7 @@ export const QUESTION_CONTENT_DE = {
   'Q-002-02': {
     title: 'Kodieraufgabe Niere',
     prompt:
-      'Der Befund dokumentiert eine chronische Nierenerkrankung Stadium 3; die dokumentierte GFR für den dargestellten Zustand beträgt 45 ml/min/1,73 m². Wählen Sie den am besten begründeten Code.',
+      'Der Befund dokumentiert eine chronische Nierenerkrankung Stadium 3; die dokumentierte GFR für den dargestellten Zustand beträgt 45 mL/min/1,73 m². Wählen Sie den am besten begründeten Code.',
   },
   'Q-002-03': {
     title: 'Kodieraufgabe Psychische Gesundheit',
@@ -106,7 +105,7 @@ export const QUESTION_CONTENT_DE = {
   'Q-003-01': {
     title: 'Kodieraufgabe Neurologie',
     prompt:
-      'Der Befund gibt ausdrücklich eine Migräne mit Aura an. Die dargestellte Episode ist keine Status migrainosus. Wählen Sie den am besten begründeten Code.',
+      'Der Befund gibt ausdrücklich eine Migräne mit Aura an. Die dargestellte Episode ist kein Status migrainosus. Wählen Sie den am besten begründeten Code.',
   },
   'Q-003-02': {
     title: 'Kodieraufgabe Endokrinologie',
@@ -139,7 +138,7 @@ export const QUESTION_CONTENT_DE = {
   'Q-004-05': {
     title: 'Kodieraufgabe Aktueller Befund',
     prompt:
-      'Im Rahmen der Untersuchung gibt der Patient lokalisierte Kreuzschmerzen ohne Ausstrahlung ins Bein an; eine zugrunde liegende Diagnose wurde nicht festgestellt. Welche der angezeigten Auswahlmöglichkeiten stellt den dokumentierten Befund am besten dar?',
+      'Im Rahmen der Untersuchung gibt die Patientin lokalisierte Kreuzschmerzen ohne Ausstrahlung ins Bein an; eine zugrunde liegende Diagnose wurde nicht festgestellt. Welche der angezeigten Auswahlmöglichkeiten stellt den dokumentierten Befund am besten dar?',
   },
   'Q-005-01': {
     title: 'Kodieraufgabe Psychiatrie',
@@ -199,5 +198,16 @@ export const QUESTION_CONTENT_DE = {
 
 export function localizeText(dict, id, fallback, locale) {
   if (locale !== 'de') return fallback
-  return dict[id] ?? fallback
+  const translated = dict[id]
+  if (typeof translated !== 'string') throw new Error(`Missing German content translation: ${id}`)
+  return translated
+}
+
+export function localizeQuestionContent(question, locale) {
+  if (locale !== 'de') return { title: question.title, prompt: question.prompt }
+  const translated = QUESTION_CONTENT_DE[question.question_id]
+  if (!translated?.title || !translated?.prompt) {
+    throw new Error(`Missing German question translation: ${question.question_id}`)
+  }
+  return translated
 }

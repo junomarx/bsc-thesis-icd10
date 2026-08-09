@@ -1,29 +1,16 @@
 {
-<<<<<<< HEAD
-  "status": "frozen_at_protobase_1_0",
+  "status": "frozen_at_protobase_1_1",
   "generated_on": "2026-08-09",
+  "scope": "Persistence implementation files; the historical development-check digest is retained as provenance.",
   "files": {
-    "README.md": "9312d793fce88591aa1a8504185f5343c56b6ef8093c2f5b8bb076877378f14d",
-    "mysql_schema_0_2.sql": "35a3cfa53a546bedcf84d64c9f43d7d9fc49d20423df3830069a063121b0509c",
-    "runtime_manifest_0_2.json": "d0c76695d03f8fc240dfdcfe343ba5684e22fdcdb59f9c32339bc196be85eb24",
+    "README.md": "3e58d7a29737416687eba8cdfdbb66d40dc07fc00a7d73218a066bf60d3dd167",
+    "mysql_schema_0_2.sql": "f8076b195f7ddb16ef120eee8bc643aa91245fda40c6cf598daafadb132c4c40",
+    "runtime_manifest_0_2.json": "ea9662669f544edf4c2f4a1bf9264eba57d20df87ed4a1357b68d8a78c2f3713",
     "runtime_data_0_2.py": "f89cddabbda04398a56a17c9b98c61e89f36abed91b17b3e9cce2824cfdc5694",
     "apply_mysql_schema_0_2.py": "76502ff558d852c74a2948d03e367071fec39d2f2c292a43c6f9706dbe51a8c4",
     "load_mysql_0_2.py": "83664f3c509ed5bd6957a688eca6268951dc7d157fa7c2819ec23368778d633f",
-    "test_runtime_contract_0_2.py": "265b9ed3607e743252d596426399a78ee8c4ef5f4356d2e9cf62b30b2c71d7fd",
-    "test_mysql_persistence_0_2.py": "bab8fcf00b2276aa35a3c5b2d66db9928bf173364211dd9859c1fb056292c7a9",
-=======
-  "status": "repository_ready_candidate_not_live_mysql_verified",
-  "generated_on": "2026-08-08",
-  "files": {
-    "README.md": "9312d793fce88591aa1a8504185f5343c56b6ef8093c2f5b8bb076877378f14d",
-    "mysql_schema_0_2.sql": "ad0cc10f9b52aee4571e022bfeb1f761c74f826dfb808aa5d1c5775d1bbe099b",
-    "runtime_manifest_0_2.json": "602d5c5a104fc829a80a7899e0992d5f06190bfe7e5bfea02696dd77e7d10e6a",
-    "runtime_data_0_2.py": "f89cddabbda04398a56a17c9b98c61e89f36abed91b17b3e9cce2824cfdc5694",
-    "apply_mysql_schema_0_2.py": "76502ff558d852c74a2948d03e367071fec39d2f2c292a43c6f9706dbe51a8c4",
-    "load_mysql_0_2.py": "83664f3c509ed5bd6957a688eca6268951dc7d157fa7c2819ec23368778d633f",
-    "test_runtime_contract_0_2.py": "95dd018270dffa92973fc8c60ab026910d556bb89c071f62418cb0d564725864",
-    "test_mysql_persistence_0_2.py": "1f1a1571f74cb78cd3ae800e87f79f6ae52630f7a790abc28d9b9e32046619c7",
->>>>>>> 5e664824895e0cbae0c6e6d63ee98e02abf8a22c
+    "test_runtime_contract_0_2.py": "237c9dbd70cbae7d4b0a4915784df4f71152a83945e71f1be083e965fef4095b",
+    "test_mysql_persistence_0_2.py": "7fae86cb7f28e5c3efa0c329de9d106ee6ec4487e6bf4c3727ec89f53988e382",
     "development_check_2026-08-08.md": "ca860b04d9586be5e1795c979a90f91b26001e9ecc3ec949f2f333f60a09f7fa"
   }
 }

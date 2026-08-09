@@ -2,8 +2,18 @@ import { useState } from 'react'
 import PatientDossier from './PatientDossier.jsx'
 import { STATUS_ICONS, STATUS_LABEL_KEYS } from '../lib/classification.js'
 import { useLocale } from '../lib/i18n.jsx'
-import { QUESTION_CONTENT_DE } from '../lib/contentTranslations.js'
-import { CODE_DESIGNATION_EN } from '../lib/catalogueTranslations.js'
+import { localizeQuestionContent } from '../lib/contentTranslations.js'
+import { englishCatalogueDesignation } from '../lib/catalogueTranslations.js'
+
+const LOCALIZED_GATE_REASONS = new Set([
+  'outside_active_subset',
+  'undefined_case_relation',
+  'missing_required_case_fact',
+  'none_option_not_defined',
+  'malformed_input',
+  'unsupported_response_kind',
+  'evaluation_failed',
+])
 
 export default function QuestionView({
   patient,
@@ -22,9 +32,7 @@ export default function QuestionView({
   const [dossierOpen, setDossierOpen] = useState(false)
 
   const selectedOption = question.options.find((option) => option.option_id === selectedOptionId)
-  const localizedContent = QUESTION_CONTENT_DE[question.question_id]
-  const title = locale === 'de' ? localizedContent?.title ?? question.title : question.title
-  const prompt = locale === 'de' ? localizedContent?.prompt ?? question.prompt : question.prompt
+  const { title, prompt } = localizeQuestionContent(question, locale)
 
   function handleSubmit() {
     if (!selectedOption) return
@@ -81,7 +89,7 @@ export default function QuestionView({
                   ) : (
                     <>
                       <strong>{option.code}</strong> —{' '}
-                      {locale === 'en' ? CODE_DESIGNATION_EN[option.code] ?? option.short_designation : option.short_designation}
+                      {locale === 'en' ? englishCatalogueDesignation(option.code) : option.short_designation}
                     </>
                   )}
                 </label>
@@ -105,7 +113,7 @@ function QuestionFeedback({ result, onAdvance, isLast }) {
   const { t, locale } = useLocale()
 
   if (result.evaluation_status === 'not_evaluated') {
-    const reasonText = t(`gateReason.${result.reason}`) === `gateReason.${result.reason}` ? result.reason : t(`gateReason.${result.reason}`)
+    const reasonText = t(LOCALIZED_GATE_REASONS.has(result.reason) ? `gateReason.${result.reason}` : 'gateReason.unknown')
     return (
       <div className="question-feedback">
         <h3>{t('question.notEvaluated')}</h3>
@@ -118,13 +126,16 @@ function QuestionFeedback({ result, onAdvance, isLast }) {
   }
 
   const StatusIcon = STATUS_ICONS[result.classification]
-  const explanation = locale === 'de' ? result.explanation_de ?? result.explanation : result.explanation
+  const explanation = locale === 'de' ? result.explanation_de : result.explanation
+  if (typeof explanation !== 'string' || explanation.trim() === '') {
+    throw new Error(`Missing ${locale} evaluation explanation`)
+  }
 
   return (
     <div className="question-feedback" aria-live="polite">
       <h3 className={`result-heading result-${result.classification}`}>
         {StatusIcon && <StatusIcon />}
-        {t(STATUS_LABEL_KEYS[result.classification] ?? result.classification)}
+        {t(STATUS_LABEL_KEYS[result.classification] ?? 'question.notEvaluated')}
       </h3>
       <p>{explanation}</p>
       {result.improvement_code && (

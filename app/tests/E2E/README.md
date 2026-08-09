@@ -7,7 +7,10 @@ running application stack; nothing here is mocked.
 The suite contains the formal `TEST-E2E-01` learner workflow and
 `TEST-E2E-02` verification-only boundary plus frontend-only regressions for
 patient completion, the first-visit tutorial, and the persisted light/dark
-appearance setting. A fresh WebDriver profile
+appearance setting. `LocalizationWorkflowTest` additionally traverses all 6
+patients, 32 context items, 25 learner questions and their displayed option
+sets in both locales, completes every patient, and checks all
+learner-reachable result branches plus both none-of-above outcomes. A fresh WebDriver profile
 has no tutorial-seen flag, so ordinary workflow helpers dismiss the real
 modal before continuing; `TutorialTest` separately verifies the complete
 first-visit/manual-replay lifecycle, including Escape and outside-backdrop

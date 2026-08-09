@@ -1,0 +1,265 @@
+#1 [internal] load local bake definitions
+#1 reading from stdin 1.74kB done
+#1 DONE 0.0s
+
+#2 [bootstrap internal] load build definition from Dockerfile.bootstrap
+#2 transferring dockerfile: 860B done
+#2 DONE 0.0s
+
+#3 [app internal] load build definition from Dockerfile
+#3 transferring dockerfile: 4.76kB done
+#3 DONE 0.0s
+
+#4 [bootstrap internal] load metadata for docker.io/library/python:3.12-slim-bookworm@sha256:4766d8b510c428e595d74b9cc5bbb2fae8e26316fffb4adc89908d79aacd58a2
+#4 DONE 0.0s
+
+#5 [bootstrap internal] load .dockerignore
+#5 transferring context: 812B done
+#5 DONE 0.0s
+
+#6 [bootstrap 1/5] FROM docker.io/library/python:3.12-slim-bookworm@sha256:4766d8b510c428e595d74b9cc5bbb2fae8e26316fffb4adc89908d79aacd58a2
+#6 DONE 0.0s
+
+#7 [bootstrap internal] load build context
+#7 transferring context: 12.01kB done
+#7 DONE 0.0s
+
+#8 [bootstrap 3/5] RUN pip install --no-cache-dir mysql-connector-python==26.7.0
+#8 CACHED
+
+#9 [bootstrap 2/5] WORKDIR /opt/icd-prototype-baseline-0-2
+#9 CACHED
+
+#10 [bootstrap 4/5] COPY data/ ./data/
+#10 CACHED
+
+#11 [bootstrap 5/5] COPY persistence_candidate/mysql_schema_0_2.sql      persistence_candidate/runtime_manifest_0_2.json      persistence_candidate/runtime_data_0_2.py      persistence_candidate/apply_mysql_schema_0_2.py      persistence_candidate/load_mysql_0_2.py      persistence_candidate/bootstrap_mysql_0_2.py      ./persistence_candidate/
+#11 DONE 0.0s
+
+#12 [bootstrap] exporting to image
+#12 exporting layers done
+#12 writing image sha256:4ca1578b4f58ff0fa41135c0f6d8333bbc5a09c7d8c57dec4e75da1b4caccbbd done
+#12 naming to ghcr.io/junomarx/bsc-thesis-icd10-bootstrap:latest done
+#12 DONE 0.0s
+
+#13 [bootstrap] resolving provenance for metadata file
+#13 DONE 0.0s
+
+#14 [test] resolve image config for docker-image://docker.io/docker/dockerfile:1
+#14 ...
+
+#15 [auth] docker/dockerfile:pull token for registry-1.docker.io
+#15 DONE 0.0s
+
+#14 [test] resolve image config for docker-image://docker.io/docker/dockerfile:1
+#14 DONE 0.8s
+
+#16 [app] docker-image://docker.io/docker/dockerfile:1@sha256:87999aa3d42bdc6bea60565083ee17e86d1f3339802f543c0d03998580f9cb89
+#16 CACHED
+
+#17 [app internal] load metadata for docker.io/library/composer:2@sha256:4d71c3c2109c61d5415544264b59ad4087e4c5b7244481723664138fd36d5040
+#17 DONE 0.0s
+
+#18 [app internal] load metadata for docker.io/library/node:22-alpine@sha256:c610fcdfb1d5b4740dd70c284ed3cb16bb857e0f7166196e36a5501df7a3aa32
+#18 DONE 0.0s
+
+#19 [app internal] load metadata for docker.io/library/php:8.4-apache@sha256:5f8050825b2f3de4efb0d81149c86643a9ee9c0a74ed4595ca2ad69ebfeb35fb
+#19 DONE 0.0s
+
+#20 [app internal] load .dockerignore
+#20 transferring context: 1.56kB done
+#20 DONE 0.0s
+
+#21 [app frontend-build 1/8] FROM docker.io/library/node:22-alpine@sha256:c610fcdfb1d5b4740dd70c284ed3cb16bb857e0f7166196e36a5501df7a3aa32
+#21 DONE 0.0s
+
+#22 [app vendor 1/4] FROM docker.io/library/composer:2@sha256:4d71c3c2109c61d5415544264b59ad4087e4c5b7244481723664138fd36d5040
+#22 DONE 0.0s
+
+#23 [app base 1/6] FROM docker.io/library/php:8.4-apache@sha256:5f8050825b2f3de4efb0d81149c86643a9ee9c0a74ed4595ca2ad69ebfeb35fb
+#23 DONE 0.0s
+
+#24 [app internal] load build context
+#24 transferring context: 18.55kB 0.0s done
+#24 DONE 0.0s
+
+#25 [test internal] load build context
+#25 transferring context: 169.18kB 0.0s done
+#25 DONE 0.0s
+
+#26 [app frontend-build 2/8] WORKDIR /app/frontend
+#26 CACHED
+
+#27 [app frontend-build 3/8] COPY app/frontend/package.json app/frontend/package-lock.json* ./
+#27 CACHED
+
+#28 [app frontend-build 4/8] RUN npm ci
+#28 CACHED
+
+#29 [test frontend-build 5/8] COPY app/frontend/ ./
+#29 DONE 0.0s
+
+#30 [app frontend-build 6/8] COPY prototype_baseline/data/patients_0_1.csv      prototype_baseline/data/patient_context_items_0_1.csv      prototype_baseline/data/questions_0_1.csv      prototype_baseline/data/question_options_0_1.csv      /prototype_baseline/data/
+#30 DONE 0.0s
+
+#31 [app frontend-build 7/8] RUN npm run test:localization
+#31 0.169 
+#31 0.169 > frontend@0.10.0 test:localization
+#31 0.169 > node --test tests/localization.test.js
+#31 0.169 
+#31 0.195 TAP version 13
+#31 0.228 # Subtest: English and German UI dictionaries have exact key and interpolation parity
+#31 0.229 ok 1 - English and German UI dictionaries have exact key and interpolation parity
+#31 0.229   ---
+#31 0.229   duration_ms: 2.704917
+#31 0.229   type: 'test'
+#31 0.229   ...
+#31 0.229 # Subtest: all six patients, 32 context items, and 25 questions have complete localized content
+#31 0.229 ok 2 - all six patients, 32 context items, and 25 questions have complete localized content
+#31 0.229   ---
+#31 0.229   duration_ms: 5.953833
+#31 0.229   type: 'test'
+#31 0.229   ...
+#31 0.229 # Subtest: every displayed code has an explicit British-English catalogue presentation
+#31 0.229 ok 3 - every displayed code has an explicit British-English catalogue presentation
+#31 0.230   ---
+#31 0.230   duration_ms: 1.735
+#31 0.230   type: 'test'
+#31 0.230   ...
+#31 0.230 # Subtest: learner components contain no opposite-language or raw-identifier fallback paths
+#31 0.230 ok 4 - learner components contain no opposite-language or raw-identifier fallback paths
+#31 0.230   ---
+#31 0.230   duration_ms: 0.240708
+#31 0.230   type: 'test'
+#31 0.230   ...
+#31 0.235 1..4
+#31 0.235 # tests 4
+#31 0.235 # suites 0
+#31 0.235 # pass 4
+#31 0.235 # fail 0
+#31 0.235 # cancelled 0
+#31 0.235 # skipped 0
+#31 0.235 # todo 0
+#31 0.235 # duration_ms 47.278375
+#31 DONE 0.2s
+
+#32 [app frontend-build 8/8] RUN npm run build
+#32 0.172 
+#32 0.172 > frontend@0.10.0 build
+#32 0.172 > vite build
+#32 0.172 
+#32 0.344 vite v8.2.1 building client environment for production...
+#32 0.352 [2Ktransforming...✓ 35 modules transformed.
+#32 0.406 rendering chunks...
+#32 0.427 computing gzip size...
+#32 0.430 ../public/index.html                   0.47 kB │ gzip:  0.30 kB
+#32 0.430 ../public/assets/index-Dro7u-v6.css   14.32 kB │ gzip:  2.93 kB
+#32 0.430 ../public/assets/index-BJlKM-xQ.js   240.02 kB │ gzip: 74.47 kB
+#32 0.430 
+#32 0.430 ✓ built in 85ms
+#32 DONE 0.4s
+
+#33 [test base 3/6] COPY app/docker/apache-vhost.conf /etc/apache2/sites-enabled/000-default.conf
+#33 CACHED
+
+#34 [test frontend-build 3/8] COPY app/frontend/package.json app/frontend/package-lock.json* ./
+#34 CACHED
+
+#35 [test frontend-build 8/8] RUN npm run build
+#35 CACHED
+
+#36 [test vendor-dev 3/4] COPY app/composer.json app/composer.lock* ./
+#36 CACHED
+
+#37 [test frontend-build 7/8] RUN npm run test:localization
+#37 CACHED
+
+#38 [test dev 1/5] COPY --from=vendor-dev /app/vendor ./vendor
+#38 CACHED
+
+#39 [test base 4/6] WORKDIR /var/www/html
+#39 CACHED
+
+#40 [test frontend-build 4/8] RUN npm ci
+#40 CACHED
+
+#41 [test base 5/6] COPY app/public/index.php app/public/.htaccess ./public/
+#41 CACHED
+
+#26 [test frontend-build 2/8] WORKDIR /app/frontend
+#26 CACHED
+
+#42 [test vendor-dev 4/4] RUN composer install --no-interaction --no-scripts --no-progress
+#42 CACHED
+
+#43 [test frontend-build 6/8] COPY prototype_baseline/data/patients_0_1.csv      prototype_baseline/data/patient_context_items_0_1.csv      prototype_baseline/data/questions_0_1.csv      prototype_baseline/data/question_options_0_1.csv      /prototype_baseline/data/
+#43 CACHED
+
+#44 [test frontend-build 5/8] COPY app/frontend/ ./
+#44 CACHED
+
+#45 [test base 6/6] COPY --from=frontend-build /app/public/. ./public/
+#45 CACHED
+
+#46 [test dev 2/5] COPY app/src ./src
+#46 CACHED
+
+#47 [app base 4/6] WORKDIR /var/www/html
+#47 CACHED
+
+#48 [app vendor 4/4] RUN composer install --no-dev --no-interaction --optimize-autoloader --no-scripts --no-progress
+#48 CACHED
+
+#49 [app base 2/6] RUN docker-php-ext-install pdo_mysql     && a2enmod rewrite     && rm -f /etc/apache2/sites-enabled/000-default.conf
+#49 CACHED
+
+#50 [app runtime 1/2] COPY --from=vendor /app/vendor ./vendor
+#50 CACHED
+
+#51 [app base 5/6] COPY app/public/index.php app/public/.htaccess ./public/
+#51 CACHED
+
+#52 [app vendor 2/4] WORKDIR /app
+#52 CACHED
+
+#53 [app base 6/6] COPY --from=frontend-build /app/public/. ./public/
+#53 CACHED
+
+#54 [app base 3/6] COPY app/docker/apache-vhost.conf /etc/apache2/sites-enabled/000-default.conf
+#54 CACHED
+
+#55 [app vendor 3/4] COPY app/composer.json app/composer.lock* ./
+#55 CACHED
+
+#56 [app runtime 2/2] COPY app/src ./src
+#56 CACHED
+
+#57 [app] exporting to image
+#57 exporting layers done
+#57 writing image sha256:b459caf27711b32058b500ad3671f1584abc74293f067b66a62d63970ed90bf1 done
+#57 naming to ghcr.io/junomarx/bsc-thesis-icd10:latest done
+#57 DONE 0.0s
+
+#58 [test dev 3/5] COPY app/tests ./tests
+#58 DONE 0.0s
+
+#59 [app] resolving provenance for metadata file
+#59 DONE 0.0s
+
+#60 [test dev 4/5] COPY app/composer.json app/composer.lock* app/phpunit.xml ./
+#60 DONE 0.0s
+
+#61 [test dev 5/5] COPY prototype_baseline/verification/reference_responses_0_3.csv /var/www/prototype_baseline/verification/reference_responses_0_3.csv
+#61 DONE 0.0s
+
+#62 [test] exporting to image
+#62 exporting layers 0.0s done
+#62 writing image sha256:3e87544da83d89cda38a8972cb2bffdba5b6655019c91adaa441109c92815f45 done
+#62 naming to ghcr.io/junomarx/bsc-thesis-icd10:dev done
+#62 DONE 0.0s
+
+#63 [test] resolving provenance for metadata file
+#63 DONE 0.0s
+ ghcr.io/junomarx/bsc-thesis-icd10:latest  Built
+ ghcr.io/junomarx/bsc-thesis-icd10:dev  Built
+ ghcr.io/junomarx/bsc-thesis-icd10-bootstrap:latest  Built

@@ -1,14 +1,13 @@
-import { createContext, useContext, useMemo, useState } from 'react'
+import { createContext, useContext, useEffect, useMemo, useState } from 'react'
 
-// Minimal EN/DE UI-chrome translation. Patient/question *content* (prompts,
-// context items, catalogue designations) comes from the runtime dataset as
-// authored and is not translated here - there is no German-authored variant
-// of that content yet, only of this static interface text.
+// Learner-interface chrome. Runtime-authored patient/question content and
+// catalogue designations have separate, ID-keyed localization assets.
 const STORAGE_KEY = 'icd10-prototype:locale'
 
 const STRINGS = {
   en: {
     'app.title': 'ICD-10 coding practice',
+    'app.browserTitle': 'ICD-10 coding practice',
     'app.disclaimer':
       'Synthetic teaching patients only. This tool does not diagnose patients, does not provide clinical decision support, and is not used for official coding, reporting, or reimbursement.',
     'language.label': 'Language',
@@ -49,11 +48,12 @@ const STRINGS = {
     'roster.resetProgressConfirm': 'Clear the completion marks for all patients in this session?',
     'roster.heading': 'Choose a patient',
     'roster.loading': 'Loading patients…',
-    'roster.error': 'Could not load patients: {message}. If this persists, check that the backend and database containers are running.',
+    'roster.error': 'Could not load the patients. If this persists, check that the backend and database containers are running.',
     'roster.progress': '{completed} of {total} patients completed',
     'patient.yearsOld': '{age} yrs',
     'patient.questionCount': '{count} questions',
     'patient.completed': 'Completed',
+    'patient.loadError': 'The selected patient could not be loaded.',
     'difficulty.foundational': 'Foundational',
     'difficulty.involved': 'Involved',
     'sex.female': 'female',
@@ -73,6 +73,10 @@ const STRINGS = {
     'question.noneOfAbove': 'None of the above',
     'question.submit': 'Submit answer',
     'question.submitting': 'Submitting…',
+    'question.loading': 'Loading question…',
+    'question.loadError': 'The question could not be loaded.',
+    'question.notFound': 'This question is not available.',
+    'question.returnToRoster': 'Return to patient list',
     'question.notEvaluated': 'Not evaluated',
     'question.notEvaluatedBody': 'This submission could not be classified ({reason}).',
     'gateReason.outside_active_subset': 'the submitted code is outside the active catalogue subset for this session',
@@ -81,6 +85,8 @@ const STRINGS = {
     'gateReason.none_option_not_defined': '"None of the above" is not defined as a response for this question',
     'gateReason.malformed_input': 'the submitted response was not in the expected format',
     'gateReason.unsupported_response_kind': 'the submitted response type is not supported',
+    'gateReason.evaluation_failed': 'the evaluation service could not process the response',
+    'gateReason.unknown': 'the response could not be evaluated for an available reason',
     'question.next': 'Next question',
     'question.reviewPatient': 'Review patient',
     'question.improvement': 'Suggested improvement: {code}',
@@ -92,13 +98,17 @@ const STRINGS = {
     'review.counts': '{correct} correct · {suboptimal} suboptimal · {incorrect} incorrect',
     'review.playAgain': 'Play again',
     'review.chooseAnother': 'Choose another patient',
+    'review.questionUnavailable': 'Question unavailable',
     'technicalDetails.toggle': 'Technical details',
     'technicalDetails.determiningRule': 'Determining rule',
     'technicalDetails.criterion': 'Criterion',
     'technicalDetails.matchedRules': 'Matched rules',
+    'value.unknown': 'Not specified',
+    'footer.build': 'v{version} · build {date} · © {year} {name}',
   },
   de: {
     'app.title': 'ICD-10-Kodierübung',
+    'app.browserTitle': 'ICD-10-Kodierübung',
     'app.disclaimer':
       'Ausschließlich synthetische Lehrfälle. Dieses Werkzeug stellt keine Diagnosen, bietet keine klinische Entscheidungsunterstützung und wird nicht für die offizielle Kodierung, Meldung oder Abrechnung verwendet.',
     'language.label': 'Sprache',
@@ -117,7 +127,7 @@ const STRINGS = {
     'tutorial.finish': 'Patient:in auswählen',
     'tutorial.step1.title': 'Patient:in auswählen',
     'tutorial.step1.body':
-      'Beginnen Sie mit den Patient:innenkarten hinter diesem Tutorial. Jede Person enthält mehrere unabhängige Kodierfragen, und alle Karten sind von Anfang an verfügbar.',
+      'Beginnen Sie mit den Patient:innenkarten hinter diesem Tutorial. Zu jeder Person gehören mehrere unabhängige Kodierfragen, und alle Karten sind von Anfang an verfügbar.',
     'tutorial.step1.cue': 'Die Hinweise „Grundlegend“ und „Anspruchsvoll“ dienen nur zur Orientierung und sperren nichts.',
     'tutorial.step2.title': 'Patient:innenakte prüfen',
     'tutorial.step2.body':
@@ -129,7 +139,7 @@ const STRINGS = {
     'tutorial.step3.cue': 'Die Reihenfolge wird bei jedem Durchlauf neu gemischt; Fragen und Antwortmöglichkeiten selbst bleiben unverändert.',
     'tutorial.step4.title': 'Feedback nutzen und fortfahren',
     'tutorial.step4.body':
-      'Lesen Sie Ergebnis und Erklärung, bevor Sie fortfahren. Nach der letzten Frage fasst die Abschlussansicht den Fall zusammen, ohne aus den drei Ergebnisklassen eine Punktzahl zu bilden.',
+      'Lesen Sie Ergebnis und Erklärung, bevor Sie fortfahren. Nach der letzten Frage fasst die Abschlussansicht die Bearbeitung dieser Person zusammen, ohne aus den drei Ergebnisklassen eine Punktzahl zu bilden.',
     'tutorial.step4.cue': 'Bei Bedarf zeigen die technischen Details die entscheidende Regel und das Kriterium eines Ergebnisses.',
     'tutorial.legend.correct': 'die gewählte Antwort wird ausdrücklich unterstützt.',
     'tutorial.legend.suboptimal': 'eine spezifischere unterstützte Antwort ist verfügbar.',
@@ -139,11 +149,12 @@ const STRINGS = {
     'roster.resetProgressConfirm': 'Abschluss-Markierungen für alle Patient:innen in dieser Sitzung löschen?',
     'roster.heading': 'Patient:in auswählen',
     'roster.loading': 'Patient:innen werden geladen…',
-    'roster.error': 'Patient:innen konnten nicht geladen werden: {message}. Falls dies bestehen bleibt, prüfen Sie, ob Backend und Datenbank-Container laufen.',
+    'roster.error': 'Die Patient:innen konnten nicht geladen werden. Falls dies weiterhin auftritt, prüfen Sie, ob Backend und Datenbank-Container laufen.',
     'roster.progress': '{completed} von {total} Patient:innen abgeschlossen',
     'patient.yearsOld': '{age} Jahre',
     'patient.questionCount': '{count} Fragen',
     'patient.completed': 'Abgeschlossen',
+    'patient.loadError': 'Die ausgewählte Person konnte nicht geladen werden.',
     'difficulty.foundational': 'Grundlegend',
     'difficulty.involved': 'Anspruchsvoll',
     'sex.female': 'weiblich',
@@ -159,33 +170,42 @@ const STRINGS = {
     'itemType.other': 'Sonstiges',
     'question.progress': 'Frage {number} von {total}',
     'question.exit': 'Zur Patient:innenliste zurückkehren',
-    'question.exitConfirm': 'Diesen Patient:in jetzt verlassen? Ihr Fortschritt in diesem Durchlauf wird nicht gespeichert.',
+    'question.exitConfirm': 'Möchten Sie die Bearbeitung für diese:n Patient:in jetzt verlassen? Ihr Fortschritt in diesem Durchlauf wird nicht gespeichert.',
     'question.noneOfAbove': 'Keine der genannten',
     'question.submit': 'Antwort absenden',
     'question.submitting': 'Wird gesendet…',
+    'question.loading': 'Frage wird geladen…',
+    'question.loadError': 'Die Frage konnte nicht geladen werden.',
+    'question.notFound': 'Diese Frage ist nicht verfügbar.',
+    'question.returnToRoster': 'Zur Patient:innenliste zurückkehren',
     'question.notEvaluated': 'Nicht bewertet',
-    'question.notEvaluatedBody': 'Diese Eingabe konnte nicht klassifiziert werden ({reason}).',
+    'question.notEvaluatedBody': 'Diese Eingabe konnte nicht bewertet werden ({reason}).',
     'gateReason.outside_active_subset': 'der übermittelte Code liegt außerhalb der aktiven Katalog-Teilmenge für diese Sitzung',
     'gateReason.undefined_case_relation': 'für diese Frage ist keine Beziehung zum übermittelten Code definiert',
     'gateReason.missing_required_case_fact': 'ein für die Bewertung dieser Frage erforderlicher Fakt fehlt',
-    'gateReason.none_option_not_defined': '„Keine der genannten" ist für diese Frage nicht als Antwort definiert',
+    'gateReason.none_option_not_defined': '„Keine der genannten“ ist für diese Frage nicht als Antwort definiert',
     'gateReason.malformed_input': 'die übermittelte Antwort entsprach nicht dem erwarteten Format',
     'gateReason.unsupported_response_kind': 'der übermittelte Antworttyp wird nicht unterstützt',
+    'gateReason.evaluation_failed': 'der Auswertungsdienst konnte die Antwort nicht verarbeiten',
+    'gateReason.unknown': 'die Antwort konnte aus einem nicht näher bestimmten Grund nicht bewertet werden',
     'question.next': 'Nächste Frage',
-  'question.reviewPatient': 'Patient:in auswerten',
+    'question.reviewPatient': 'Patient:in im Überblick',
     'question.improvement': 'Verbesserungsvorschlag: {code}',
     'status.not_attempted': 'Nicht bearbeitet',
     'status.correct': 'Richtig',
     'status.suboptimal': 'Suboptimal',
     'status.incorrect': 'Falsch',
-    'review.heading': '{name} — Patient:in abgeschlossen',
+    'review.heading': '{name} — Bearbeitung abgeschlossen',
     'review.counts': '{correct} richtig · {suboptimal} suboptimal · {incorrect} falsch',
-    'review.playAgain': 'Erneut spielen',
-    'review.chooseAnother': 'Andere Patient:innen wählen',
+    'review.playAgain': 'Noch einmal bearbeiten',
+    'review.chooseAnother': 'Andere:n Patient:in auswählen',
+    'review.questionUnavailable': 'Frage nicht verfügbar',
     'technicalDetails.toggle': 'Technische Details',
     'technicalDetails.determiningRule': 'Entscheidende Regel',
     'technicalDetails.criterion': 'Kriterium',
     'technicalDetails.matchedRules': 'Zutreffende Regeln',
+    'value.unknown': 'Nicht angegeben',
+    'footer.build': 'Version {version} · Build {date} · © {year} {name}',
   },
 }
 
@@ -220,6 +240,7 @@ export function LocaleProvider({ children }) {
   const [locale, setLocaleState] = useState(() => readStoredLocale() ?? detectDefaultLocale())
 
   function setLocale(next) {
+    if (next !== 'en' && next !== 'de') throw new Error(`Unsupported locale: ${next}`)
     setLocaleState(next)
     try {
       localStorage.setItem(STORAGE_KEY, next)
@@ -229,9 +250,18 @@ export function LocaleProvider({ children }) {
   }
 
   const t = useMemo(() => {
-    const dict = STRINGS[locale] ?? STRINGS.en
-    return (key, vars) => format(dict[key] ?? STRINGS.en[key] ?? key, vars)
+    const dict = STRINGS[locale]
+    return (key, vars) => {
+      const translated = dict[key]
+      if (typeof translated !== 'string') throw new Error(`Missing ${locale} translation: ${key}`)
+      return format(translated, vars)
+    }
   }, [locale])
+
+  useEffect(() => {
+    document.documentElement.lang = locale === 'de' ? 'de-AT' : 'en-GB'
+    document.title = t('app.browserTitle')
+  }, [locale, t])
 
   const value = useMemo(() => ({ locale, setLocale, t }), [locale, t])
 

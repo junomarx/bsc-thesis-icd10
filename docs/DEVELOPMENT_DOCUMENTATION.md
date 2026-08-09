@@ -3,7 +3,7 @@
 **Scope:** the implementation phase of the Austrian ICD-10 educational
 prototype, from the original one-case/one-question build
 (`PROTOBASE-0.1`/`0.2`) through the 8-9 August 2026 forward redesign to a
-patient/question model (`PROTOBASE-0.3`, current) and its downstream
+patient/question model (`PROTOBASE-0.3` at redesign, `PROTOBASE-1.1` current) and its downstream
 application layer. Sections 5-6 and 9 describe the original implementation
 and predate the redesign — each is marked; the current architecture is
 `IMPLEMENTATION_SPECIFICATION.md` plus §13-17 below.
@@ -408,9 +408,10 @@ of the testing approach.
 |---|---|---|---|
 | Data/source structural checks | Python `unittest` (`prototype_baseline/scripts/prepare_subset_0_2.py --check-existing`, `persistence_candidate/test_runtime_contract_0_2.py`) | Frozen-source checksum, deterministic subset reproduction, oracle/runtime-model consistency | No |
 | Persistence integration | Python `unittest` (`prototype_baseline/persistence_candidate/test_mysql_persistence_0_2.py`) | Live schema shape, row counts, FK enforcement, oracle-column absence | Yes (live MySQL) |
-| Rule-engine unit tests | PHPUnit (`app/tests/Unit/*`, 77 tests) | Every `RULE-*` predicate and `Precedence` in isolation, against hand-built `CodingQuestion`/`QuestionFacts` fixtures (`Fixtures.php`) | No |
-| Backend integration tests | PHPUnit (`app/tests/Integration/*`, 160 tests) | Repositories + evaluator + API together, including all 143 `RC-*` rows, determinism, and oracle isolation | Yes (live MySQL) |
-| End-to-end / browser | Selenium via `php-webdriver/webdriver` (`app/tests/E2E/*`, 9 tests; Playwright was used once for the initial pass, then retired — §10.4/§10.5) | The actual React → PHP → MySQL path a learner would exercise | Yes (full stack + Selenium) |
+| Rule-engine unit tests | PHPUnit (`app/tests/Unit/*`, 83 tests) | Every `RULE-*` predicate and `Precedence`, plus bilingual fact/explanation formatting | No |
+| Backend integration tests | PHPUnit (`app/tests/Integration/*`, 163 tests) | Repositories + evaluator + API together, including all 143 `RC-*` rows, bilingual explanations, determinism, and oracle isolation | Yes (live MySQL) |
+| Frontend localization contract | Node built-in test runner (`app/frontend/tests/localization.test.js`, 4 tests) | Strict dictionary/content/catalogue completeness and `en-GB` presentation rules | No |
+| End-to-end / browser | Selenium via `php-webdriver/webdriver` (`app/tests/E2E/*`, 12 tests; Playwright was used once for the initial pass, then retired — §10.4/§10.5) | The actual React → PHP → MySQL path, including the complete bilingual learner surface | Yes (full stack + Selenium) |
 | Container/orchestration | `docker compose build` / `up` / the bootstrap service's own test invocation | That the images build, the services start in the right order, and the bootstrap pipeline behaves idempotently against a *freshly created* compose-managed database | Yes (via Compose) |
 
 Exact pass counts as of the last verified run: `IMPLEMENTATION_SPECIFICATION.md`
@@ -1622,3 +1623,66 @@ a CI pipeline verified to actually run and publish, not merely assumed to.
 Full account, job-level breakdowns, and direct Actions URLs:
 `docs/CONFORMANCE_REPORT.md` §10, `docs/CHANGELOG.md`'s two same-dated
 entries.
+
+## 20. Post-freeze localization correction — `PROTOBASE-1.1`
+
+The comprehensive bilingual audit after `PROTOBASE-1.0` found a presentation
+defect outside the scope of the earlier predefined conformance suite: German
+relation feedback embedded the English-only `question_fact.learner_label`,
+and several frontend paths could silently fall back to the other language or
+to a machine identifier. This does not invalidate the earlier report's actual
+claim: its predefined tests found no deviations. It does show that those tests
+did not yet inventory or exercise every learner-visible string in both
+locales. The immutable `dev-freeze` through `dev-freeze-4` tags and their
+report remain historical records; the corrected software is a new
+`PROTOBASE-1.1` revision with its own report and tag.
+
+### 20.1 Design decision: localize semantic values, not authoring labels
+
+Adding a second free-text label column would have duplicated phrasing and
+left value loss unresolved. Instead, `LocalizedFactFormatter` consumes the
+same typed `QuestionFact` key/value pair that evaluation already hydrates and
+returns coordinated `en-GB`/`de-AT` clauses. `Evaluator` wraps those clauses
+in the relevant hard-conflict or specificity sentence. There are no patient,
+question, or ICD-code branches, and an unsupported semantic value fails as a
+specification gap. The English `learner_label` remains useful authoring
+metadata but is no longer a learner-prose dependency.
+
+This boundary preserves the data model and evaluation truth. The complete
+`RCBASE-0.3` file remains byte-identical, and all 143 classifications,
+determining rules, criteria, improvement semantics and precedence outcomes
+are compared with the live evaluator in both explanation locales. The
+presentation correction therefore warrants a prototype revision but not a
+`MODELBASE`, `RULEBASE`, or `RCBASE` revision.
+
+### 20.2 Fail-closed presentation assets
+
+The frontend now treats localization completeness as a contract. UI keys and
+placeholders have exact parity; German patient/question/context content and
+British-English catalogue presentations use strict ID lookups; evaluator
+results require the locale-appropriate explanation; and unknown backend
+tokens resolve only to localized generic failure copy. The browser title and
+document language follow `en-GB`/`de-AT`. Intentional technical values—ICD
+codes, rule/criterion identifiers in the collapsed technical disclosure,
+baseline IDs, proper names and language abbreviations—remain untranslated by
+policy and are listed in the audit inventory.
+
+### 20.3 Evidence model
+
+`docs/localization_inventory.json` is a reproducible 349-entry inventory
+covering the complete learner surface. The tests add four frontend contract
+checks, six unit tests, three integration tests and three Selenium workflows.
+Together they cover every one of the 6 patients, 32 context rows, 25 learner
+questions, 87 displayed code presentations, all 143 oracle responses, 58
+feedback-linked relation/fact combinations, both `RULE-NOA-01` branches and
+all learner-reachable rule branches in both locales. Exact commands and
+fresh-run evidence belong to
+`docs/CONFORMANCE_REPORT_PROTOBASE_1_1.md`; the previous
+`docs/CONFORMANCE_REPORT.md` remains unedited.
+
+The one deliberate limitation is provenance, not missing coverage: the
+repository contains only the authoritative German Austrian catalogue.
+English option designations are reviewed interface presentations for the 87
+displayed codes, not an official parallel catalogue. Strict coverage makes
+future expansion explicit—a new displayed code cannot pass the frontend
+audit until its English presentation has been supplied and reviewed.

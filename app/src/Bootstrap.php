@@ -15,7 +15,7 @@ use Icd10Prototype\Repository\QuestionRepository;
 
 /**
  * Wires repositories/evaluator against one PDO connection and the active
- * PROTOBASE-1.0 (MODELBASE-0.2) baseline identity. Kept separate from the
+ * PROTOBASE-1.1 (MODELBASE-0.2) baseline identity. Kept separate from the
  * front controller so tests can build the same graph against a test
  * database.
  */

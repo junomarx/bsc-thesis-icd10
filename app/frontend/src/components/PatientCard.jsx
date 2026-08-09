@@ -33,8 +33,8 @@ export default function PatientCard({ patient, completed, onSelect }) {
       </span>
       <span className="patient-card-badges">
         <span className="badge">{t('patient.yearsOld', { age: patient.age_years })}</span>
-        <span className="badge">{t(SEX_LABEL_KEYS[patient.sex] ?? patient.sex)}</span>
-        <span className="badge">{t(DIFFICULTY_LABEL_KEYS[patient.difficulty_role] ?? patient.difficulty_role)}</span>
+        <span className="badge">{t(SEX_LABEL_KEYS[patient.sex] ?? 'value.unknown')}</span>
+        <span className="badge">{t(DIFFICULTY_LABEL_KEYS[patient.difficulty_role] ?? 'value.unknown')}</span>
         <span className="badge">{t('patient.questionCount', { count: patient.question_count })}</span>
       </span>
       <span className="patient-card-summary">{summary}</span>

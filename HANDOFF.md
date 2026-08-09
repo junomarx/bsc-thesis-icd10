@@ -1,9 +1,17 @@
 # Handoff
 
-**Snapshot date:** 9 August 2026 (revised same day — steps 1-7 of the forward implementation order are now complete; see the revision note directly below)
+**Snapshot date:** 9 August 2026 (current through the `PROTOBASE-1.1` localization correction; see §0.12)
 **Audience:** a developer, contractor, or coding agent with no access to the conversation that produced this state — read this first, before touching anything.
 **Supersedes:** everything below §0 in this document's own prior form (dated 8 August 2026, describing the case-centric `CASEBASE-0.2` implementation), and the status/progress sections of `archived/development_handoff/handoff/ICD_PROTOTYPE_DEVELOPMENT_BRIEF.md` and `CODEX_VSCODE_CONTINUATION_INSTRUCTION.md` (dated 7 August 2026, in `archived/development_handoff/`, an intentionally-preserved historical archive, not the live project state).
 **Same-day revision note (ninth pass — implementation order complete):** earlier versions of this file (preserved in git history) covered, in order: steps 1-6 plus the persistence/deployment-path fix (§0.1); then step 7 (`UXBASE-0.1` polish) plus the documentation-consolidation pass; then step 8 (§0.4) - `app/tests/*` rewritten wholesale against the patient/question model and genuinely passing; then CI's `push` trigger re-enabled after a stale-log false alarm (§0.5); then step 9, the oracle/source audit (§0.6) - all 129 previously-unaudited reference-response rows human-oracle-confirmed, zero discrepancies; then a repository housekeeping pass (§0.7) - `prototype_baseline_0_2_design/` renamed to `prototype_baseline/`, `prototype_baseline_0_1/`/`development_handoff/`/`forward_package_0_6/` archived, and three real bugs that exercise surfaced fixed along the way; then CI's first real GitHub-hosted run (§0.8) - a multi-arch build hang found and fixed, then a genuinely green run confirmed all 5 jobs pass and the published GHCR images are current, not stale; then the four legacy "reconstructed" rows confirmed against the genuine raw historical oracle (§0.9) - it was sitting archived, not lost; then execution-environment versions recorded ahead of freeze (§0.10); **now: step 10, the formal freeze + principal verification run** (§0.11) - `PROTOBASE-1.0` frozen, floating tags actually pinned in `main`'s Dockerfile/compose/CI (not just recorded), a `develop` branch retains floating tags for ongoing work, and the full check battery passed with zero defects. **The 10-step implementation order is now complete.** Read §0 anyway — most of it still applies, and §3/§4 below now describe genuinely different remaining work (evidence capture and thesis-writing, not implementation).
+
+**Post-freeze correction note:** a subsequent complete learner-string audit
+found bilingual presentation defects outside those predefined checks. They
+are corrected in `PROTOBASE-1.1` without changing `MODELBASE-0.2`,
+`RULEBASE-0.2`, or byte-identical `RCBASE-0.3`. The earlier statement must be
+read precisely as “the predefined freeze tests found no deviations,” not as
+“the software had no defects.” See §0.12, `docs/LOCALIZATION_AUDIT.md`, and
+the separate `docs/CONFORMANCE_REPORT_PROTOBASE_1_1.md`.
 
 ## 0. The forward redesign (read this section first — it invalidates most of what a stale copy of this file, or of `chapter3_*.md` at repo root, would tell you)
 
@@ -49,8 +57,8 @@ Steps 2-3 and 6 were each verified against **throwaway infrastructure** — a sc
 | API/feedback contract | `APIBASE-0.1` | Working — tagged-response contract, resolved 9 implementation-detail ambiguities |
 | SQL/loader migration contract | `DATAMIG-0.2` | Implemented (§0.1) |
 | UX/gamification concept | `UXBASE-0.1` | Applied to the frontend, step 7 — see §0.3 |
-| Prototype identity | **`PROTOBASE-1.0`** (was `PROTOBASE-0.3`) | **Frozen this run** — `runtime_manifest_0_2.json`'s `status`: `frozen_evaluation_baseline`; commit `7147b30`, execution environment pinned (§0.11) |
-| **`1.0`/frozen anything** | **`PROTOBASE-1.0`, `RCBASE-0.3` (frozen)** | **`REQBASE-1.0`/`TESTBASE-1.0` remain open — supervisor/thesis-authorship version-label decisions, not implementation gaps; see §0.11 and `docs/CONFORMANCE_REPORT.md` §7 for the exact boundary** |
+| Prototype identity | **`PROTOBASE-1.1`** | Localization-corrected freeze; inherits the pinned seven-image environment and preserves all 1.0 semantic identifiers; see §0.12 |
+| Frozen revisions | **`PROTOBASE-1.0` historical; `PROTOBASE-1.1` current; `RCBASE-0.3` unchanged** | **`REQBASE-1.0`/`TESTBASE-1.0` remain open — supervisor/thesis-authorship version-label decisions, not implementation gaps; see §0.11-0.12** |
 
 The old table (`CASEBASE-0.2`/`RCBASE-0.2`/`MODELBASE-0.1`/`PROTOBASE-0.2`, etc.) describes a superseded model. Do not resume work against it.
 
@@ -151,6 +159,34 @@ That tag (`dev-freeze-2`) turned out to have no CI run at all — trying to get 
 
 Also stated explicitly for the first time in this addendum, per project-owner instruction, though true since the freeze began: pinning third-party base images does not make `docker compose pull` reproduce this frozen result indefinitely. `docker-compose.yml`'s own defaults for the three *project-owned* images (`ghcr.io/junomarx/bsc-thesis-icd10:latest`/`:dev`, `bsc-thesis-icd10-bootstrap:latest`) stay mutable by design — CI's `publish-images` job overwrites them on every later push to `master`. The reproducible path to this exact result is building from source at the frozen/tagged commit, not pulling those tags.
 
+### 0.12 Comprehensive localization audit and corrective freeze — `PROTOBASE-1.1`
+
+A per-string audit of the actual learner surface found that German
+`RULE-REL-HARD-01` / `RULE-REL-SPEC-01` feedback could interpolate the
+English-only `question_fact.learner_label`, and that some frontend lookup
+paths could fall back to the opposite language or a technical identifier.
+The correction introduces a general typed fact-key/value formatter, strict
+frontend presentation assets, natural `CORRECT`/both `NOA` explanations,
+and complete Austrian-German/British-English copy review. It does not branch
+on question or ICD code, does not change layout, and does not change any
+evaluation predicate, precedence, terminal class, criterion, option or data
+row.
+
+The reproducible inventory contains 349 entries. Coverage now comprises 83
+unit tests, 163 integration tests, 12 Selenium tests and 4 frontend
+localization tests. The bilingual runtime audit traverses all 6 patients, 32
+context items, 25 questions, displayed option lists and completion views;
+backend integration verifies all 143 oracle rows plus every one of the 58
+feedback-linked relation/fact combinations. `RCBASE-0.3` remains byte
+identical. Exact final commands, screenshots, environment and results are in
+`docs/evidence/PROTOBASE-1.1/` and the separate conformance report; the 1.0
+evidence is intentionally not edited or relabelled.
+
+The current freeze tag and exact commit are recorded in that report after
+the local verification commit is created. No GitHub-hosted CI result is
+claimed for this local correction unless it is later pushed and actually
+runs.
+
 ## 1. What this project is
 
 A bachelor-thesis Design Science Research artefact: a small web application that evaluates a learner-submitted Austrian ICD-10 BMASGPK 2026 code against a synthetic patient/question and returns one of `correct`/`suboptimal`/`incorrect`/`none_of_above`-aware feedback with an explanation, via explicit, traceable, deterministic rules — not a real diagnostic or clinical tool. Full commission/scope/non-goals: `archived/development_handoff/handoff/ICD_PROTOTYPE_DEVELOPMENT_BRIEF.md` §1-2 (still accurate for *scope*; status sections are superseded, and its case-centric implementation detail is now historical).
@@ -194,4 +230,4 @@ curl http://127.0.0.1:5860/api/patients   # sanity check: expect 6 patients with
 
 The `stack.sh`-managed path (`prototype_stack/`) follows the same three-command sequence documented in `docs/IMPLEMENTATION_SPECIFICATION.md` §6.4/§6.5, with the same `bootstrap` repoint already applied to `prototype_stack/compose.yaml`.
 
-Selenium (project standard — **not Playwright**, see `CLAUDE.md`): `app/tests/E2E/docker-compose.yml`, per `app/tests/E2E/README.md`. The committed PHPUnit e2e suite now runs correctly (`--testsuite e2e`, 9/9, including first-visit tutorial and persisted-theme regressions) against a stack started this way; for one-off ad hoc visual verification beyond what the committed suite covers, write a throwaway script against the same `php-webdriver/webdriver` dependency instead of reaching for anything else.
+Selenium (project standard — **not Playwright**, see `CLAUDE.md`): `app/tests/E2E/docker-compose.yml`, per `app/tests/E2E/README.md`. The committed PHPUnit e2e suite now runs correctly (`--testsuite e2e`, 12/12, including first-visit tutorial, persisted-theme regressions, and complete bilingual traversal) against a stack started this way; for one-off ad hoc visual verification beyond what the committed suite covers, write a throwaway script against the same `php-webdriver/webdriver` dependency instead of reaching for anything else.

@@ -37,16 +37,16 @@ export const CODE_DESIGNATION_EN = {
   'F33.1': 'Recurrent depressive disorder, current episode moderate',
   'F33.9': 'Recurrent depressive disorder, unspecified',
   'F41.0': 'Panic disorder [episodic paroxysmal anxiety]',
-  'F41.1': 'Generalized anxiety disorder',
+  'F41.1': 'Generalised anxiety disorder',
   'F41.2': 'Mixed anxiety and depressive disorder',
   'F41.9': 'Anxiety disorder, unspecified',
   'G24.0': 'Drug-induced dystonia',
   'G24.9': 'Dystonia, unspecified',
   'G25.1': 'Drug-induced tremor',
   'G25.4': 'Drug-induced chorea',
-  'G40.0': 'Localization-related (focal)(partial) idiopathic epilepsy and epileptic syndromes with seizures of localized onset',
-  'G40.3': 'Generalized idiopathic epilepsy and epileptic syndromes',
-  'G40.4': 'Other generalized epilepsy and epileptic syndromes',
+  'G40.0': 'Localisation-related (focal)(partial) idiopathic epilepsy and epileptic syndromes with seizures of localised onset',
+  'G40.3': 'Generalised idiopathic epilepsy and epileptic syndromes',
+  'G40.4': 'Other generalised epilepsy and epileptic syndromes',
   'G40.9': 'Epilepsy, unspecified',
   'G43.0': 'Migraine without aura [common migraine]',
   'G43.1': 'Migraine with aura [classical migraine]',
@@ -75,7 +75,7 @@ export const CODE_DESIGNATION_EN = {
   'J44.02': 'COPD with acute lower-respiratory infection: FEV1 >= 50% and < 70% of predicted',
   'J44.09': 'COPD with acute lower-respiratory infection: FEV1 unspecified',
   'L40.0': 'Psoriasis vulgaris',
-  'L40.1': 'Generalized pustular psoriasis',
+  'L40.1': 'Generalised pustular psoriasis',
   'L40.4': 'Guttate psoriasis',
   'L40.9': 'Psoriasis, unspecified',
   'M17.0': 'Primary gonarthrosis, bilateral',
@@ -95,4 +95,10 @@ export const CODE_DESIGNATION_EN = {
   'R40.1': 'Stupor',
   'R40.2': 'Coma, unspecified',
   'R55': 'Syncope and collapse',
+}
+
+export function englishCatalogueDesignation(code) {
+  const designation = CODE_DESIGNATION_EN[code]
+  if (typeof designation !== 'string') throw new Error(`Missing English catalogue presentation: ${code}`)
+  return designation
 }

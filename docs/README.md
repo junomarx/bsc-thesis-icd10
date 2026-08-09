@@ -19,10 +19,11 @@ be logged in [CHANGELOG.md](CHANGELOG.md).
 | [IMPLEMENTATION_SPECIFICATION.md](IMPLEMENTATION_SPECIFICATION.md) | *What exactly was built?* Concrete data model, rule-engine contract, API contract, frontend structure, build/deploy contract, and test inventory, as it exists right now. | Anyone extending or auditing the code; the appendix-style reference. |
 | [REQUIREMENTS_TRACEABILITY.md](REQUIREMENTS_TRACEABILITY.md) | *Does every requirement actually have a verification destination?* Every `REQ-*` entry in the current catalogue audited against real evidence, not planned intent, with an explicit status for the few genuinely deferred to a still-open supervisor decision or to thesis-writing. | `REQ-TRC-01` compliance; a ready draft for the thesis appendix. |
 | [CHANGELOG.md](CHANGELOG.md) | *What changed, and when?* Dated, chronological log of implementation increments. | Tracing how the current state was reached; thesis "development process" narrative. |
+| [LOCALIZATION_AUDIT.md](LOCALIZATION_AUDIT.md) ([complete inventory](localization_inventory.json)) | *Is every learner-visible string complete and natural in Austrian German and British English?* Source ownership, defects, root causes, corrective architecture, tests, intentional non-translations and limitations for `PROTOBASE-1.1`. | Localization review and reproducible presentation coverage. |
 
-## The frozen evidence package (not part of the living set above)
+## Frozen evidence packages (not part of the living set above)
 
-`CLAUDE.md`'s "five living documentation sources" are the table above —
+`CLAUDE.md`'s living documentation sources are the table above —
 each expected to keep changing as the implementation does. Two further
 files exist alongside them but are deliberately **not** living documents:
 they are the frozen result of the `PROTOBASE-1.0` development freeze
@@ -31,13 +32,16 @@ rewritten as development continues on `develop`.
 
 | File | Answers | Audience |
 |---|---|---|
-| [CONFORMANCE_REPORT.md](CONFORMANCE_REPORT.md) | *Did the frozen baseline actually pass its checks?* The `REQ-VER-05` formal conformance report: baseline/version table, execution-environment record, every executed check and its result, and the exact scope of what is/isn't frozen. | The principal verification record for Chapter 3/the final evaluation chapter; not to be confused with the ongoing `CHANGELOG.md`. |
-| [environment_manifest_0_1.json](environment_manifest_0_1.json) | *Exactly which container image, by digest, does each pinned service resolve to?* Per-image resolved version and manifest-list digest, `status: "frozen_at_protobase_1_0"`. | Reproducing the frozen execution environment exactly; the source data `CONFORMANCE_REPORT.md` §2 summarizes. |
+| [CONFORMANCE_REPORT.md](CONFORMANCE_REPORT.md) | *Did the original `PROTOBASE-1.0` predefined battery pass?* Immutable historical report; its precise conclusion is that those tests found no deviations. | Original principal verification record; not silently rewritten after later defects were found. |
+| [environment_manifest_0_1.json](environment_manifest_0_1.json) | *Which seven image digests were pinned for 1.0?* | Original frozen environment record. |
+| [CONFORMANCE_REPORT_PROTOBASE_1_1.md](CONFORMANCE_REPORT_PROTOBASE_1_1.md) | *Did the localization-corrected `PROTOBASE-1.1` pass the expanded battery?* Exact commands, counts, semantic safeguards, environment and freeze identity. | Current corrective verification record. |
+| [environment_manifest_0_2.json](environment_manifest_0_2.json) | *Which environment did 1.1 use?* The unchanged seven-image pin set, recorded separately for the new freeze. | Reproducing the corrected revision without mutating the 1.0 record. |
+| [evidence/PROTOBASE-1.1/](evidence/PROTOBASE-1.1/) | Logs, checksums and bilingual Selenium screenshots supporting the 1.1 report. | Direct inspection and thesis evidence. |
 
-If a further freeze ever happens (a `1.1`, etc.), it should get its own
-dated report rather than overwriting this one — see
-`docs/DEVELOPMENT_DOCUMENTATION.md` §19 for why `master`/`develop` are
-split the way they are.
+That separation has now been applied: `PROTOBASE-1.1` has its own report,
+manifest and evidence package rather than overwriting the 1.0 record. See
+`docs/DEVELOPMENT_DOCUMENTATION.md` §19-20 for the freeze lineage and
+localization-correction rationale.
 
 ## Keeping this set current
 

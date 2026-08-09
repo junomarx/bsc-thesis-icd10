@@ -31,6 +31,12 @@ WORKDIR /app/frontend
 COPY app/frontend/package.json app/frontend/package-lock.json* ./
 RUN npm ci
 COPY app/frontend/ ./
+COPY prototype_baseline/data/patients_0_1.csv \
+     prototype_baseline/data/patient_context_items_0_1.csv \
+     prototype_baseline/data/questions_0_1.csv \
+     prototype_baseline/data/question_options_0_1.csv \
+     /prototype_baseline/data/
+RUN npm run test:localization
 RUN npm run build
 
 FROM --platform=$BUILDPLATFORM composer:2@sha256:4d71c3c2109c61d5415544264b59ad4087e4c5b7244481723664138fd36d5040 AS vendor

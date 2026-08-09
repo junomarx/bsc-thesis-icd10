@@ -1,0 +1,43 @@
+ Container bsc-thesis-icd10-db-1  Running
+MODELBASE-0.2 runtime input validation: PASS
+  prototype baseline candidate: PROTOBASE-1.1
+  catalogue: 99
+  patients: 6
+  patient_context: 32
+  questions: 33
+  question_facts: 88
+  question_code_domain: 118
+  question_relation_facts: 182
+  question_options: 120
+  canonical runtime digest: 63d7ddccc11b4e4c40a33d8dc8eec65e528a9786de2e8820a5b01ca58bc07008
+MySQL baseline load: no_op
+MySQL bootstrap: exact MODELBASE-0.2 runtime table set already present; schema unchanged
+MySQL bootstrap: PASS
+test_foreign_key_rejects_outside_domain_option_without_mutation (test_mysql_persistence_0_2.MySQLPersistenceTests.test_foreign_key_rejects_outside_domain_option_without_mutation) ... ok
+test_loader_identical_reimport_is_no_op_and_conflict_is_rejected (test_mysql_persistence_0_2.MySQLPersistenceTests.test_loader_identical_reimport_is_no_op_and_conflict_is_rejected) ... ok
+test_none_of_above_and_copd_boundaries (test_mysql_persistence_0_2.MySQLPersistenceTests.test_none_of_above_and_copd_boundaries) ... ok
+test_persisted_counts_and_candidate_identity (test_mysql_persistence_0_2.MySQLPersistenceTests.test_persisted_counts_and_candidate_identity) ... ok
+test_question_distribution_and_visibility_boundary (test_mysql_persistence_0_2.MySQLPersistenceTests.test_question_distribution_and_visibility_boundary) ... ok
+test_schema_contains_runtime_tables_only (test_mysql_persistence_0_2.MySQLPersistenceTests.test_schema_contains_runtime_tables_only) ... ok
+
+----------------------------------------------------------------------
+Ran 6 tests in 0.059s
+
+OK
+bootstrap-1  | MODELBASE-0.2 MySQL schema application: PASS
+bootstrap-1  |   runtime tables: 9
+bootstrap-1  |   schema: /opt/icd-prototype-baseline-0-2/persistence_candidate/mysql_schema_0_2.sql
+bootstrap-1  | MODELBASE-0.2 runtime input validation: PASS
+bootstrap-1  |   prototype baseline candidate: PROTOBASE-1.1
+bootstrap-1  |   catalogue: 99
+bootstrap-1  |   patients: 6
+bootstrap-1  |   patient_context: 32
+bootstrap-1  |   questions: 33
+bootstrap-1  |   question_facts: 88
+bootstrap-1  |   question_code_domain: 118
+bootstrap-1  |   question_relation_facts: 182
+bootstrap-1  |   question_options: 120
+bootstrap-1  |   canonical runtime digest: 63d7ddccc11b4e4c40a33d8dc8eec65e528a9786de2e8820a5b01ca58bc07008
+bootstrap-1  | MySQL baseline load: inserted
+bootstrap-1  | MySQL bootstrap: empty database; applying MODELBASE-0.2 runtime schema
+bootstrap-1  | MySQL bootstrap: PASS

@@ -11,23 +11,23 @@ PATIENTBASE-0.1,PATIENT-002,CTX-002-04,documented_condition,record,Essential hyp
 PATIENTBASE-0.1,PATIENT-002,CTX-002-05,documented_condition,record,Gout is part of the background history and is not a current coding target.,5
 PATIENTBASE-0.1,PATIENT-003,CTX-003-01,documented_condition,record,Migraine with aura is documented; the represented episode is not status migrainosus.,1
 PATIENTBASE-0.1,PATIENT-003,CTX-003-02,documented_condition,record,Postinfectious hypothyroidism is documented.,2
-PATIENTBASE-0.1,PATIENT-003,CTX-003-03,documented_condition,record,Generalized anxiety disorder is documented.,3
+PATIENTBASE-0.1,PATIENT-003,CTX-003-03,documented_condition,record,Generalised anxiety disorder is documented.,3
 PATIENTBASE-0.1,PATIENT-003,CTX-003-04,documented_condition,record,Endometriosis is noted in the background history and is not a current coding target.,4
 PATIENTBASE-0.1,PATIENT-003,CTX-003-05,documented_condition,record,A healed wrist fracture is noted in the remote history and is not a current coding target.,5
 PATIENTBASE-0.1,PATIENT-004,CTX-004-01,documented_condition,record,Type 2 diabetes is documented without a diabetic complication in the transferred record.,1
 PATIENTBASE-0.1,PATIENT-004,CTX-004-02,documented_condition,record,Primary open-angle glaucoma is documented separately; the record does not attribute it to diabetes.,2
 PATIENTBASE-0.1,PATIENT-004,CTX-004-03,documented_condition,record,Recurrent depressive disorder with a current moderate episode is documented.,3
 PATIENTBASE-0.1,PATIENT-004,CTX-004-04,documented_condition,record,Iron-deficiency anaemia due to chronic blood loss is documented.,4
-PATIENTBASE-0.1,PATIENT-004,CTX-004-05,current_exam_finding,physical_exam,Localized low-back pain without leg radiation is recorded; no underlying diagnosis has been established for this finding.,5
+PATIENTBASE-0.1,PATIENT-004,CTX-004-05,current_exam_finding,physical_exam,Localised low-back pain without leg radiation is recorded; no underlying diagnosis has been established for this finding.,5
 PATIENTBASE-0.1,PATIENT-005,CTX-005-01,documented_condition,record,Paranoid schizophrenia is documented by specialist care.,1
 PATIENTBASE-0.1,PATIENT-005,CTX-005-02,documented_condition,record,Tardive dyskinesia associated with long-term neuroleptic treatment is documented.,2
 PATIENTBASE-0.1,PATIENT-005,CTX-005-03,documented_condition,record,Psoriasis vulgaris is documented.,3
 PATIENTBASE-0.1,PATIENT-005,CTX-005-04,documented_condition,record,Mixed hyperlipidaemia is documented.,4
 PATIENTBASE-0.1,PATIENT-005,CTX-005-05,documented_condition,record,Essential primary hypertension is documented without hypertensive heart disease or a secondary cause.,5
-PATIENTBASE-0.1,PATIENT-006,CTX-006-01,information_boundary,physical_exam,The patient is unconscious and cannot provide an anamnesis at the represented encounter.,1
+PATIENTBASE-0.1,PATIENT-006,CTX-006-01,information_boundary,physical_exam,The patient is unconscious and cannot provide a medical history at the represented encounter.,1
 PATIENTBASE-0.1,PATIENT-006,CTX-006-02,documented_condition,record,Accessible prior records document atherosclerotic heart disease.,2
 PATIENTBASE-0.1,PATIENT-006,CTX-006-03,documented_condition,record,A cerebral infarction two years earlier is documented together with a current deficit explicitly described as a sequela.,3
-PATIENTBASE-0.1,PATIENT-006,CTX-006-04,documented_condition,record,Generalized idiopathic epilepsy is documented; the record does not establish it as the cause of the current unconsciousness.,4
+PATIENTBASE-0.1,PATIENT-006,CTX-006-04,documented_condition,record,Generalised idiopathic epilepsy is documented; the record does not establish it as the cause of the current unconsciousness.,4
 PATIENTBASE-0.1,PATIENT-006,CTX-006-05,documented_condition,record,Dementia is documented without a documented aetiology or causal link to the prior cerebrovascular disease.,5
 PATIENTBASE-0.1,PATIENT-006,CTX-006-06,documented_condition,record,Benign prostatic hyperplasia is documented.,6
 PATIENTBASE-0.1,PATIENT-006,CTX-006-07,current_exam_finding,physical_exam,At the represented end of the encounter the patient remains unconscious; diagnostic clarification is incomplete and no codable disease cause has been established.,7

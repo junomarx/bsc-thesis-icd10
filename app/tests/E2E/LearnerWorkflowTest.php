@@ -43,7 +43,7 @@ final class LearnerWorkflowTest extends SeleniumTestCase
     public static function threeClassSubmissions(): array
     {
         return [
-            'correct: J44.02' => ['J44.02', 'Correct', 'declared acceptable response for this question', null],
+            'correct: J44.02' => ['J44.02', 'Correct', 'supported by the documented information', null],
             'suboptimal: J44.09' => ['J44.09', 'Suboptimal', 'FEV1 severity unspecified', 'J44.02'],
             // RULE-EVID-01 also supplies an improvement code as corrective
             // direction even though the result is `incorrect`, not only for

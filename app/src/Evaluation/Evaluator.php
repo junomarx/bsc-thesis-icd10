@@ -86,8 +86,8 @@ final class Evaluator
                 'correct',
                 'RULE-CORRECT-01',
                 RuleCorrect::CRITERION,
-                sprintf('%s is a declared acceptable response for this question.', $submittedCode),
-                sprintf('%s ist eine erklärte akzeptable Antwort für diese Frage.', $submittedCode),
+                sprintf('%s is supported by the documented information as an appropriate code for this question.', $submittedCode),
+                sprintf('%s wird durch die dokumentierten Angaben als passende Kodierung unterstützt.', $submittedCode),
                 ['accepted_code' => $submittedCode],
                 ['RULE-CORRECT-01'],
                 null,
@@ -112,11 +112,11 @@ final class Evaluator
             'RULE-NOA-01',
             $correct ? RuleNoa::CRITERION_NO_DISPLAYED_ACCEPTED : RuleNoa::CRITERION_DISPLAYED_ACCEPTED_EXISTS,
             $correct
-                ? 'None of the displayed codes is a declared acceptable response for this question, so "None of the above" is correct.'
-                : 'A declared acceptable response is among the displayed codes, so "None of the above" is not correct here.',
+                ? 'None of the displayed codes is supported by the documented information as an appropriate response. Therefore, “None of the above” is correct.'
+                : 'The displayed codes include a response supported by the documented information. Therefore, “None of the above” is not correct here.',
             $correct
-                ? 'Keiner der angezeigten Codes ist eine erklärte akzeptable Antwort für diese Frage, daher ist „Keine der genannten" richtig.'
-                : 'Eine erklärte akzeptable Antwort befindet sich unter den angezeigten Codes, daher ist „Keine der genannten" hier nicht richtig.',
+                ? 'Keiner der angezeigten Codes wird durch die dokumentierten Angaben als passende Kodierung unterstützt. Daher ist „Keine der genannten“ richtig.'
+                : 'Unter den angezeigten Codes befindet sich eine durch die dokumentierten Angaben unterstützte Antwort. Daher ist „Keine der genannten“ hier nicht richtig.',
             [
                 'displayed_accepted_response_exists' => $displayed,
                 'reference_code' => $accepted,
@@ -149,9 +149,9 @@ final class Evaluator
                     str_replace('_', ' ', (string) $question->facts->getEnum('encounter_setting')),
                 ),
                 sprintf(
-                    '%s trägt die Statuskennzeichnung „!" und kann in diesem %s-Kontext nicht als %s-Diagnose verwendet werden.',
+                    '%s trägt die Statuskennzeichnung „!“ und darf %s nicht als %sdiagnose verwendet werden.',
                     $submittedCode,
-                    self::encounterSettingDe((string) $question->facts->getEnum('encounter_setting')),
+                    self::encounterSettingPhraseDe((string) $question->facts->getEnum('encounter_setting')),
                     self::diagnosisRoleDe((string) $question->facts->getEnum('diagnosis_role')),
                 ),
                 [
@@ -228,13 +228,8 @@ final class Evaluator
     ): EvaluationResult {
         /** @var QuestionCodeDomainRelation $relation a REL-HARD match implies a resolved relation */
         $criterion = RuleRelHard::criterionFor($relation);
-        $citedFact = $question->relationFactsFor($submittedCode)[0] ?? null;
-        // A humanized fallback, never the raw fact key or reason_key enum
-        // value verbatim - those are internal identifiers, not learner prose
-        // (the bug this whole fix is for; see RULE-NOA-01 above).
-        $factLabel = $citedFact !== null
-            ? ($question->facts->get($citedFact->factKey)?->learnerLabel ?? str_replace('_', ' ', $citedFact->factKey))
-            : str_replace('_', ' ', (string) $relation->reasonKey);
+        $fact = $this->localizedRelationFact($question, $submittedCode);
+        $clauses = LocalizedFactFormatter::clauses($fact);
 
         $elementKey = $relation->relationKind === QuestionCodeDomainRelation::KIND_FACT_CONFLICT
             ? 'conflicting_fact'
@@ -244,12 +239,12 @@ final class Evaluator
             'incorrect',
             'RULE-REL-HARD-01',
             $criterion,
-            sprintf('%s conflicts with the documented %s for this question.', $submittedCode, $factLabel),
-            sprintf('%s widerspricht dem dokumentierten %s für diese Frage.', $submittedCode, $factLabel),
+            sprintf('%s conflicts with the documented fact that %s.', $submittedCode, $clauses['en']),
+            sprintf('%s widerspricht der dokumentierten Angabe, dass %s.', $submittedCode, $clauses['de']),
             [
                 'submitted_code' => $submittedCode,
                 'reason_key' => $relation->reasonKey,
-                $elementKey => $factLabel,
+                $elementKey => self::factElementValue($fact),
             ],
             $hardMatches,
             null,
@@ -268,29 +263,29 @@ final class Evaluator
 
         if ($primary === 'RULE-REL-SPEC-01') {
             /** @var QuestionCodeDomainRelation $relation a REL-SPEC match implies a resolved relation */
-            $citedFact = $question->relationFactsFor($submittedCode)[0] ?? null;
-            $supportedDetail = $citedFact !== null
-                ? ($question->facts->get($citedFact->factKey)?->learnerLabel ?? str_replace('_', ' ', $citedFact->factKey))
-                : $relation->code;
+            $fact = $this->localizedRelationFact($question, $submittedCode);
+            $clauses = LocalizedFactFormatter::clauses($fact);
 
             return EvaluationResult::classified(
                 'suboptimal',
                 'RULE-REL-SPEC-01',
                 RuleRelSpec::CRITERION,
                 sprintf(
-                    '%s is accepted but %s is better supported by the documented facts for this question.',
+                    '%s is supported; however, %s more precisely reflects that %s.',
                     $submittedCode,
                     (string) $relation->improvementCode,
+                    $clauses['en'],
                 ),
                 sprintf(
-                    '%s wird akzeptiert, aber %s wird durch die dokumentierten Fakten für diese Frage besser unterstützt.',
+                    '%s wird durch die Angaben unterstützt; %s bildet jedoch genauer ab, dass %s.',
                     $submittedCode,
                     (string) $relation->improvementCode,
+                    $clauses['de'],
                 ),
                 [
                     'submitted_code' => $submittedCode,
                     'improvement_code' => $relation->improvementCode,
-                    'supported_detail' => $supportedDetail,
+                    'supported_detail' => self::factElementValue($fact),
                 ],
                 $gradedMatches,
                 $relation->improvementCode,
@@ -308,7 +303,7 @@ final class Evaluator
                 (string) $map->expectedSpecificCode,
             ),
             sprintf(
-                '%s lässt den FEV1-Schweregrad unspezifiziert. Die Frage gibt bereits eine stabile FEV1 von %s %% an, die den spezifischeren Code %s unterstützt.',
+                '%s lässt den FEV1-Schweregrad unspezifiziert. Die Frage gibt für die stabile Phase bereits eine FEV1 von %s %% an, die den spezifischeren Code %s unterstützt.',
                 $submittedCode,
                 self::formatDecimal($question->facts->getDecimal('fev1_stable_pct_predicted')),
                 (string) $map->expectedSpecificCode,
@@ -333,21 +328,50 @@ final class Evaluator
         return rtrim(rtrim(sprintf('%.2f', $value), '0'), '.');
     }
 
+    private function localizedRelationFact(CodingQuestion $question, string $submittedCode): \Icd10Prototype\Model\QuestionFact
+    {
+        $relationFact = $question->relationFactsFor($submittedCode)[0] ?? null;
+        if ($relationFact === null) {
+            throw new SpecificationGapException(sprintf(
+                'Question %s / code %s has no fact linked for learner feedback.',
+                $question->questionId,
+                $submittedCode,
+            ));
+        }
+
+        $fact = $question->facts->get($relationFact->factKey);
+        if ($fact === null) {
+            throw new SpecificationGapException(sprintf(
+                'Question %s / code %s links missing fact %s for learner feedback.',
+                $question->questionId,
+                $submittedCode,
+                $relationFact->factKey,
+            ));
+        }
+
+        return $fact;
+    }
+
+    private static function factElementValue(\Icd10Prototype\Model\QuestionFact $fact): string|int|float|bool
+    {
+        return $fact->value;
+    }
+
     private static function diagnosisRoleDe(string $role): string
     {
         return match ($role) {
             'main' => 'Haupt',
             'additional' => 'Neben',
-            default => str_replace('_', ' ', $role),
+            default => throw new SpecificationGapException('No German diagnosis-role localization for ' . $role),
         };
     }
 
-    private static function encounterSettingDe(string $setting): string
+    private static function encounterSettingPhraseDe(string $setting): string
     {
         return match ($setting) {
-            'inpatient' => 'stationär',
-            'hospital_outpatient' => 'ambulant (Spital)',
-            default => str_replace('_', ' ', $setting),
+            'inpatient' => 'bei einem stationären Aufenthalt',
+            'hospital_outpatient' => 'bei einem ambulanten Spitalsbesuch im stationären LKF-Modell',
+            default => throw new SpecificationGapException('No German encounter-setting localization for ' . $setting),
         };
     }
 
@@ -355,7 +379,7 @@ final class Evaluator
     {
         return match ($level) {
             'five-character' => 'fünfstellig',
-            default => $level,
+            default => throw new SpecificationGapException('No German coding-level localization for ' . $level),
         };
     }
 

@@ -20,6 +20,15 @@ prototype_baseline/
 # directory (the Python pipeline itself) is copied into any image.
 !prototype_baseline/verification/
 !prototype_baseline/verification/reference_responses_0_3.csv
+# The frontend-build stage runs localization completeness checks against the
+# learner-visible authoring rows. These four inputs remain build/test-only and
+# are not copied into the runtime image.
+!prototype_baseline/data/
+prototype_baseline/data/*
+!prototype_baseline/data/patients_0_1.csv
+!prototype_baseline/data/patient_context_items_0_1.csv
+!prototype_baseline/data/questions_0_1.csv
+!prototype_baseline/data/question_options_0_1.csv
 prototype_stack/
 
 app/vendor/

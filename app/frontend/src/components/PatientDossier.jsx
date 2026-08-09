@@ -33,14 +33,14 @@ export default function PatientDossier({ patient, open, onToggle }) {
             <strong>{patient.display_name}</strong>{' '}
             {t('dossier.identityDetail', {
               age: patient.age_years,
-              sex: t(SEX_LABEL_KEYS[patient.sex] ?? patient.sex),
+              sex: t(SEX_LABEL_KEYS[patient.sex] ?? 'value.unknown'),
             })}
           </p>
           <p>{summary}</p>
           <ul className="patient-context-list">
             {patient.context_items.map((item) => (
               <li key={item.context_item_id}>
-                <span className="badge">{t(ITEM_TYPE_LABEL_KEYS[item.item_type] ?? item.item_type)}</span>{' '}
+                <span className="badge">{t(ITEM_TYPE_LABEL_KEYS[item.item_type] ?? 'itemType.other')}</span>{' '}
                 {localizeText(CONTEXT_ITEM_DE, item.context_item_id, item.display_text, locale)}
               </li>
             ))}

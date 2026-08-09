@@ -116,9 +116,9 @@
   }
   \vfill
   \begin{tabular}{@{}ll@{}}
-    \textbf{Guide revision} & 0.6 \\
+    \textbf{Guide revision} & 0.7 \\
     \textbf{Last updated} & 9 August 2026 \\
-    \textbf{Prototype data} & BMASGPK 2026 working baseline (6 patients, 25 questions) \\
+    \textbf{Prototype data} & PROTOBASE-1.1 / BMASGPK 2026 (6 patients, 25 questions) \\
     \textbf{Repository} & \href{https://github.com/junomarx/bsc-thesis-icd10}{github.com/junomarx/bsc-thesis-icd10}
   \end{tabular}\par
   \vspace{12mm}
@@ -276,13 +276,14 @@ An \textbf{EN | DE} switch sits in the top-right corner of every screen.
 The choice is remembered in the browser for later visits, and defaults to
 German or English automatically based on the browser's own language
 setting on first visit. Switching language translates all interface text,
-the patient summaries and question prompts, and the feedback explanation.
-The displayed ICD-10 code designations come from the single-language
-Austrian source catalogue and are shown in the language of that source
-regardless of the interface language: German designations are shown as
-authored; the prototype supplies English titles for these instead when the
-interface is set to English, since no official English designation exists
-in the source data.
+the six patient summaries, all 32 context records, all 25 question titles
+and prompts, displayed code designations, and feedback explanations. German
+mode uses the official Austrian source-catalogue designations; English mode
+uses reviewed British-English interface presentations for all 87 displayed
+codes because the repository has no official English counterpart. These
+presentations do not alter the underlying catalogue records. The application
+fails its localization checks if a required entry is missing, so it does not
+silently mix English and German at runtime.
 
 \subsection{Switch appearance}
 
@@ -307,7 +308,7 @@ one question at a time, and interpreting feedback. The final step explains
 the three feedback classes with the same icon and colour used later in the
 actual results. Choose \textbf{Skip tutorial}, the close button, or press
 Escape to leave it at any time. You can also click or tap the dimmed area
-outside the tutorial card.
+outside the tutorial card; a click inside the card does not close it.
 
 After the tutorial is closed, the browser remembers that it has been seen
 and does not open it automatically on later page loads. It remains available
@@ -374,11 +375,10 @@ label, so the outcome does not depend on colour perception alone.
 \toprule
 Result & Meaning in this prototype \\
 \midrule
-Correct & The submitted code is a declared acceptable response for the
-question. \\
-Suboptimal & The answer is accepted within the implemented rules, but the
-documented facts support a more specific code. A suggested improvement is
-shown. \\
+Correct & The documented information supports the submitted code as an
+appropriate response for the question. \\
+Suboptimal & The documented information supports the answer, but also
+supports a more specific code. A suggested improvement is shown. \\
 Incorrect & A hard rule was violated, for example a status restriction,
 required coding depth, conflict with a documented fact, or a wrong
 temporal/status context --- or, for \textbf{None of the above}, a declared
@@ -471,9 +471,10 @@ when you need a clean copy of the baseline.
 \section{Optional: run the automated tests}
 
 The committed PHPUnit suite (\texttt{app/tests/}) targets the current
-six-patient/25-question model described in this guide: 77 unit tests, 160
-integration tests (against a live MySQL baseline), and 9 browser-driven
-end-to-end tests, all passing as of the last verified run (see
+six-patient/25-question model described in this guide: 83 unit tests, 163
+integration tests (against a live MySQL baseline), 12 browser-driven
+end-to-end tests, and 4 frontend localization-contract tests, all passing as
+of the last verified run (see
 \path{docs/CHANGELOG.md} for exact counts and how they were verified).
 
 The application does not start test tooling during normal use. To run the

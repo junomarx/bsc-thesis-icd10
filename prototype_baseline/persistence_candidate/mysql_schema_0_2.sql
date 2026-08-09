@@ -1,4 +1,4 @@
--- MODELBASE-0.2 / PROTOBASE-1.0 (frozen, docs/CONFORMANCE_REPORT.md)
+-- MODELBASE-0.2 / PROTOBASE-1.0 schema, reused unchanged by the PROTOBASE-1.1 localization correction
 -- Runtime schema only. RCBASE-0.3 and all expected verification outcomes are absent.
 
 CREATE TABLE prototype_baseline (

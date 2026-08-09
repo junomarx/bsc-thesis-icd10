@@ -8,7 +8,8 @@ use PHPUnit\Framework\Attributes\DataProvider;
 
 /**
  * TEST-RC-01: reference-response conformance against the `RCBASE-0.3`
- * oracle, frozen at `PROTOBASE-1.0` (`docs/CONFORMANCE_REPORT.md`).
+ * oracle, originally frozen at `PROTOBASE-1.0` and rerun unchanged against
+ * the localization-corrected `PROTOBASE-1.1` baseline.
  *
  * This test harness reads
  * `prototype_baseline/verification/reference_responses_0_3.csv`

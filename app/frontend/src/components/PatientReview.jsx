@@ -1,7 +1,7 @@
 import { STATUS_ICONS, STATUS_LABEL_KEYS } from '../lib/classification.js'
 import { summarizeResults } from '../lib/playthrough.js'
 import { useLocale } from '../lib/i18n.jsx'
-import { QUESTION_CONTENT_DE } from '../lib/contentTranslations.js'
+import { localizeQuestionContent } from '../lib/contentTranslations.js'
 import { IconCheck } from './icons.jsx'
 
 // REQ-FBK-03: raw class counts plus a per-question read-only list - no
@@ -30,11 +30,11 @@ export default function PatientReview({ patient, orderedQuestionIds, questionsBy
           const question = questionsById[questionId]
           const result = results[questionId]
           const StatusIcon = result?.classification ? STATUS_ICONS[result.classification] : null
-          const title = locale === 'de' ? QUESTION_CONTENT_DE[questionId]?.title ?? question?.title : question?.title
+          const title = question ? localizeQuestionContent(question, locale).title : t('review.questionUnavailable')
 
           return (
             <li key={questionId} className="review-item">
-              <span className="review-item-title">{title ?? questionId}</span>
+              <span className="review-item-title">{title}</span>
               <span className={`result-heading result-${result?.classification ?? 'not_attempted'}`}>
                 {StatusIcon && <StatusIcon />}
                 {t(STATUS_LABEL_KEYS[result?.classification] ?? 'status.not_attempted')}

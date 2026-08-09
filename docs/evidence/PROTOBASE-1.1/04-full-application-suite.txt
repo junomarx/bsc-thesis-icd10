@@ -1,0 +1,40 @@
+ Network bsc-thesis-icd10_default  Creating
+ Network bsc-thesis-icd10_default  Created
+ Volume bsc-thesis-icd10_mysql_data  Creating
+ Volume bsc-thesis-icd10_mysql_data  Created
+ Container bsc-thesis-icd10-db-1  Creating
+ Container bsc-thesis-icd10-selenium-1  Creating
+ Container bsc-thesis-icd10-selenium-1  Created
+ Container bsc-thesis-icd10-db-1  Created
+ Container bsc-thesis-icd10-bootstrap-1  Creating
+ Container bsc-thesis-icd10-bootstrap-1  Created
+ Container bsc-thesis-icd10-app-1  Creating
+ Container bsc-thesis-icd10-app-1  Created
+ Container bsc-thesis-icd10-selenium-1  Starting
+ Container bsc-thesis-icd10-db-1  Starting
+ Container bsc-thesis-icd10-selenium-1  Started
+ Container bsc-thesis-icd10-db-1  Started
+ Container bsc-thesis-icd10-db-1  Waiting
+ Container bsc-thesis-icd10-db-1  Healthy
+ Container bsc-thesis-icd10-bootstrap-1  Starting
+ Container bsc-thesis-icd10-bootstrap-1  Started
+ Container bsc-thesis-icd10-db-1  Waiting
+ Container bsc-thesis-icd10-bootstrap-1  Waiting
+ Container bsc-thesis-icd10-bootstrap-1  Exited
+ Container bsc-thesis-icd10-db-1  Healthy
+ Container bsc-thesis-icd10-app-1  Starting
+ Container bsc-thesis-icd10-app-1  Started
+PHPUnit 11.5.56 by Sebastian Bergmann and contributors.
+
+Runtime:       PHP 8.4.24
+Configuration: /var/www/html/phpunit.xml
+
+...............................................................  63 / 258 ( 24%)
+............................................................... 126 / 258 ( 48%)
+............................................................... 189 / 258 ( 73%)
+............................................................... 252 / 258 ( 97%)
+......                                                          258 / 258 (100%)
+
+Time: 00:33.052, Memory: 12.00 MB
+
+OK (258 tests, 5682 assertions)

@@ -1,13 +1,14 @@
 {
   "name": "frontend",
   "private": true,
-  "version": "0.9.9",
+  "version": "0.10.0",
   "author": "Juno Anna Marx",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "lint": "oxlint",
+    "test:localization": "node --test tests/localization.test.js",
     "preview": "vite preview"
   },
   "dependencies": {
