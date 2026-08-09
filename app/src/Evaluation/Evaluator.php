@@ -4,65 +4,90 @@ declare(strict_types=1);
 
 namespace Icd10Prototype\Evaluation;
 
-use Icd10Prototype\Model\CaseFacts;
 use Icd10Prototype\Model\CatalogueRecord;
+use Icd10Prototype\Model\CodingQuestion;
+use Icd10Prototype\Model\QuestionCodeDomainRelation;
+use Icd10Prototype\Model\ResponseInput;
+use Icd10Prototype\Rules\MapResult;
+use Icd10Prototype\Rules\Precedence;
 use Icd10Prototype\Rules\RuleCorrect;
 use Icd10Prototype\Rules\RuleDepth;
 use Icd10Prototype\Rules\RuleEvid;
 use Icd10Prototype\Rules\RuleGate;
 use Icd10Prototype\Rules\RuleMap;
+use Icd10Prototype\Rules\RuleNoa;
+use Icd10Prototype\Rules\RuleRelHard;
+use Icd10Prototype\Rules\RuleRelSpec;
 use Icd10Prototype\Rules\RuleSpec;
 use Icd10Prototype\Rules\RuleStatus;
-use Icd10Prototype\Rules\Precedence;
 
 /**
  * RULE-PREC-01: deterministic precedence and terminal-result policy.
  *
- * Implements RULEBASE-0.1 Section 6 exactly:
- *   gate -> map derivation -> hard rules (STATUS > DEPTH > EVID) -> SPEC ->
- *   CORRECT -> specification gap.
+ * Implements RULEBASE-0.2 Section 6 exactly:
+ *   gate -> (none_of_above: RULE-NOA-01, terminal) | (code: map derivation ->
+ *   hard rules (STATUS > DEPTH > EVID > REL_HARD) -> graded (SPEC >
+ *   REL_SPEC) -> CORRECT -> specification gap).
  *
- * Pure/near-pure: it consumes only explicit case/catalogue facts already
- * resolved by the caller (REQ-MOD-01) and is testable without a database or
- * the React UI (REQ-ARC-01).
+ * Pure/near-pure: it consumes only explicit question facts/domain relations
+ * already resolved by the caller (REQ-MOD-01) and is testable without a
+ * database or the React UI (REQ-ARC-01).
  */
 final class Evaluator
 {
-    public function evaluate(CaseFacts $case, ?CatalogueRecord $record, string $submittedCode): EvaluationResult
+    public function evaluate(CodingQuestion $question, ResponseInput $response, ?CatalogueRecord $record): EvaluationResult
     {
-        $gate = RuleGate::evaluate($case, $record, $submittedCode);
+        $gate = RuleGate::evaluate($question, $response, $record);
         if (!$gate->eligible) {
             return EvaluationResult::notEvaluated($gate->reason);
         }
 
-        /** @var CatalogueRecord $record eligible implies a resolved record */
-        $map = RuleMap::evaluate($case);
+        if ($response->isNoneOfAbove()) {
+            return $this->buildNoaResult($question);
+        }
+
+        $submittedCode = (string) $response->code;
+        /** @var CatalogueRecord $record eligible implies a resolved record for a code response */
+        $map = RuleMap::evaluate($question);
+        $relation = $question->relationFor($submittedCode);
 
         $hardMatches = [];
-        if (RuleStatus::matches($case, $record)) {
+        if (RuleStatus::matches($question, $record)) {
             $hardMatches[] = 'RULE-STATUS-01';
         }
-        if (RuleDepth::matches($case, $submittedCode)) {
+        if (RuleDepth::matches($question, $submittedCode)) {
             $hardMatches[] = 'RULE-DEPTH-01';
         }
-        if (RuleEvid::matches($case, $submittedCode, $map)) {
+        if (RuleEvid::matches($question, $submittedCode, $map)) {
             $hardMatches[] = 'RULE-EVID-01';
+        }
+        if (RuleRelHard::matches($question, $submittedCode)) {
+            $hardMatches[] = 'RULE-REL-HARD-01';
         }
 
         if ($hardMatches !== []) {
-            return $this->buildHardResult($case, $record, $submittedCode, $map, $hardMatches);
+            return $this->buildHardResult($question, $record, $submittedCode, $map, $relation, $hardMatches);
         }
 
-        if (RuleSpec::matches($case, $submittedCode, $map)) {
-            return $this->buildSpecResult($case, $submittedCode, $map);
+        $gradedMatches = [];
+        if (RuleSpec::matches($question, $submittedCode, $map)) {
+            $gradedMatches[] = 'RULE-SPEC-01';
+        }
+        if (RuleRelSpec::matches($question, $submittedCode)) {
+            $gradedMatches[] = 'RULE-REL-SPEC-01';
         }
 
-        if (RuleCorrect::matches($case, $submittedCode)) {
+        if ($gradedMatches !== []) {
+            return $this->buildGradedResult($question, $submittedCode, $map, $relation, $gradedMatches);
+        }
+
+        if (RuleCorrect::matches($question, $submittedCode)) {
             return EvaluationResult::classified(
                 'correct',
                 'RULE-CORRECT-01',
                 RuleCorrect::CRITERION,
-                sprintf('%s is a declared acceptable response for this case.', $submittedCode),
+                sprintf('%s is a declared acceptable response for this question.', $submittedCode),
+                sprintf('%s ist eine erklärte akzeptable Antwort für diese Frage.', $submittedCode),
                 ['accepted_code' => $submittedCode],
                 ['RULE-CORRECT-01'],
                 null,
@@ -70,18 +95,44 @@ final class Evaluator
         }
 
         throw new SpecificationGapException(sprintf(
-            'Case %s / code %s is eligible but reaches no terminal rule (RULE-PREC-01 specification gap).',
-            $case->caseId,
+            'Question %s / code %s is eligible but reaches no terminal rule (RULE-PREC-01 specification gap).',
+            $question->questionId,
             $submittedCode,
         ));
     }
 
+    private function buildNoaResult(CodingQuestion $question): EvaluationResult
+    {
+        $accepted = RuleNoa::acceptedReferenceCode($question);
+        $displayed = $accepted !== null && RuleNoa::isDisplayedCode($question, $accepted);
+        $correct = RuleNoa::isCorrect($question);
+
+        return EvaluationResult::classified(
+            $correct ? 'correct' : 'incorrect',
+            'RULE-NOA-01',
+            $correct ? RuleNoa::CRITERION_NO_DISPLAYED_ACCEPTED : RuleNoa::CRITERION_DISPLAYED_ACCEPTED_EXISTS,
+            $correct
+                ? 'None of the displayed codes is a declared acceptable response for this question, so "None of the above" is correct.'
+                : 'A declared acceptable response is among the displayed codes, so "None of the above" is not correct here.',
+            $correct
+                ? 'Keiner der angezeigten Codes ist eine erklärte akzeptable Antwort für diese Frage, daher ist „Keine der genannten" richtig.'
+                : 'Eine erklärte akzeptable Antwort befindet sich unter den angezeigten Codes, daher ist „Keine der genannten" hier nicht richtig.',
+            [
+                'displayed_accepted_response_exists' => $displayed,
+                'reference_code' => $accepted,
+            ],
+            ['RULE-NOA-01'],
+            null,
+        );
+    }
+
     /** @param list<string> $hardMatches */
     private function buildHardResult(
-        CaseFacts $case,
+        CodingQuestion $question,
         CatalogueRecord $record,
         string $submittedCode,
-        \Icd10Prototype\Rules\MapResult $map,
+        MapResult $map,
+        ?QuestionCodeDomainRelation $relation,
         array $hardMatches,
     ): EvaluationResult {
         $primary = Precedence::primaryHardRule($hardMatches);
@@ -94,14 +145,20 @@ final class Evaluator
                 sprintf(
                     '%s carries the "!" status marker and cannot be used as the %s diagnosis in this %s context.',
                     $submittedCode,
-                    $case->diagnosisRole,
-                    str_replace('_', ' ', $case->encounterSetting),
+                    (string) $question->facts->getEnum('diagnosis_role'),
+                    str_replace('_', ' ', (string) $question->facts->getEnum('encounter_setting')),
+                ),
+                sprintf(
+                    '%s trägt die Statuskennzeichnung „!" und kann in diesem %s-Kontext nicht als %s-Diagnose verwendet werden.',
+                    $submittedCode,
+                    self::encounterSettingDe((string) $question->facts->getEnum('encounter_setting')),
+                    self::diagnosisRoleDe((string) $question->facts->getEnum('diagnosis_role')),
                 ),
                 [
                     'submitted_code' => $submittedCode,
                     'marker' => $record->marker,
-                    'diagnosis_role' => $case->diagnosisRole,
-                    'encounter_setting' => $case->encounterSetting,
+                    'diagnosis_role' => $question->facts->getEnum('diagnosis_role'),
+                    'encounter_setting' => $question->facts->getEnum('encounter_setting'),
                     'restriction' => '"!" codes may not be used as a main diagnosis for inpatient stays or for hospital-outpatient visits scored under the inpatient LKF model.',
                 ],
                 $hardMatches,
@@ -115,6 +172,11 @@ final class Evaluator
                     '%s does not meet the mandatory %s coding depth required for this diagnosis family.',
                     $submittedCode,
                     RuleDepth::REQUIRED_CODING_LEVEL,
+                ),
+                sprintf(
+                    '%s erreicht nicht die für diese Diagnosegruppe vorgeschriebene Kodiertiefe (%s).',
+                    $submittedCode,
+                    self::codingLevelDe(RuleDepth::REQUIRED_CODING_LEVEL),
                 ),
                 [
                     'submitted_code' => $submittedCode,
@@ -131,13 +193,20 @@ final class Evaluator
                 sprintf(
                     '%s conflicts with the represented stable-phase FEV1 of %s%%; the source-defined suffix for that value is %d (%s).',
                     $submittedCode,
-                    self::formatFev1($case->fev1StablePctPredicted),
+                    self::formatDecimal($question->facts->getDecimal('fev1_stable_pct_predicted')),
                     $map->expectedSuffix,
-                    RuleMap::suffixMeaning($map->expectedSuffix),
+                    RuleMap::suffixMeaning((int) $map->expectedSuffix),
+                ),
+                sprintf(
+                    '%s widerspricht der angegebenen stabilen FEV1 von %s %%; die quellendefinierte Endziffer für diesen Wert ist %d (%s).',
+                    $submittedCode,
+                    self::formatDecimal($question->facts->getDecimal('fev1_stable_pct_predicted')),
+                    $map->expectedSuffix,
+                    self::suffixMeaningDe((int) $map->expectedSuffix),
                 ),
                 [
                     'submitted_code' => $submittedCode,
-                    'fev1_stable_pct_predicted' => $case->fev1StablePctPredicted,
+                    'fev1_stable_pct_predicted' => $question->facts->getDecimal('fev1_stable_pct_predicted'),
                     'submitted_suffix_meaning' => RuleMap::suffixMeaning((int) substr($submittedCode, -1)),
                     'expected_suffix' => $map->expectedSuffix,
                     'expected_code' => $map->expectedSpecificCode,
@@ -145,39 +214,159 @@ final class Evaluator
                 $hardMatches,
                 $map->expectedSpecificCode,
             ),
+            'RULE-REL-HARD-01' => $this->buildRelHardResult($question, $submittedCode, $relation, $hardMatches),
             default => throw new SpecificationGapException('Hard match retained without a recognised primary rule.'),
         };
     }
 
-    private function buildSpecResult(CaseFacts $case, string $submittedCode, \Icd10Prototype\Rules\MapResult $map): EvaluationResult
-    {
+    /** @param list<string> $hardMatches */
+    private function buildRelHardResult(
+        CodingQuestion $question,
+        string $submittedCode,
+        ?QuestionCodeDomainRelation $relation,
+        array $hardMatches,
+    ): EvaluationResult {
+        /** @var QuestionCodeDomainRelation $relation a REL-HARD match implies a resolved relation */
+        $criterion = RuleRelHard::criterionFor($relation);
+        $citedFact = $question->relationFactsFor($submittedCode)[0] ?? null;
+        // A humanized fallback, never the raw fact key or reason_key enum
+        // value verbatim - those are internal identifiers, not learner prose
+        // (the bug this whole fix is for; see RULE-NOA-01 above).
+        $factLabel = $citedFact !== null
+            ? ($question->facts->get($citedFact->factKey)?->learnerLabel ?? str_replace('_', ' ', $citedFact->factKey))
+            : str_replace('_', ' ', (string) $relation->reasonKey);
+
+        $elementKey = $relation->relationKind === QuestionCodeDomainRelation::KIND_FACT_CONFLICT
+            ? 'conflicting_fact'
+            : 'temporal_fact';
+
+        return EvaluationResult::classified(
+            'incorrect',
+            'RULE-REL-HARD-01',
+            $criterion,
+            sprintf('%s conflicts with the documented %s for this question.', $submittedCode, $factLabel),
+            sprintf('%s widerspricht dem dokumentierten %s für diese Frage.', $submittedCode, $factLabel),
+            [
+                'submitted_code' => $submittedCode,
+                'reason_key' => $relation->reasonKey,
+                $elementKey => $factLabel,
+            ],
+            $hardMatches,
+            null,
+        );
+    }
+
+    /** @param list<string> $gradedMatches */
+    private function buildGradedResult(
+        CodingQuestion $question,
+        string $submittedCode,
+        MapResult $map,
+        ?QuestionCodeDomainRelation $relation,
+        array $gradedMatches,
+    ): EvaluationResult {
+        $primary = Precedence::primaryGradedRule($gradedMatches);
+
+        if ($primary === 'RULE-REL-SPEC-01') {
+            /** @var QuestionCodeDomainRelation $relation a REL-SPEC match implies a resolved relation */
+            $citedFact = $question->relationFactsFor($submittedCode)[0] ?? null;
+            $supportedDetail = $citedFact !== null
+                ? ($question->facts->get($citedFact->factKey)?->learnerLabel ?? str_replace('_', ' ', $citedFact->factKey))
+                : $relation->code;
+
+            return EvaluationResult::classified(
+                'suboptimal',
+                'RULE-REL-SPEC-01',
+                RuleRelSpec::CRITERION,
+                sprintf(
+                    '%s is accepted but %s is better supported by the documented facts for this question.',
+                    $submittedCode,
+                    (string) $relation->improvementCode,
+                ),
+                sprintf(
+                    '%s wird akzeptiert, aber %s wird durch die dokumentierten Fakten für diese Frage besser unterstützt.',
+                    $submittedCode,
+                    (string) $relation->improvementCode,
+                ),
+                [
+                    'submitted_code' => $submittedCode,
+                    'improvement_code' => $relation->improvementCode,
+                    'supported_detail' => $supportedDetail,
+                ],
+                $gradedMatches,
+                $relation->improvementCode,
+            );
+        }
+
         return EvaluationResult::classified(
             'suboptimal',
             'RULE-SPEC-01',
             RuleSpec::CRITERION,
             sprintf(
-                '%s leaves the FEV1 severity unspecified. The case already states a stable-phase FEV1 of %s%%, which supports the more specific code %s.',
+                '%s leaves the FEV1 severity unspecified. The question already states a stable-phase FEV1 of %s%%, which supports the more specific code %s.',
                 $submittedCode,
-                self::formatFev1($case->fev1StablePctPredicted),
-                $map->expectedSpecificCode,
+                self::formatDecimal($question->facts->getDecimal('fev1_stable_pct_predicted')),
+                (string) $map->expectedSpecificCode,
+            ),
+            sprintf(
+                '%s lässt den FEV1-Schweregrad unspezifiziert. Die Frage gibt bereits eine stabile FEV1 von %s %% an, die den spezifischeren Code %s unterstützt.',
+                $submittedCode,
+                self::formatDecimal($question->facts->getDecimal('fev1_stable_pct_predicted')),
+                (string) $map->expectedSpecificCode,
             ),
             [
                 'submitted_code' => $submittedCode,
-                'fev1_stable_pct_predicted' => $case->fev1StablePctPredicted,
+                'fev1_stable_pct_predicted' => $question->facts->getDecimal('fev1_stable_pct_predicted'),
                 'expected_code' => $map->expectedSpecificCode,
-                'improvement_direction' => sprintf('Use %s to reflect the documented FEV1 value.', $map->expectedSpecificCode),
+                'improvement_direction' => sprintf('Use %s to reflect the documented FEV1 value.', (string) $map->expectedSpecificCode),
             ],
-            ['RULE-SPEC-01'],
+            $gradedMatches,
             $map->expectedSpecificCode,
         );
     }
 
-    private static function formatFev1(?float $fev1): string
+    private static function formatDecimal(?float $value): string
     {
-        if ($fev1 === null) {
+        if ($value === null) {
             return 'unspecified';
         }
 
-        return rtrim(rtrim(sprintf('%.2f', $fev1), '0'), '.');
+        return rtrim(rtrim(sprintf('%.2f', $value), '0'), '.');
+    }
+
+    private static function diagnosisRoleDe(string $role): string
+    {
+        return match ($role) {
+            'main' => 'Haupt',
+            'additional' => 'Neben',
+            default => str_replace('_', ' ', $role),
+        };
+    }
+
+    private static function encounterSettingDe(string $setting): string
+    {
+        return match ($setting) {
+            'inpatient' => 'stationär',
+            'hospital_outpatient' => 'ambulant (Spital)',
+            default => str_replace('_', ' ', $setting),
+        };
+    }
+
+    private static function codingLevelDe(string $level): string
+    {
+        return match ($level) {
+            'five-character' => 'fünfstellig',
+            default => $level,
+        };
+    }
+
+    private static function suffixMeaningDe(int $suffix): string
+    {
+        return match ($suffix) {
+            0 => 'FEV1 < 35 % des Sollwertes',
+            1 => 'FEV1 >= 35 % und < 50 % des Sollwertes',
+            2 => 'FEV1 >= 50 % und < 70 % des Sollwertes',
+            3 => 'FEV1 >= 70 % des Sollwertes',
+            default => 'FEV1 nicht näher bezeichnet',
+        };
     }
 }

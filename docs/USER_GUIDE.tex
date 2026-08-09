@@ -116,9 +116,9 @@
   }
   \vfill
   \begin{tabular}{@{}ll@{}}
-    \textbf{Guide revision} & 0.2 \\
-    \textbf{Last updated} & 8 August 2026 \\
-    \textbf{Prototype data} & BMASGPK 2026 working baseline \\
+    \textbf{Guide revision} & 0.3 \\
+    \textbf{Last updated} & 9 August 2026 \\
+    \textbf{Prototype data} & BMASGPK 2026 working baseline (6 patients, 25 questions) \\
     \textbf{Repository} & \href{https://github.com/junomarx/bsc-thesis-icd10}{github.com/junomarx/bsc-thesis-icd10}
   \end{tabular}\par
   \vspace{12mm}
@@ -134,20 +134,23 @@
 \section{Quick introduction}
 
 \productname{} is a bachelor-thesis software artefact for practising a
-small, explicitly defined subset of Austrian ICD-10 coding. It presents
-synthetic teaching cases, lets a learner select one of the supported codes,
-and evaluates that answer with deterministic rules. Feedback is returned as
+small, explicitly defined subset of Austrian ICD-10 coding. It presents six
+synthetic teaching patients, each containing several independent coding
+questions; the learner answers one question at a time by selecting a
+supported code (or \textbf{None of the above}), and each answer is
+evaluated with deterministic rules. Feedback is returned as
 \textbf{Correct}, \textbf{Suboptimal}, or \textbf{Incorrect}, together with
-an explanation and, where applicable, a suggested improvement.
+an explanation and, where applicable, a suggested improvement. The
+interface is available in English and German.
 
 The prototype is deliberately small. It is intended to demonstrate and test
 the project's rule-based educational approach, not to provide a complete
 coding platform.
 
 \warningbox{Educational use only}{
-  The cases are synthetic. The prototype does not diagnose patients, provide
-  clinical decision support, perform official coding, or support reporting or
-  reimbursement. Do not enter real patient data.
+  The patients and questions are synthetic. The prototype does not diagnose
+  patients, provide clinical decision support, perform official coding, or
+  support reporting or reimbursement. Do not enter real patient data.
 }
 
 \section{Installation}
@@ -178,6 +181,21 @@ Both commands should print version information. If Docker reports that it
 cannot connect to the daemon, open Docker Desktop or start the Docker service.
 
 \subsection{Install and start with the published images}
+
+\warningbox{The published images currently predate this guide's learner workflow}{
+  \texttt{docker compose pull} fetches the last images published by the
+  project's CI pipeline, which has not been re-run since the six-patient/
+  25-question model described in Section~\ref{sec:learner-workflow} was
+  implemented. Following the two commands below as written will currently
+  start the \emph{previous} case-based prototype, not the one this guide
+  describes. Until the images are republished, use
+  Section~\ref{sec:local-build}'s native local build instead ---
+  \texttt{docker compose build bootstrap app} followed by
+  \texttt{docker compose up -d --wait app} --- which builds directly from
+  the checked-out source and is guaranteed to match this guide. This
+  warning will be removed once a fresh publish confirms the pulled images
+  are current again.
+}
 
 Open a terminal and run:
 
@@ -265,59 +283,121 @@ toolchains to be installed directly on the host. On Apple Silicon, the
 resulting \texttt{app} and \texttt{bootstrap} images are native ARM64 images.
 
 \section{Using the prototype}
+\label{sec:learner-workflow}
 
-\subsection{Choose a case}
+\subsection{Switch language}
 
-The first screen shows the educational-use disclaimer and the available
-synthetic cases. Each case button identifies the case, encounter setting, and
-diagnosis role. Select a case to begin.
+An \textbf{EN | DE} switch sits in the top-right corner of every screen.
+The choice is remembered in the browser for later visits, and defaults to
+German or English automatically based on the browser's own language
+setting on first visit. Switching language translates all interface text,
+the patient summaries and question prompts, and the feedback explanation.
+The displayed ICD-10 code designations come from the single-language
+Austrian source catalogue and are shown in the language of that source
+regardless of the interface language: German designations are shown as
+authored; the prototype supplies English titles for these instead when the
+interface is set to English, since no official English designation exists
+in the source data.
 
-\subsection{Review the case facts}
+\subsection{How this works: orientation}
 
-The case screen shows only facts that are relevant to the implemented rule
-set, such as:
+Below the page header, an expandable \textbf{How this works} panel states
+the prototype's educational purpose and non-clinical boundary, summarizes
+the choose-patient $\rightarrow$ answer-question $\rightarrow$
+receive-feedback workflow, and explains the three feedback classes with the
+same icon and colour used later in the actual feedback. It is open by
+default and can be collapsed; collapsing it does not lose any progress.
 
-\begin{itemize}
-  \item the encounter setting;
-  \item whether the code is being considered as a main or secondary
-        diagnosis; and
-  \item stable-phase FEV1 as a percentage of predicted, when that fact applies.
-\end{itemize}
+\subsection{Choose a patient}
 
-This concise presentation is intentional. The prototype is a rule-focused
-demonstrator rather than a full clinical vignette system.
+Below the orientation panel, the six synthetic patients appear as a grid of
+equally sized cards. Each card shows the patient's display name, age, sex,
+a neutral complexity label (\textit{Foundational} or \textit{Involved}),
+and its question count (3, 5, or 6 depending on the patient), followed by a
+one-sentence summary of that patient's record. Difficulty is informational
+only --- no patient is locked, and any patient may be selected in any
+order.
 
-\subsection{Search for and submit a code}
+A patient already fully answered in this browser session shows a
+\textit{Completed} badge on its card, and a one-line summary above the
+grid tracks overall progress ("\textit{n} of 6 patients completed''). This
+record lives only for the current browser session (cleared when the
+browser tab/session ends, not just on page reload) --- nothing is sent to
+or stored by the server. A \textbf{Reset progress} link appears next to the
+summary whenever at least one patient has been completed, and clears every
+completion mark after a confirmation prompt. Select a patient to begin.
 
-Use \textbf{Search supported codes} to filter by ICD-10 code, full
-designation, or short designation. Select one result using its radio button,
-then choose \textbf{Submit code}. The button remains disabled until a code is
-selected.
+\subsection{Review the patient record}
 
-Only codes in the case's declared response domain are offered. The list is
-not a complete Austrian ICD-10 catalogue, and free-text or arbitrary code
-submission is not part of the learner interface.
+Choosing a patient opens its first question directly. A \textbf{Show
+patient info} button reveals a collapsible panel with the patient's
+identity, a general summary, and its documented context items (conditions,
+history, current findings), each labelled by information type --- for
+example, whether a detail comes from a documented record versus a current
+examination finding, which matters for questions about a patient who
+cannot provide their own history. This panel can be opened and closed at
+any point without losing the current question's state, and remains
+reachable throughout the patient's questions via the same button.
+
+\subsection{Answer a question}
+
+Each question shows its position (``Question 2 of 5''), a matching visual
+progress bar, the patient panel, the question prompt, and a list of
+answer options: several supported ICD-10 codes with their designation,
+plus a dedicated \textbf{None of the above} option. Select one option, then
+choose \textbf{Submit answer}; the button remains disabled until an option
+is selected. Question order is shuffled independently each time a patient
+is started or replayed, so the same patient may present its questions in a
+different sequence on a later attempt --- this never changes which
+questions or options exist, only their order.
+
+Only the options shown are offered; free-text or arbitrary code submission
+is not part of the learner interface. An \textbf{Exit to patient list}
+link is available at any point during a question, in case you want to
+return to the patient list before finishing --- a confirmation is required,
+since the current, unfinished attempt on that patient is not saved.
 
 \subsection{Interpret the feedback}
+
+Each result is shown with a matching icon and colour alongside its text
+label, so the outcome does not depend on colour perception alone.
 
 \begin{tabularx}{\textwidth}{@{}>{\bfseries}p{28mm}X@{}}
 \toprule
 Result & Meaning in this prototype \\
 \midrule
-Correct & The submitted code is a declared acceptable response for the case. \\
-Suboptimal & The answer is usable within the implemented rules, but the case
-supports a more specific code. A suggested improvement is shown. \\
+Correct & The submitted code is a declared acceptable response for the
+question. \\
+Suboptimal & The answer is accepted within the implemented rules, but the
+documented facts support a more specific code. A suggested improvement is
+shown. \\
 Incorrect & A hard rule was violated, for example a status restriction,
-required coding depth, or conflict with the stated case evidence. \\
-Not evaluated & The request could not be classified because a required case
-or code relationship was unavailable. This is normally a data or application
-problem, not an expected learner outcome. \\
+required coding depth, conflict with a documented fact, or a wrong
+temporal/status context --- or, for \textbf{None of the above}, a declared
+acceptable code was in fact among the displayed options. \\
+Not evaluated & The request could not be classified because a required
+question or code relationship was unavailable. This is normally a data or
+application problem, not an expected learner outcome. \\
 \bottomrule
 \end{tabularx}
 
-The explanation beneath the result states the rule-relevant reason. Choose
-\textbf{Try another code} to answer the same case again, or
-\textbf{Back to cases} to choose a different case.
+The explanation beneath the result states the rule-relevant reason, in the
+selected interface language. A collapsed \textbf{Technical details}
+section is available beneath it, showing the determining rule and
+criterion for anyone who wants to inspect exactly which rule fired ---
+useful for demonstration, not required reading for normal use. Once
+submitted, an answer is locked for the rest of that attempt; choose
+\textbf{Next question}, or \textbf{Review patient} after the last question
+of that patient.
+
+\subsection{Review a completed patient}
+
+After the last question, a review screen shows the patient's name with a
+completion acknowledgement, raw counts of correct/suboptimal/incorrect
+results (never a weighted score), and a list of every question with its
+result. From here, choose \textbf{Play again} to reattempt the same
+patient with its questions reshuffled, or \textbf{Choose another patient}
+to return to the patient list.
 
 \section{Starting, stopping, and updating}
 
@@ -382,6 +462,17 @@ when you need a clean copy of the baseline.
 
 \section{Optional: run the automated tests}
 
+\warningbox{Currently broken, pending an in-progress test-suite update}{
+  The committed PHPUnit suite (\texttt{app/tests/}) still targets the
+  prototype's previous, single-question-per-case data model and has not
+  yet been rewritten for the current six-patient/25-question model
+  described in this guide. Running the commands below currently reports
+  most unit tests erroring, not passing. This is a known, tracked gap
+  (see \path{docs/CHANGELOG.md}), not a sign that something in your local
+  setup is broken. The application itself is unaffected --- it does not
+  depend on this test suite to run.
+}
+
 The application does not start test tooling during normal use. To run the
 containerized unit, integration, and browser-driven test suite:
 
@@ -397,9 +488,10 @@ before the commands above:
 docker compose --profile test build test
 \end{lstlisting}
 
-A successful run ends with PHPUnit reporting no failures or errors. The
-browser tests use a separate Selenium container and may take longer on the
-first run.
+Once the test-suite update above lands, a successful run will end with
+PHPUnit reporting no failures or errors; until then, expect errors as
+described in the warning above. The browser tests use a separate Selenium
+container and may take longer on the first run.
 
 Stop the application and test services when finished:
 
@@ -435,7 +527,7 @@ If the log reports an unsupported in-place upgrade, use the reset procedure
 in Section~\ref{sec:reset-data}. This deletes and reconstructs the local
 baseline database.
 
-\subsection{The page does not load or cases do not appear}
+\subsection{The page does not load or patients do not appear}
 
 Check the service state and health endpoint:
 
@@ -478,15 +570,18 @@ these ports; they belong only to the optional Selenium service.
 \section{Data, privacy, and scope}
 
 \begin{itemize}
-  \item All bundled cases are synthetic teaching cases.
+  \item All bundled patients and questions are synthetic teaching content.
   \item The current interface has no account system and does not persist
-        learner submissions or attempt history.
-  \item The database volume holds the versioned prototype catalogue, case,
-        rule-support, and reference-response baseline.
+        learner submissions or attempt history anywhere server-side. The
+        per-patient \textit{Completed} marks described in
+        Section~\ref{sec:learner-workflow} live only in the browser, only
+        for the current session, and are never sent to the server.
+  \item The database volume holds the versioned prototype catalogue,
+        patient, question, rule-support, and reference-response baseline.
   \item The implemented catalogue is a small, traceable subset of the Austrian
         ICD-10 BMASGPK 2026 material, not the entire catalogue.
-  \item Results express the prototype's declared rules and case relationships;
-        they are not medical or official coding advice.
+  \item Results express the prototype's declared rules and question
+        relationships; they are not medical or official coding advice.
 \end{itemize}
 
 \section{Further project documentation}

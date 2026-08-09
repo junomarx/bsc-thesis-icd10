@@ -1,0 +1,30 @@
+{
+  "reference_response_baseline_id": "RCBASE-0.3",
+  "status": "candidate_predefined_expectations_not_execution_results",
+  "date": "2026-08-08",
+  "question_baseline_id": "QUESTIONBASE-0.1",
+  "rule_baseline_id": "RULEBASE-0.2",
+  "model_baseline_id": "MODELBASE-0.2",
+  "subset_baseline_id": "SUBSET-0.2",
+  "oracle_file": "reference_responses_0_3_candidate.csv",
+  "oracle_sha256": "17e13a6c07c71c6bdcd7ad80a869e6510f89753cbd9411a802d58d681111f1b7",
+  "counts": {
+    "learner_code_responses": 100,
+    "learner_none_of_above_responses": 25,
+    "learner_total": 125,
+    "legacy_regression_total": 18,
+    "total": 143,
+    "correct": 33,
+    "suboptimal": 20,
+    "incorrect": 90
+  },
+  "legacy_provenance": {
+    "exact_semantic_carry_forward_from_rcbase_0_1": 14,
+    "reconstructed_from_implementation_documentation": 4,
+    "raw_rcbase_0_2_diff_required_before_freeze": true
+  },
+  "learner_expectation_status": "forward_specification_derived_pending_human_oracle_audit",
+  "runtime_access_allowed": false,
+  "implementation_output_used_to_author_expectations": false,
+  "application_verification_claim": "none"
+}

@@ -1,23 +1,23 @@
 # Project documentation set
 
 This folder documents the **implemented prototype and how to use it**, as
-distinct from the **specification** it implements. The control artefacts at the repository
-root (`chapter3_input_source_baseline_register.md`,
-`chapter3_requirements_catalogue.md`,
-`chapter3_domain_error_taxonomy_and_classification_baseline.md`,
-`chapter3_rule_catalogue.md`, `chapter3_reference_case_coverage_plan.md`,
-`chapter3_data_model_and_interaction_baseline.md`,
-`chapter3_test_catalogue.md`) remain the upstream authority for *what the
-software is supposed to do and why*. Nothing in this folder overrides them;
+distinct from the **specification** it implements. The control artefacts at
+the repository root remain the upstream authority for *what the software is
+supposed to do and why*; since the 8-9 August 2026 forward redesign
+(patient/question model, `MODELBASE-0.2`/`RULEBASE-0.2`), the current
+authority is the `_0_2`/`_0_5`/`_0_6`/`_0_7`-suffixed siblings of the
+original `chapter3_*.md` files (e.g. `chapter3_rule_catalogue_0_2.md`,
+`chapter3_requirements_catalogue.md` now at `0.6`) — see `HANDOFF.md` §1 for
+the exact current reading order. Nothing in this folder overrides them;
 where the two disagree, the control artefacts win and the discrepancy should
 be logged in [CHANGELOG.md](CHANGELOG.md).
 
 | File | Answers | Audience |
 |---|---|---|
-| [USER_GUIDE.pdf](USER_GUIDE.pdf) ([LaTeX source](USER_GUIDE.tex)) | *How do I install and use the prototype?* Quick start, learner workflow, lifecycle commands, optional test run, troubleshooting, and scope cautions. | Prototype users, demonstrators, evaluators, and new project contributors. |
-| [DEVELOPMENT_DOCUMENTATION.md](DEVELOPMENT_DOCUMENTATION.md) | *Why does the implementation look the way it does?* Technology choices, architectural decisions, UI/backend design principles, how the build fits the project's Design Science Research framing. | Thesis chapter drafting; anyone who needs the rationale, not just the result. |
-| [IMPLEMENTATION_SPECIFICATION.md](IMPLEMENTATION_SPECIFICATION.md) | *What exactly was built?* Concrete data model, rule-engine contract, API contract, frontend structure, build/deploy contract, as it exists right now. | Anyone extending or auditing the code; the appendix-style reference. |
-| [REQUIREMENTS_TRACEABILITY.md](REQUIREMENTS_TRACEABILITY.md) | *Does every requirement actually have a verification destination?* All 31 `REQ-*` entries audited against real evidence, not planned intent. | `REQ-TRC-01` compliance; a ready draft for the thesis appendix. |
+| [USER_GUIDE.pdf](USER_GUIDE.pdf) ([LaTeX source](USER_GUIDE.tex)) | *How do I install and use the prototype?* Quick start, learner (patient/question) workflow, language switch, lifecycle commands, optional test run, troubleshooting, and scope cautions. | Prototype users, demonstrators, evaluators, and new project contributors. |
+| [DEVELOPMENT_DOCUMENTATION.md](DEVELOPMENT_DOCUMENTATION.md) | *Why does the implementation look the way it does?* Technology choices, architectural decisions, UI/backend design principles, the forward redesign's own rationale (§13-14), how the build fits the project's Design Science Research framing. | Thesis chapter drafting; anyone who needs the rationale, not just the result. |
+| [IMPLEMENTATION_SPECIFICATION.md](IMPLEMENTATION_SPECIFICATION.md) | *What exactly was built?* Concrete data model, rule-engine contract, API contract, frontend structure, build/deploy contract, as it exists right now — including an honest statement of which parts (the test suite) are not yet migrated. | Anyone extending or auditing the code; the appendix-style reference. |
+| [REQUIREMENTS_TRACEABILITY.md](REQUIREMENTS_TRACEABILITY.md) | *Does every requirement actually have a verification destination?* Every `REQ-*` entry in the current catalogue audited against real evidence, not planned intent, with an explicit status for the ones evidenced by inspection rather than an automated test. | `REQ-TRC-01` compliance; a ready draft for the thesis appendix. |
 | [CHANGELOG.md](CHANGELOG.md) | *What changed, and when?* Dated, chronological log of implementation increments. | Tracing how the current state was reached; thesis "development process" narrative. |
 
 ## Keeping this set current

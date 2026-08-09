@@ -44,7 +44,7 @@ services:
   bootstrap:
     image: ${BOOTSTRAP_IMAGE:-ghcr.io/junomarx/bsc-thesis-icd10-bootstrap:latest}
     build:
-      context: ./prototype_baseline_0_1
+      context: ./prototype_baseline_0_2_design
       dockerfile: Dockerfile.bootstrap
     environment:
       ICD_DB_HOST: db

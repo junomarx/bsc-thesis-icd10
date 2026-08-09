@@ -1,31 +1,61 @@
-# UX/UI stretch-goal specification (draft)
+# UX/UI stretch-goal specification
 
-**Status: draft, awaiting project-owner review — nothing here is
-implemented or approved.** Derived from
+**Status: implemented and verified, 2026-08-08 — this file is now
+historical.** Per §8 below, its conclusions have been folded into
+`docs/DEVELOPMENT_DOCUMENTATION.md` §7 (current rationale) and
+`docs/IMPLEMENTATION_SPECIFICATION.md` §5 (current structure); read those
+for the living version. Kept on disk as the planning record, the same
+role `chapter3_reference_case_coverage_plan.md` plays for the case
+baseline. One item this redesign surfaced but deliberately did not
+resolve, since fixing it would cross the case-data boundary this document
+holds throughout: `CASE-003`/`005`/`006`/`007`'s single-code response
+domains make for a trivial "choice" once the case list names each case via
+`short_description` — see `HANDOFF.md` §8 for where that stands.
+
+**Status when approved, 2026-08-08:** Derived from
 [UX_UI_BRAINSTORM.md](UX_UI_BRAINSTORM.md); read that first for the full
-idea set and the reasoning behind what got included or excluded here. This
-document narrows that list to a concrete, implementable plan and makes an
-explicit recommendation on every open question the brainstorm raised, so
-the project owner can approve, amend, or veto at the level of a single
-decision rather than rewriting from scratch. Once approved, this becomes
-the basis for actual implementation, at which point it graduates into the
-normal `CLAUDE.md` documentation-upkeep discipline (see
+idea set and the reasoning behind what got included or excluded. The
+project owner reviewed both documents and made one scope call: **no new
+case narrative content or data-model change**, full stop — everything else
+originally proposed as a non-goal here (a client-side router,
+autocomplete-style search, a UI framework, and — the one explicitly
+upgraded from "flag for veto" to "essential" — a lightweight gamification
+layer) is in scope, provided it stays frontend-only (plus test updates);
+the backend, rule engine, and data layer are the hard limit. §1 and §9
+below are updated to reflect that decision directly; the rest of this
+document's per-component specifications already anticipated it (they were
+always written to be additive on top of, not blocked by, that eventual
+answer). This is now the basis for actual implementation, which graduates
+it into the normal `CLAUDE.md` documentation-upkeep discipline (see
 [§8](#8-documentation-impact-once-implemented)) rather than staying a
-standalone file.
+standalone planning file once each phase lands.
 
 ## 1. Purpose, scope, and the governing constraint
 
 **Goal:** make the frontend look and function like a deliberately designed
-product — oriented, styled, responsive — without reversing any of the
-architectural decisions in `docs/DEVELOPMENT_DOCUMENTATION.md` §7 or
-breaking the Selenium E2E contract (`app/tests/E2E/`).
+product — oriented, styled, responsive, with a lightweight sense of
+progress — without reversing the architectural decisions in
+`docs/DEVELOPMENT_DOCUMENTATION.md` §7 that still hold (feedback keeps
+colour+text+now-icon redundancy; the client never receives enough
+information to reveal the answer key; the disclaimer stays first-visible)
+or breaking the Selenium E2E contract (`app/tests/E2E/`).
 
-**Non-goals** (excluded per the brainstorm's scope-creep flags): no
-client-side router, no network-backed autocomplete, no new case narrative
-content/data-model change, no progress-tracking or gamification, no change
-to evaluation logic or explanation wording, no UI framework/component
-library adoption (see [§2.1](#21-styling-approach-recommended-decision)
-for the recommendation and why it stays dependency-free).
+**The one remaining non-goal:** no new case narrative content and no
+data-model change of any kind — `short_description` (already returned by
+the API) is the naming source, unchanged (see [§5](#5-naming--data)).
+
+**Explicitly in scope, per the project owner's 2026-08-08 decision** (all
+frontend-only, plus test updates where needed): a gamification layer,
+deliberately kept small *by instruction*, not by default
+([§3.7](#37-gamification-progress-layer));
+a UI framework/library, if and where it earns its keep (still defaulting to
+plain CSS on engineering merits, not because it's disallowed —
+[§2.1](#21-styling-approach-recommended-decision)); autocomplete-style
+search polish over the existing client-side filter
+([§3.4](#34-case-detail)); and a client-side router, which
+[§2.6](#26-client-side-routing-reconsidered-still-declined) explains was
+reconsidered and still not adopted, on its own merits rather than because
+it was off the table.
 
 **Governing constraint:** every component spec below states explicitly
 which existing E2E selector/text it must preserve, and which test (if any)
@@ -33,7 +63,9 @@ must change in the same commit. This is not optional cleanup — silently
 changing a selector the Selenium suite depends on is exactly the kind of
 regression that would only surface once someone runs the full suite (or
 worse, only in CI), which is preventable by treating it as part of the
-spec instead of an afterthought.
+spec instead of an afterthought. The same discipline now also applies to
+[§3.7](#37-gamification-progress-layer)'s new behaviour: it gets its own
+E2E coverage, not a hope that manual testing catches it.
 
 ## 2. Design system foundation
 
@@ -146,8 +178,36 @@ Small inline SVGs, hand-authored or from a permissively-licensed set
 (e.g. Lucide/Heroicons — MIT-licensed, copy only the specific `<svg>`
 markup needed rather than adding the package as a dependency). Needed for:
 setting badges (inpatient/outpatient), the three result classes
-(check/warning/cross), and the tutorial trigger (`?`). No icon-font, no
-new runtime dependency — icons are static markup, not a loaded asset.
+(check/warning/cross), the tutorial trigger (`?`), and the four
+gamification progress states ([§3.7](#37-gamification-progress-layer)).
+No icon-font, no new runtime dependency — icons are static markup, not a
+loaded asset.
+
+### 2.6 Client-side routing (reconsidered, still declined)
+
+The project owner's 2026-08-08 decision explicitly lifted the "no router"
+restriction — it's permitted, not just tolerated. Reconsidered on that
+basis and still not adopted, for reasons independent of whether it was
+allowed:
+
+- The workflow stays exactly as linear as before (case list → detail →
+  result); gamification ([§3.7](#37-gamification-progress-layer)) is shown
+  entirely within the existing case list view and needs no route of its
+  own — a "your progress" indicator is not a "your progress" *page*.
+- Introducing `react-router` (or hand-rolled `history`/`popstate` handling)
+  changes real browser behaviour — back-button semantics, URL structure —
+  for no capability anyone has asked for (no deep-linking/bookmarking
+  requirement exists anywhere in the requirements catalogue).
+- It's a new runtime dependency and a real
+  `DEVELOPMENT_DOCUMENTATION.md`-grade decision that would need its own
+  rationale entry for zero concrete benefit identified so far.
+
+**This is a call made on engineering merits, flagged here explicitly so it
+reads as a considered decision rather than an oversight** — if the project
+owner disagrees (e.g., wants bookmarkable case URLs for demonstration
+purposes), that's a one-line override, not a rework of anything else in
+this specification, since nothing else here depends on which way this
+goes.
 
 ## 3. Component specifications
 
@@ -288,6 +348,67 @@ achieves this without hand-written breakpoints).
 **E2E impact:** none of these paths are currently asserted by name/class
 in the E2E suite beyond what's already covered above.
 
+### 3.7 Gamification / progress layer
+
+Per the project owner's instruction: "essential... but not an elaborate
+concept." Concretely, that means tracking *attempt state per case* and
+reflecting it back on the case list — nothing that needs a backend,
+an account, or persistence beyond one browser.
+
+**Mechanism — entirely client-side, zero data-layer change:**
+
+- New module `app/frontend/src/lib/progress.js`. Reads/writes a single
+  `localStorage` key (`icd10_progress_v1`) holding
+  `{ [case_id]: { attempts: number, lastClassification: 'correct' |
+  'suboptimal' | 'incorrect' } }`.
+- Written once per submission, from the same place `App.jsx` already
+  handles the `evaluate()` response — no new network call, no change to
+  `api.js` or any backend endpoint.
+- Versioned key name (`_v1`) so a future shape change doesn't need to
+  migrate old data — it can just be ignored/reset, which is an acceptable
+  cost for a prototype with no real user data at stake.
+
+**What the learner sees:**
+
+- **Case list:** each card gets a small badge reflecting
+  `lastClassification` for that `case_id` — empty/neutral "Not attempted
+  yet" state, or the same check/warning/cross icon + colour + text used on
+  the result view ([§3.5](#35-result-view)), so the vocabulary is
+  consistent across the whole app rather than a second iconography for
+  "progress."
+- **List header:** a one-line summary, "`<attempted>` of `<total>` cases
+  attempted" (`total` = the learner-visible case count from `/api/cases`,
+  currently 6).
+- **Completion state:** when every learner-visible case has
+  `lastClassification === 'correct'`, a small dismissible banner
+  acknowledges it once (not a modal, not a repeated nag — reappears on
+  next full page load rather than persisting a "dismissed forever" flag,
+  since there's no cost to seeing it again on a fresh visit). No score, no
+  streak counter, no leaderboard — explicitly excluded per "not an
+  elaborate concept."
+- Resetting progress is a side effect of clearing browser storage
+  (private/incognito windows start fresh); no in-app "reset progress"
+  control is included in this pass — trivial to add later if wanted, but
+  not asked for.
+
+**Markup contract (for both styling and the new E2E test below):** each
+case card carries `data-case-id="<case_id>"`; its progress badge carries
+`data-progress-status="not_attempted|correct|suboptimal|incorrect"` and
+visible text matching one of `Not attempted` / `Correct` / `Suboptimal` /
+`Incorrect` (same vocabulary as `CLASS_LABELS` in `App.jsx` today).
+
+**E2E impact — this is new test surface, not a preserved contract:**
+add a case to `LearnerWorkflowTest` (or a small new test class) that:
+submits a code for `CASE-001`, navigates back to the case list, and
+asserts `[data-case-id="CASE-001"] [data-progress-status]` now reads the
+expected class — proving the localStorage round-trip actually reaches the
+DOM, not just that the module's unit logic is correct. This is frontend
+behaviour with no backend equivalent, so it has no `TEST-*` upstream
+identifier; document it in `docs/IMPLEMENTATION_SPECIFICATION.md` §7 as
+frontend-only supplementary coverage, not a new formal `TEST-*` catalogue
+entry (that catalogue is upstream-controlled per `chapter3_test_catalogue.md`
+and out of scope to extend for a presentation-layer feature).
+
 ## 4. Responsive breakpoints
 
 | Range | Behaviour |
@@ -319,10 +440,13 @@ Sequenced so each phase leaves the app in a shippable, fully-tested state
 1. **Design tokens** (§2) — add the `:root` custom-property block to
    `App.css`; no visible change yet beyond whatever inherits the new
    tokens incidentally. Zero E2E risk.
-2. **Case list & naming** (§3.3) — highest visibility, lowest risk, most
-   self-contained. Update `VerificationOnlyCaseVisibilityTest` /
-   `LearnerWorkflowTest` selectors only if the card's root element stops
-   being a `<button>` (not recommended — keep it a button).
+2. **Case list, naming & gamification badges** (§3.3, §3.7) — highest
+   visibility, lowest risk, most self-contained; bundled together because
+   the progress badges live on the same cards. Update
+   `VerificationOnlyCaseVisibilityTest` / `LearnerWorkflowTest` selectors
+   only if the card's root element stops being a `<button>` (not
+   recommended — keep it a button); add the new progress-badge E2E
+   coverage from §3.7 here, not deferred to a later phase.
 3. **Case detail & code selection** (§3.4).
 4. **Result view** (§3.5).
 5. **Tutorial/onboarding** (§3.2) — deliberately after the other screens
@@ -384,19 +508,19 @@ same turn as each slice:
   (kept for the record, like `chapter3_reference_case_coverage_plan.md`'s
   role for the case baseline, rather than deleted).
 
-## 9. Open decisions requiring explicit sign-off
+## 9. Decisions (resolved 2026-08-08)
 
-Carried from the brainstorm's question list, with this document's default
-if not overridden:
+Carried from the brainstorm's question list. All five are now resolved;
+kept in table form for the record rather than deleted.
 
-| # | Decision | This spec's default |
+| # | Decision | Resolution |
 |---|---|---|
-| 1 | Case naming: `short_description` as-is vs. new richer narrative content | `short_description` as-is (§5) — no data/baseline change |
-| 2 | Styling approach: plain CSS vs. framework/library | Plain CSS custom properties, no new dependency (§2.1) |
-| 3 | Dark mode: explicit design attention vs. "don't break existing native support" | Explicit token-level support (§2.2), since it's nearly free once a palette exists anyway |
-| 4 | Tutorial shape: auto-shown modal vs. contextual hints vs. both | Auto-shown modal + persistent re-entry button (§3.2); contextual hints not included by default |
-| 5 | Progress/gamification appetite | Out of scope (per brainstorm's scope-creep flag) |
+| 1 | Case naming: `short_description` as-is vs. new richer narrative content | **Resolved: `short_description` as-is (§5) — no data/baseline change, the one hard non-goal.** |
+| 2 | Styling approach: plain CSS vs. framework/library | **Resolved: permitted either way; plain CSS custom properties chosen on engineering merit (§2.1), not because a framework was disallowed.** |
+| 3 | Dark mode: explicit design attention vs. "don't break existing native support" | Not separately addressed in the reply — this spec's default (explicit token-level support, §2.2) stands. |
+| 4 | Tutorial shape: auto-shown modal vs. contextual hints vs. both | Not separately addressed in the reply — this spec's default (auto-shown modal + persistent re-entry button, §3.2) stands. |
+| 5 | Progress/gamification appetite | **Resolved: in scope, and explicitly "regarded as essential for the successful completion of the implementation" — deliberately not an elaborate concept (§3.7).** |
 
-Everything else in this document is a default, not a locked decision —
-the project owner's review is expected to add, amend, or strike items
-freely before any implementation begins.
+Everything not listed above remains a default rather than a locked
+decision — still open to amendment on request, but nothing here is
+blocking implementation from proceeding.

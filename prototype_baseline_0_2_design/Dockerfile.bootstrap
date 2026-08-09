@@ -1,0 +1,19 @@
+FROM python:3.12-slim-bookworm
+
+WORKDIR /opt/icd-prototype-baseline-0-2
+
+RUN pip install --no-cache-dir mysql-connector-python==26.7.0
+
+# Runtime bootstrap inputs and code are copied explicitly. In particular, the
+# RCBASE verification oracle (verification/reference_responses_0_3_candidate.csv)
+# is not present in this image.
+COPY data/ ./data/
+COPY persistence_candidate/mysql_schema_0_2.sql \
+     persistence_candidate/runtime_manifest_0_2.json \
+     persistence_candidate/runtime_data_0_2.py \
+     persistence_candidate/apply_mysql_schema_0_2.py \
+     persistence_candidate/load_mysql_0_2.py \
+     persistence_candidate/bootstrap_mysql_0_2.py \
+     ./persistence_candidate/
+
+CMD ["python", "persistence_candidate/bootstrap_mysql_0_2.py"]

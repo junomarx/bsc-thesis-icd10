@@ -7,7 +7,7 @@ namespace Icd10Prototype\Repository;
 use Icd10Prototype\Model\CatalogueRecord;
 
 /**
- * Reads only the 13 SUBSET-0.1 records (catalogue_code). No verification
+ * Reads only the 99 SUBSET-0.2 records (catalogue_code). No verification
  * oracle table exists in this schema and none is queried here (TEST-ARC-01).
  */
 final class CatalogueRepository

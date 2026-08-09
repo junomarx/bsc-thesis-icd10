@@ -1,189 +1,164 @@
-import { useEffect, useMemo, useState } from 'react'
-import { evaluate, getCase, listCases } from './api.js'
+import { useEffect, useState } from 'react'
+import { evaluate, getPatient, getQuestion, listPatients } from './api.js'
+import Footer from './components/Footer.jsx'
+import Header from './components/Header.jsx'
+import PatientRoster from './components/PatientRoster.jsx'
+import PatientReview from './components/PatientReview.jsx'
+import QuestionView from './components/QuestionView.jsx'
+import { shuffledOrder } from './lib/playthrough.js'
 import './App.css'
 
-const CLASS_LABELS = {
-  correct: 'Correct',
-  suboptimal: 'Suboptimal',
-  incorrect: 'Incorrect',
-}
+// REQ-UI-02: patient-level completion is shown on the roster, but is
+// explicitly "session-local" - sessionStorage (cleared when the browser
+// session ends), never a server-side attempt history (REQ-INT-05).
+const COMPLETED_STORAGE_KEY = 'icd10-prototype:completed-patients'
 
-function CaseList({ cases, onSelect, loading, error }) {
-  return (
-    <section>
-      <h1>ICD-10 coding practice (prototype)</h1>
-      <p className="disclaimer">
-        Synthetic teaching cases only. This tool does not diagnose patients, does not
-        provide clinical decision support, and is not used for official coding,
-        reporting, or reimbursement.
-      </p>
-      {loading && <p>Loading cases…</p>}
-      {error && <p className="error">Could not load cases: {error}</p>}
-      <ul className="case-list">
-        {cases.map((c) => (
-          <li key={c.case_id}>
-            <button type="button" onClick={() => onSelect(c.case_id)}>
-              {c.case_id} — {c.encounter_setting.replace('_', ' ')}, {c.diagnosis_role} diagnosis
-            </button>
-          </li>
-        ))}
-      </ul>
-    </section>
-  )
-}
-
-function CaseDetail({ caseData, onSubmit, submitting, onBack }) {
-  const [search, setSearch] = useState('')
-  const [selectedCode, setSelectedCode] = useState(null)
-
-  const visibleCodes = useMemo(() => {
-    const term = search.trim().toLowerCase()
-    if (term === '') return caseData.supported_codes
-    return caseData.supported_codes.filter(
-      (code) =>
-        code.code.toLowerCase().includes(term) ||
-        code.designation.toLowerCase().includes(term) ||
-        code.short_designation.toLowerCase().includes(term),
-    )
-  }, [search, caseData.supported_codes])
-
-  return (
-    <section>
-      <button type="button" className="link-button" onClick={onBack}>
-        ← Back to cases
-      </button>
-      <h2>{caseData.case_id}</h2>
-      <dl className="case-facts">
-        <dt>Setting</dt>
-        <dd>{caseData.encounter_setting.replace('_', ' ')}</dd>
-        <dt>Diagnosis role</dt>
-        <dd>{caseData.diagnosis_role}</dd>
-        {caseData.fev1_stable_pct_predicted !== null && (
-          <>
-            <dt>Stable-phase FEV1</dt>
-            <dd>{caseData.fev1_stable_pct_predicted}% of predicted</dd>
-          </>
-        )}
-      </dl>
-
-      <label htmlFor="code-search">Search supported codes</label>
-      <input
-        id="code-search"
-        type="text"
-        value={search}
-        onChange={(event) => setSearch(event.target.value)}
-        placeholder="Search by code or designation…"
-      />
-
-      <ul className="code-list">
-        {visibleCodes.map((code) => (
-          <li key={code.code}>
-            <label>
-              <input
-                type="radio"
-                name="submitted_code"
-                value={code.code}
-                checked={selectedCode === code.code}
-                onChange={() => setSelectedCode(code.code)}
-              />
-              <strong>{code.code}</strong> — {code.short_designation}
-            </label>
-          </li>
-        ))}
-      </ul>
-
-      <button
-        type="button"
-        disabled={selectedCode === null || submitting}
-        onClick={() => onSubmit(selectedCode)}
-      >
-        {submitting ? 'Submitting…' : 'Submit code'}
-      </button>
-    </section>
-  )
-}
-
-function ResultView({ result, onRetry, onBack }) {
-  if (result.evaluation_status === 'not_evaluated') {
-    return (
-      <section>
-        <h2>Not evaluated</h2>
-        <p>This submission could not be classified ({result.reason}).</p>
-        <button type="button" onClick={onRetry}>Try another code</button>
-        <button type="button" className="link-button" onClick={onBack}>Back to cases</button>
-      </section>
-    )
+function readCompletedPatientIds() {
+  try {
+    const stored = sessionStorage.getItem(COMPLETED_STORAGE_KEY)
+    const parsed = stored ? JSON.parse(stored) : []
+    return new Set(Array.isArray(parsed) ? parsed : [])
+  } catch {
+    return new Set()
   }
-
-  return (
-    <section>
-      <h2 className={`result-heading result-${result.classification}`}>
-        {CLASS_LABELS[result.classification] ?? result.classification}
-      </h2>
-      <p>{result.explanation}</p>
-      {result.improvement_code && (
-        <p className="improvement">Suggested improvement: <strong>{result.improvement_code}</strong></p>
-      )}
-      <button type="button" onClick={onRetry}>Try another code</button>
-      <button type="button" className="link-button" onClick={onBack}>Back to cases</button>
-    </section>
-  )
 }
 
 export default function App() {
-  const [cases, setCases] = useState([])
-  const [loadingCases, setLoadingCases] = useState(true)
-  const [listError, setListError] = useState(null)
+  const [patients, setPatients] = useState([])
+  const [loadingPatients, setLoadingPatients] = useState(true)
+  const [patientsError, setPatientsError] = useState(null)
+  const [completedPatientIds, setCompletedPatientIds] = useState(() => readCompletedPatientIds())
 
-  const [activeCase, setActiveCase] = useState(null)
-  const [result, setResult] = useState(null)
+  const [view, setView] = useState('roster')
+  const [activePatient, setActivePatient] = useState(null)
+  const [orderedQuestionIds, setOrderedQuestionIds] = useState([])
+  const [currentIndex, setCurrentIndex] = useState(0)
+  const [questionsById, setQuestionsById] = useState({})
+  const [results, setResults] = useState({})
   const [submitting, setSubmitting] = useState(false)
 
   useEffect(() => {
-    listCases()
+    listPatients()
       .then(({ status, body }) => {
         if (status !== 200) throw new Error(body?.error ?? `HTTP ${status}`)
-        setCases(body.cases)
+        setPatients(body.patients)
       })
-      .catch((error) => setListError(error.message))
-      .finally(() => setLoadingCases(false))
+      .catch((error) => setPatientsError(error.message))
+      .finally(() => setLoadingPatients(false))
   }, [])
 
-  function openCase(caseId) {
-    setResult(null)
-    getCase(caseId).then(({ status, body }) => {
-      if (status === 200) setActiveCase(body)
+  const currentQuestionId = orderedQuestionIds[currentIndex] ?? null
+  const currentQuestion = currentQuestionId ? questionsById[currentQuestionId] : null
+
+  useEffect(() => {
+    if (view !== 'playthrough' || currentQuestionId === null || questionsById[currentQuestionId]) return
+
+    getQuestion(currentQuestionId).then(({ status, body }) => {
+      if (status === 200) {
+        setQuestionsById((prev) => ({ ...prev, [currentQuestionId]: body }))
+      }
+    })
+  }, [view, currentQuestionId, questionsById])
+
+  function selectPatient(patientId) {
+    getPatient(patientId).then(({ status, body }) => {
+      if (status !== 200) return
+      setActivePatient(body)
+      setOrderedQuestionIds(shuffledOrder(body.questions.map((q) => q.question_id)))
+      setCurrentIndex(0)
+      setResults({})
+      setView('playthrough')
     })
   }
 
-  function backToList() {
-    setActiveCase(null)
-    setResult(null)
-  }
-
-  function submitCode(code) {
+  function submitAnswer(response) {
     setSubmitting(true)
-    evaluate(activeCase.case_id, code)
-      .then(({ body }) => setResult(body))
+    evaluate(currentQuestionId, response)
+      .then(({ body }) => setResults((prev) => ({ ...prev, [currentQuestionId]: body })))
       .finally(() => setSubmitting(false))
   }
 
-  if (result !== null) {
-    return <ResultView result={result} onRetry={() => setResult(null)} onBack={backToList} />
+  function advance() {
+    if (currentIndex + 1 >= orderedQuestionIds.length) {
+      setView('review')
+      setCompletedPatientIds((prev) => {
+        if (prev.has(activePatient.patient_id)) return prev
+        const next = new Set(prev)
+        next.add(activePatient.patient_id)
+        try {
+          sessionStorage.setItem(COMPLETED_STORAGE_KEY, JSON.stringify([...next]))
+        } catch {
+          // private-browsing/quota: completion badge just won't survive this
+        }
+        return next
+      })
+      return
+    }
+    setCurrentIndex((i) => i + 1)
   }
 
-  if (activeCase !== null) {
-    return (
-      <CaseDetail
-        caseData={activeCase}
-        onSubmit={submitCode}
-        submitting={submitting}
-        onBack={backToList}
-      />
-    )
+  function replay() {
+    setOrderedQuestionIds(shuffledOrder(activePatient.questions.map((q) => q.question_id)))
+    setCurrentIndex(0)
+    setResults({})
+    setView('playthrough')
+  }
+
+  function chooseAnother() {
+    setActivePatient(null)
+    setOrderedQuestionIds([])
+    setCurrentIndex(0)
+    setResults({})
+    setView('roster')
+  }
+
+  function resetProgress() {
+    setCompletedPatientIds(new Set())
+    try {
+      sessionStorage.removeItem(COMPLETED_STORAGE_KEY)
+    } catch {
+      // private-browsing/quota: nothing to clean up in that case
+    }
   }
 
   return (
-    <CaseList cases={cases} onSelect={openCase} loading={loadingCases} error={listError} />
+    <>
+      <Header />
+      {view === 'roster' && (
+        <PatientRoster
+          patients={patients}
+          completedPatientIds={completedPatientIds}
+          onSelect={selectPatient}
+          onResetProgress={resetProgress}
+          loading={loadingPatients}
+          error={patientsError}
+        />
+      )}
+      {view === 'playthrough' && activePatient && currentQuestion && (
+        <QuestionView
+          patient={activePatient}
+          question={currentQuestion}
+          questionNumber={currentIndex + 1}
+          totalQuestions={orderedQuestionIds.length}
+          result={results[currentQuestionId] ?? null}
+          submitting={submitting}
+          onSubmit={submitAnswer}
+          onAdvance={advance}
+          onExit={chooseAnother}
+          isLast={currentIndex + 1 >= orderedQuestionIds.length}
+        />
+      )}
+      {view === 'review' && activePatient && (
+        <PatientReview
+          patient={activePatient}
+          orderedQuestionIds={orderedQuestionIds}
+          questionsById={questionsById}
+          results={results}
+          onReplay={replay}
+          onChooseAnother={chooseAnother}
+        />
+      )}
+      <Footer />
+    </>
   )
 }

@@ -5,7 +5,16 @@ declare(strict_types=1);
 namespace Icd10Prototype\Evaluation;
 
 /**
- * Terminal shape fixed by RULEBASE-0.1 Section 2 / MODELBASE-0.1 Section 10.1.
+ * Terminal shape fixed by RULEBASE-0.2 Section 2 / MODELBASE-0.2 Section 7.
+ * Unchanged shape from RULEBASE-0.1 - it already generalizes across every
+ * determining rule, including the net-new RULE-REL-HARD-01/REL-SPEC-01/
+ * NOA-01.
+ *
+ * `explanationDe` is additive (project-owner request, 9 August 2026): the
+ * frontend's EN/DE UI switch was translating chrome and content but not the
+ * evaluator's own prose, which stayed English regardless of locale. Every
+ * `classified()` call site in Evaluator.php must supply both languages -
+ * required, not optional, so a future rule can't silently ship English-only.
  */
 final class EvaluationResult
 {
@@ -20,6 +29,7 @@ final class EvaluationResult
         public readonly ?string $determiningRule,
         public readonly ?string $criterion,
         public readonly ?string $explanation,
+        public readonly ?string $explanationDe,
         public readonly ?array $explanationElements,
         public readonly ?array $matchedRules,
         public readonly ?string $improvementCode,
@@ -28,7 +38,7 @@ final class EvaluationResult
 
     public static function notEvaluated(string $reason): self
     {
-        return new self('not_evaluated', null, $reason, null, null, null, null, null, null);
+        return new self('not_evaluated', null, $reason, null, null, null, null, null, null, null);
     }
 
     /**
@@ -40,6 +50,7 @@ final class EvaluationResult
         string $determiningRule,
         string $criterion,
         string $explanation,
+        string $explanationDe,
         array $explanationElements,
         array $matchedRules,
         ?string $improvementCode,
@@ -51,6 +62,7 @@ final class EvaluationResult
             $determiningRule,
             $criterion,
             $explanation,
+            $explanationDe,
             $explanationElements,
             $matchedRules,
             $improvementCode,

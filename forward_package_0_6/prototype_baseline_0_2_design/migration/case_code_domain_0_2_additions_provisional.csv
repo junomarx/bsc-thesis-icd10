@@ -1,0 +1,5 @@
+case_baseline_id,case_id,subset_baseline_id,code,is_acceptable,provenance_status
+CASEBASE-0.2,CASE-005,SUBSET-0.1,J44.00,1,reconstructed_from_implementation_documentation
+CASEBASE-0.2,CASE-006,SUBSET-0.1,J44.11,1,reconstructed_from_implementation_documentation
+CASEBASE-0.2,CASE-007,SUBSET-0.1,J44.03,1,reconstructed_from_implementation_documentation
+CASEBASE-0.2,CASE-008,SUBSET-0.1,Z01.6,0,reconstructed_from_implementation_documentation

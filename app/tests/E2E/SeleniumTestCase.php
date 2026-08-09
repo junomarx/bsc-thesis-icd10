@@ -46,6 +46,28 @@ abstract class SeleniumTestCase extends TestCase
         $this->wait()->until(WebDriverExpectedCondition::presenceOfElementLocated(
             WebDriverBy::className('case-list'),
         ));
+        $this->dismissTutorialIfPresent();
+    }
+
+    /**
+     * The first-visit tutorial modal (docs/UX_UI_SPECIFICATION.md §3.2)
+     * auto-shows once per browser profile (localStorage flag). A fresh
+     * WebDriver session has no prior visit, so it would otherwise cover
+     * the case list and intercept the next click - dismiss it exactly as
+     * a real first-time learner would, rather than special-casing test
+     * mode out of the real first-visit behaviour.
+     */
+    private function dismissTutorialIfPresent(): void
+    {
+        $closeButtons = static::$driver->findElements(WebDriverBy::className('tutorial-close'));
+        if ($closeButtons === []) {
+            return;
+        }
+
+        $closeButtons[0]->click();
+        $this->wait()->until(WebDriverExpectedCondition::invisibilityOfElementLocated(
+            WebDriverBy::className('tutorial-overlay'),
+        ));
     }
 
     protected function caseListButtonLabels(): array
@@ -131,7 +153,7 @@ abstract class SeleniumTestCase extends TestCase
         return ['status' => $status, 'body' => json_decode($body, true)];
     }
 
-    private function wait(): WebDriverWait
+    protected function wait(): WebDriverWait
     {
         return new WebDriverWait(static::$driver, 10);
     }

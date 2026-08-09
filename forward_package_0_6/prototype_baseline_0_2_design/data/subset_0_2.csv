@@ -1,0 +1,100 @@
+Diagnose,Kennzeichen,Bezeichnung,Kurzbezeichnung
+C61,,Bösartige Neubildung der Prostata,Bösartige Neubildung der Prostata
+D50.0,,Eisenmangelanämie nach Blutverlust (chronisch),Eisenmangelanämie nach Blutverlust (chronisch)
+D50.8,,Sonstige Eisenmangelanämien,Sonstige Eisenmangelanämien
+D50.9,,"Eisenmangelanämie, nicht näher bezeichnet","Eisenmangelanämie, nicht näher bezeichnet"
+D64.9,,"Anämie, nicht näher bezeichnet","Anämie, nicht näher bezeichnet"
+E03.2,,Hypothyreose durch Arzneimittel oder andere exogene Substanzen,Hypothyreose durch Arzneimittel oder andere exogene Substanzen
+E03.3,,Postinfektiöse Hypothyreose,Postinfektiöse Hypothyreose
+E03.4,,Atrophie der Schilddrüse (erworben),Atrophie der Schilddrüse (erworben)
+E03.9,,"Hypothyreose, nicht näher bezeichnet","Hypothyreose, nicht näher bezeichnet"
+E11.2,+,"Diabetes mellitus, Typ 2: Mit Nierenkomplikationen","Diabetes mellitus, Typ 2: Mit Nierenkomplikationen"
+E11.3,+,"Diabetes mellitus, Typ 2: Mit Augenkomplikationen","Diabetes mellitus, Typ 2: Mit Augenkomplikationen"
+E11.8,,"Diabetes mellitus, Typ 2: Mit nicht näher bezeichneten Komplikationen","Diabetes mellitus, Typ 2: Mit nicht näher bezeichneten Komplikationen"
+E11.9,,"Diabetes mellitus, Typ 2: Ohne Komplikationen","Diabetes mellitus, Typ 2: Ohne Komplikationen"
+E78.0,,Reine Hypercholesterinämie,Reine Hypercholesterinämie
+E78.1,,Reine Hypertriglyzeridämie,Reine Hypertriglyzeridämie
+E78.2,,Gemischte Hyperlipidämie,Gemischte Hyperlipidämie
+E78.5,,"Hyperlipidämie, nicht näher bezeichnet","Hyperlipidämie, nicht näher bezeichnet"
+F01.9,,"Vaskuläre Demenz, nicht näher bezeichnet","Vaskuläre Demenz, nicht näher bezeichnet"
+F03,,Nicht näher bezeichnete Demenz,Nicht näher bezeichnete Demenz
+F05.1,,Delir bei Demenz,Delir bei Demenz
+F20.0,,Paranoide Schizophrenie,Paranoide Schizophrenie
+F20.1,,Hebephrene Schizophrenie,Hebephrene Schizophrenie
+F20.2,,Katatone Schizophrenie,Katatone Schizophrenie
+F20.9,,"Schizophrenie, nicht näher bezeichnet","Schizophrenie, nicht näher bezeichnet"
+F32.1,,Mittelgradige depressive Episode,Mittelgradige depressive Episode
+F33.0,,"Rezidivierende depressive Störung, gegenwärtig leichte Episode","Rezidivierende depressive Störung, gegenwärtig leichte Episode"
+F33.1,,"Rezidivierende depressive Störung, gegenwärtig mittelgradige Episode","Rezidivierende depressive Störung, gegenwärtig mittelgradige Episode"
+F33.9,,"Rezidivierende depressive Störung, nicht näher bezeichnet","Rezidivierende depressive Störung, nicht näher bezeichnet"
+F41.0,,Panikstörung [episodisch paroxysmale Angst],Panikstörung [episodisch paroxysmale Angst]
+F41.1,,Generalisierte Angststörung,Generalisierte Angststörung
+F41.2,,"Angst und depressive Störung, gemischt","Angst und depressive Störung, gemischt"
+F41.9,,"Angststörung, nicht näher bezeichnet","Angststörung, nicht näher bezeichnet"
+G24.0,,Arzneimittelinduzierte Dystonie,Arzneimittelinduzierte Dystonie
+G24.9,,"Dystonie, nicht näher bezeichnet","Dystonie, nicht näher bezeichnet"
+G25.1,,Arzneimittelinduzierter Tremor,Arzneimittelinduzierter Tremor
+G25.4,,Arzneimittelinduzierte Chorea,Arzneimittelinduzierte Chorea
+G40.0,,Lokalisationsbezogene (fokale) (partielle) idiopathische Epilepsie und epileptische Syndrome mit fokal beginnenden Anfällen,Lokalisationsbez. (fok.) (part.) idiopath. Epilepsie u. epilept. Synd. mit fok. beginnenden Anfällen
+G40.3,,Generalisierte idiopathische Epilepsie und epileptische Syndrome,Generalisierte idiopathische Epilepsie und epileptische Syndrome
+G40.4,,Sonstige generalisierte Epilepsie und epileptische Syndrome,Sonstige generalisierte Epilepsie und epileptische Syndrome
+G40.9,,"Epilepsie, nicht näher bezeichnet","Epilepsie, nicht näher bezeichnet"
+G43.0,,Migräne ohne Aura [Gewöhnliche Migräne],Migräne ohne Aura [Gewöhnliche Migräne]
+G43.1,,Migräne mit Aura [Klassische Migräne],Migräne mit Aura [Klassische Migräne]
+G43.2,,Status migraenosus,Status migraenosus
+G43.9,,"Migräne, nicht näher bezeichnet","Migräne, nicht näher bezeichnet"
+H40.0,,Glaukomverdacht,Glaukomverdacht
+H40.1,,Primäres Weitwinkelglaukom,Primäres Weitwinkelglaukom
+H40.2,,Primäres Engwinkelglaukom,Primäres Engwinkelglaukom
+H40.9,,"Glaukom, nicht näher bezeichnet","Glaukom, nicht näher bezeichnet"
+I10,,Essentielle (primäre) Hypertonie,Essentielle (primäre) Hypertonie
+I11.9,,Hypertensive Herzkrankheit ohne (kongestive) Herzinsuffizienz,Hypertensive Herzkrankheit ohne (kongestive) Herzinsuffizienz
+I15.9,,"Sekundäre Hypertonie, nicht näher bezeichnet","Sekundäre Hypertonie, nicht näher bezeichnet"
+I25.1,,Atherosklerotische Herzkrankheit,Atherosklerotische Herzkrankheit
+I25.2,,Alter Myokardinfarkt,Alter Myokardinfarkt
+I25.5,,Ischämische Kardiomyopathie,Ischämische Kardiomyopathie
+I25.9,,"Chronische ischämische Herzkrankheit, nicht näher bezeichnet","Chronische ischämische Herzkrankheit, nicht näher bezeichnet"
+I48.0,,"Vorhofflimmern, paroxysmal","Vorhofflimmern, paroxysmal"
+I48.1,,"Vorhofflimmern, persistierend","Vorhofflimmern, persistierend"
+I48.3,,"Vorhofflattern, typisch","Vorhofflattern, typisch"
+I48.9,,"Vorhofflimmern und Vorhofflattern, nicht näher bezeichnet","Vorhofflimmern und Vorhofflattern, nicht näher bezeichnet"
+I63.9,,"Hirninfarkt, nicht näher bezeichnet","Hirninfarkt, nicht näher bezeichnet"
+I69.1,,Folgen einer intrazerebralen Blutung,Folgen einer intrazerebralen Blutung
+I69.3,,Folgen eines Hirninfarktes,Folgen eines Hirninfarktes
+I69.4,,"Folgen eines Schlaganfalls, nicht als Blutung oder Infarkt bezeichnet","Folgen eines Schlaganfalls, nicht als Blutung oder Infarkt bezeichnet"
+I95.9,,"Hypotonie, nicht näher bezeichnet","Hypotonie, nicht näher bezeichnet"
+J44.0,,Chronische obstruktive Lungenkrankheit mit akuter Infektion der unteren Atemwege,Chronische obstruktive Lungenkrankheit mit akuter Infektion der unteren Atemwege
+J44.00,,Chronische obstruktive Lungenkrankheit mit akuter Infektion der unteren Atemwege: FEV1 < 35 % des Sollwertes,COPD mit akuter Infektion der unteren Atemwege: FEV1 < 35 % des Sollwertes
+J44.01,,Chronische obstruktive Lungenkrankheit mit akuter Infektion der unteren Atemwege: FEV1 >= 35 % und < 50 % des Sollwertes,COPD mit akuter Infektion der unteren Atemwege: FEV1 >= 35 % und < 50 % des Sollwertes
+J44.02,,Chronische obstruktive Lungenkrankheit mit akuter Infektion der unteren Atemwege: FEV1 >= 50 % und < 70 % des Sollwertes,COPD mit akuter Infektion der unteren Atemwege: FEV1 >= 50 % und < 70 % des Sollwertes
+J44.03,,Chronische obstruktive Lungenkrankheit mit akuter Infektion der unteren Atemwege: FEV1 >= 70 % des Sollwertes,COPD mit akuter Infektion der unteren Atemwege: FEV1 >= 70 % des Sollwertes
+J44.09,,Chronische obstruktive Lungenkrankheit mit akuter Infektion der unteren Atemwege: FEV1 nicht näher bezeichnet,COPD mit akuter Infektion der unteren Atemwege: FEV1 nicht näher bezeichnet
+J44.1,,"Chronische obstruktive Lungenkrankheit mit akuter Exazerbation, nicht näher bezeichnet","Chronische obstruktive Lungenkrankheit mit akuter Exazerbation, nicht näher bezeichnet"
+J44.10,,"Chronische obstruktive Lungenkrankheit mit akuter Exazerbation, nicht näher bezeichnet: FEV1 < 35 % des Sollwertes","COPD mit akuter Exazerbation, nicht näher bezeichnet: FEV1 < 35 % des Sollwertes"
+J44.11,,"Chronische obstruktive Lungenkrankheit mit akuter Exazerbation, nicht näher bezeichnet: FEV1 >= 35 % und < 50 % des Sollwertes","COPD mit akuter Exazerbation, nicht näher bezeichnet: FEV1 >= 35 % und < 50 % des Sollwertes"
+J44.12,,"Chronische obstruktive Lungenkrankheit mit akuter Exazerbation, nicht näher bezeichnet: FEV1 >= 50 % und < 70 % des Sollwertes","COPD mit akuter Exazerbation, nicht näher bezeichnet: FEV1 >= 50 % und < 70 % des Sollwertes"
+J44.13,,"Chronische obstruktive Lungenkrankheit mit akuter Exazerbation, nicht näher bezeichnet: FEV1 >= 70 % des Sollwertes","COPD mit akuter Exazerbation, nicht näher bezeichnet: FEV1 >= 70 % des Sollwertes"
+J44.19,,"Chronische obstruktive Lungenkrankheit mit akuter Exazerbation, nicht näher bezeichnet: FEV1 nicht näher bezeichnet","COPD mit akuter Exazerbation, nicht näher bezeichnet: FEV1 nicht näher bezeichnet"
+L40.0,,Psoriasis vulgaris,Psoriasis vulgaris
+L40.1,,Generalisierte Psoriasis pustulosa,Generalisierte Psoriasis pustulosa
+L40.4,,Psoriasis guttata,Psoriasis guttata
+L40.9,,"Psoriasis, nicht näher bezeichnet","Psoriasis, nicht näher bezeichnet"
+M17.0,,"Primäre Gonarthrose, beidseitig","Primäre Gonarthrose, beidseitig"
+M17.2,,"Posttraumatische Gonarthrose, beidseitig","Posttraumatische Gonarthrose, beidseitig"
+M17.4,,"Sonstige sekundäre Gonarthrose, beidseitig","Sonstige sekundäre Gonarthrose, beidseitig"
+M17.9,,"Gonarthrose, nicht näher bezeichnet","Gonarthrose, nicht näher bezeichnet"
+M54.2,,Zervikalneuralgie,Zervikalneuralgie
+M54.3,,Ischialgie,Ischialgie
+M54.5,,Kreuzschmerz,Kreuzschmerz
+M54.6,,Schmerzen im Bereich der Brustwirbelsäule,Schmerzen im Bereich der Brustwirbelsäule
+N18.2,,"Chronische Nierenkrankheit, Stadium 2","Chronische Nierenkrankheit, Stadium 2"
+N18.3,,"Chronische Nierenkrankheit, Stadium 3","Chronische Nierenkrankheit, Stadium 3"
+N18.4,,"Chronische Nierenkrankheit, Stadium 4","Chronische Nierenkrankheit, Stadium 4"
+N18.9,,"Chronische Nierenkrankheit, nicht näher bezeichnet","Chronische Nierenkrankheit, nicht näher bezeichnet"
+N40,,Prostatahyperplasie,Prostatahyperplasie
+N41.0,,Akute Prostatitis,Akute Prostatitis
+N42.9,,"Krankheit der Prostata, nicht näher bezeichnet","Krankheit der Prostata, nicht näher bezeichnet"
+R40.1,,Sopor,Sopor
+R40.2,,"Koma, nicht näher bezeichnet","Koma, nicht näher bezeichnet"
+R55,,Synkope und Kollaps,Synkope und Kollaps
+Z01.6,!,"Röntgenuntersuchung, anderenorts nicht klassifiziert","Röntgenuntersuchung, anderenorts nicht klassifiziert"

@@ -221,40 +221,105 @@ queried differently (`hasDefinedRelation()` vs. `isAcceptable()`).
 ## 7. UI design principles
 
 The brief is explicit that UI sophistication is secondary to clarity and
-determinism (`INT-SUP-03`). Concretely, that produced these choices rather
-than an unstated "keep it simple" gesture:
+determinism (`INT-SUP-03`); the implementation was initially built plainly
+on that basis. Once the core prototype and its CI/deployment story were
+done and independently verified, the project owner requested a stretch
+goal — deliberate visual/UX polish and a lightweight gamification layer
+— explicitly *before* the freeze, with schedule room to spare. That
+request revisited several of the choices below on their merits (see the
+`reconsidered` markers); none of the underlying reasoning was overridden
+by assumption, and one hard boundary was set and held throughout: no
+change to case data/content or the data model. Full brainstorm/decision
+record: `docs/UX_UI_BRAINSTORM.md` and `docs/UX_UI_SPECIFICATION.md`
+(both historical now that this is implemented; this section is the living
+version of their conclusions).
 
-- **No client-side router.** The learner workflow (`REQ-INT-01`) is a
-  strictly linear case → code → feedback path with no requirement for
-  bookmarkable URLs per case. `frontend/src/App.jsx` models this as three
-  in-memory view states (`list`, `case`, `result`) rather than pulling in
-  `react-router` for a workflow that never branches.
+- **No client-side router — reconsidered, still declined.** The learner
+  workflow (`REQ-INT-01`) is a strictly linear case → code → feedback path
+  with no requirement for bookmarkable URLs per case.
+  `frontend/src/App.jsx` models this as three in-memory view states
+  (`list`, `case`, `result`) rather than pulling in `react-router` for a
+  workflow that never branches. The stretch-goal request explicitly lifted
+  this restriction (frontend-only changes were broadly permitted); it was
+  reconsidered on that basis and declined again anyway — the gamification
+  progress summary lives inside the existing case-list view rather than a
+  route of its own, and no deep-linking/bookmarking requirement exists
+  anywhere in the requirements catalogue. A new dependency and real
+  browser-history behaviour change for no identified capability gain
+  wasn't justified by "now allowed" alone.
 - **Feedback design follows the cited formative-feedback evidence, not
-  intuition.** `EVID-FB-01` (Shute 2008) and `EVID-FB-02` (Hattie & Timperley
-  2007) motivate elaborated, task-focused feedback over a bare right/wrong
-  signal. `ResultView` (in `App.jsx`) always renders three things together:
-  the class (`Correct`/`Suboptimal`/`Incorrect`), a task-focused explanation
-  naming the concrete criterion that decided it, and — only when one exists
-  — an explicit improvement target. Colour (green/amber/red heading) is a
+  intuition — now with a third redundant channel.** `EVID-FB-01` (Shute
+  2008) and `EVID-FB-02` (Hattie & Timperley 2007) motivate elaborated,
+  task-focused feedback over a bare right/wrong signal. `ResultView`
+  always renders three things together: the class
+  (`Correct`/`Suboptimal`/`Incorrect`), a task-focused explanation naming
+  the concrete criterion that decided it, and — only when one exists — an
+  explicit improvement target. Colour (green/amber/red heading) is a
   reinforcement of the text label, never the only signal, so the class is
-  still legible without colour.
-- **The intended-use boundary is stated on the landing view, not only in
-  documentation.** `REQ-SCP-02` requires that the "not for diagnosis /
+  still legible without colour. The stretch-goal redesign added a
+  check/warning/cross icon alongside the same heading — a *third*
+  redundant signal (shape, independent of colour perception), not a
+  replacement for either existing one. The same three-channel vocabulary
+  (icon + colour + text) is reused for the new gamification progress
+  badges below, so "what does this case card's badge mean" and "what does
+  the result heading mean" share one visual language instead of two.
+- **The intended-use boundary is stated persistently, not only on the
+  landing view.** `REQ-SCP-02` requires that the "not for diagnosis /
   clinical decision support / official coding" boundary be stated in
-  UI/disclaimer text, not just asserted in the thesis. `CaseList` renders
-  this as the first thing a learner sees, above the case list itself.
+  UI/disclaimer text, not just asserted in the thesis. Originally rendered
+  only atop the case list; the stretch-goal redesign moved it into a
+  persistent header (`components/Header.jsx`) shown above every view, not
+  only the first one a learner sees — a strengthening of the same
+  requirement, not a reinterpretation of it.
 - **The searchable code list is deliberately a plain `<input>` + client-side
   filter over the case's already-fetched `supported_codes`, not a
-  typeahead/autocomplete component.** The response domain per case tops out
-  at six codes (`REQ-DAT-03`'s purposive, small subset), so a debounced
-  network-backed autocomplete would be solving a scale problem this project
-  does not have.
+  typeahead/autocomplete component — reconsidered, still the case.** The
+  response domain per case tops out at six codes (`REQ-DAT-03`'s
+  purposive, small subset), so a debounced network-backed autocomplete
+  would be solving a scale problem this project does not have. The
+  stretch-goal request explicitly permitted autocomplete-style search
+  polish; what was actually built is visual polish over the same
+  mechanism (larger touch targets, hover/selected states, a "no matches"
+  message) rather than a network-backed component, since the underlying
+  reasoning (six codes, already fetched) didn't change.
 - **No accepted-set information ever reaches the client.** `CaseController`
   strips `is_acceptable` before responding; the frontend never has enough
   information to reveal the answer key through, e.g., inspecting the
   network tab. This is a direct, UI-side extension of the runtime/oracle
   separation principle in §5.5 — the *learner's browser* is treated as
-  no more trusted than the verification harness.
+  no more trusted than the verification harness. The gamification layer
+  below reads only the already-received `evaluate()` response and writes
+  only to the browser's own `localStorage`; it does not add a new
+  network call or change what the API returns, so this boundary is
+  untouched by it.
+- **Design tokens over a CSS framework.** The stretch-goal redesign added
+  a `:root` custom-property palette/type/spacing/motion scale to
+  `App.css` (colours for both light and dark, per the existing
+  `color-scheme: light dark` declaration) rather than adopting a UI
+  framework/component library. The project owner's instruction explicitly
+  permitted either; plain CSS custom properties were chosen on their own
+  merits — zero new build dependency, consistent with this project's
+  general "add complexity only where the workflow needs it" posture, and
+  fully sufficient for an app with three views and no design-system reuse
+  outside itself.
+- **Gamification layer — client-side only, deliberately small.** The
+  project owner's stretch-goal instruction called a lightweight sense of
+  progress "essential... but not an elaborate concept." Implemented as a
+  single `localStorage` record (`lib/progress.js`) of each case's last
+  classification, surfaced as a per-case-card badge and a "`n` of `m`
+  attempted" summary — no score, no streak counter, no leaderboard, no
+  backend/session/schema change of any kind (§5.4 of the implementation
+  specification). This is the one place the project explicitly tracks
+  something resembling "learner attempt history," and it does so entirely
+  in the browser, preserving the hard limit the project owner set
+  alongside the request: the backend, rule engine, and data layer were not
+  to be touched by any of this work.
+- **First-visit tutorial, not a permanent tour.** A four-step modal
+  (`components/Tutorial.jsx`) mirroring `docs/USER_GUIDE.tex`'s "Using the
+  prototype" narrative, shown once per browser (`localStorage` flag) and
+  re-openable via a persistent header button rather than forced on every
+  visit — the same "state it once, make it findable, don't nag"
+  reasoning already applied to the scope disclaimer above.
 
 ## 8. Backend/API design principles
 
@@ -563,6 +628,17 @@ Both verification levels are now executed:
 
 ## 11. Current status and known gaps
 
+**Superseded by §13/§14 below (9 August 2026).** Everything in this
+section describes the one-case/one-question `CASEBASE-0.2` implementation,
+which no longer exists in `app/src/`/`app/frontend/src/`. Kept verbatim as
+a historical record of that phase's status rather than silently deleted —
+§13 explains why it was replaced, §14 covers the visual/gameful polish
+that followed, and §12's table has forward-model rows appended after the
+historical ones. For the current implementation's actual status, read §13
+and §14, plus [REQUIREMENTS_TRACEABILITY.md](REQUIREMENTS_TRACEABILITY.md)
+and [IMPLEMENTATION_SPECIFICATION.md](IMPLEMENTATION_SPECIFICATION.md),
+both fully rewritten for the forward model on the same date.
+
 - The reference-suite breadth question flagged in
   `ICD_PROTOTYPE_DEVELOPMENT_BRIEF.md` §23.2 is **resolved** (§10.3): all
   four `RULE-MAP-01` suffix bands and both `RULE-STATUS-01` prohibited
@@ -591,6 +667,16 @@ Both verification levels are now executed:
   in §10.7 is closed: every live project index contains AMD64 and ARM64, the
   CI assertion passed, and the documented pull-and-start path was executed
   successfully on ARM64.
+- **UX/UI redesign** (§7, `docs/UX_UI_BRAINSTORM.md`/`UX_UI_SPECIFICATION.md`):
+  design tokens, case-card naming (`short_description`), a first-visit
+  tutorial, and a client-side gamification layer are implemented and
+  verified — visually (Playwright screenshots across desktop and a 375px
+  mobile viewport, including one real bug found and fixed: the sticky
+  submit bar's resting position) and functionally (86/86 tests, 495
+  assertions, via the same self-contained bundle used above, including a
+  new frontend-only `ProgressBadgeTest`). No case data, backend, rule
+  engine, or schema change — see §7 for the scope boundary this stayed
+  within throughout.
 
 ## 12. Traceability quick-reference
 
@@ -600,10 +686,211 @@ Both verification levels are now executed:
 | `app/src/Rules/Precedence.php` + `Evaluation/Evaluator.php` | `RULE-PREC-01` |
 | `app/src/Repository/*.php` + `mysql_schema.sql` | `MODELBASE-0.1` §6, `REQ-DAT-*`, `REQ-MOD-02` |
 | `app/src/Http/*.php` | `MODELBASE-0.1` §7 (API boundary), `REQ-INT-01`, `REQ-RUL-05` |
-| `app/frontend/src/App.jsx` | `REQ-INT-01`, `REQ-FBK-01`, `REQ-FBK-02`, `REQ-SCP-02` |
+| `app/frontend/src/App.jsx` + `components/*.jsx` | `REQ-INT-01`, `REQ-FBK-01`, `REQ-FBK-02`, `REQ-SCP-02` |
+| `app/frontend/src/lib/progress.js` | Gamification layer (§7) — no upstream `REQ-*`/`TEST-*`, frontend-only |
 | `app/tests/Unit/*` | `TEST-MAP-01`, `TEST-GATE-01`, `TEST-STATUS-01`, `TEST-DEPTH-01`, `TEST-EVID-01`, `TEST-SPEC-01`, `TEST-CORRECT-01`, `TEST-PREC-01` |
 | `app/tests/Integration/*` | `TEST-API-01`, `TEST-RC-01`, `TEST-DET-01`, `TEST-ARC-01` |
 | `app/tests/E2E/*` | `TEST-E2E-01`, `TEST-E2E-02` |
 | `Dockerfile` (repo root), `prototype_stack/compose.yaml` | `REQ-IMP-01`, brief §17, `TEST-CFG-01` (version pinning) |
 | `docker-compose.yml` (repo root), `Dockerfile`'s `dev` target | `REQ-DOC-01`/reproducibility (self-contained publishable bundle, §10.6) |
 | `.github/workflows/ci.yml` | `REQ-VER-04`/`REQ-VER-06` (automated regression execution, §10.6) |
+
+**Rows above this line describe the historical `CASEBASE-0.2` implementation
+(§11's note). Rows below are current, forward-model (`MODELBASE-0.2`/
+`RULEBASE-0.2`) elements, added 9 August 2026 — see §13/§14.**
+
+| Architectural element | Upstream identifiers it realizes |
+|---|---|
+| `app/src/Rules/*.php` (9 classes) | `RULE-GATE-01`, `RULE-MAP-01`, `RULE-STATUS-01`, `RULE-DEPTH-01`, `RULE-EVID-01`, `RULE-SPEC-01`, `RULE-REL-HARD-01`, `RULE-REL-SPEC-01`, `RULE-NOA-01`, `RULE-CORRECT-01` |
+| `app/src/Rules/Precedence.php` + `Evaluation/Evaluator.php` | `RULE-PREC-01` (extended: 4-slot hard priority, 2-slot graded priority) |
+| `app/src/Repository/PatientRepository.php`/`QuestionRepository.php` + `mysql_schema_0_2.sql` | `MODELBASE-0.2` §6-7, `REQ-DAT-*`, `REQ-MOD-01`-`06` |
+| `app/src/Http/PatientController.php`/`QuestionController.php`/`EvaluationController.php` | `MODELBASE-0.2` §7 (API boundary), `APIBASE-0.1`, `REQ-INT-01`-`05`, `REQ-RUL-05` |
+| `app/frontend/src/App.jsx` + `components/*.jsx` | `REQ-INT-01`-`05`, `REQ-FBK-01`-`03`, `REQ-SCP-02`, `REQ-UI-01`-`03`, `REQ-GAM-01` |
+| `app/frontend/src/lib/i18n.jsx`/`contentTranslations.js`/`catalogueTranslations.js` | §14.2 — no upstream `REQ-*`/`TEST-*`, presentation-layer only |
+| `prototype_baseline_0_2_design/Dockerfile.bootstrap` + `persistence_candidate/*` | `MODELBASE-0.2`, `DATAMIG-0.2`, `PROTOBASE-0.3` — §13.3 |
+| `app/tests/Unit`/`Integration`/`E2E` | **Not yet migrated** — implementation-order step 8, see §13.4 |
+
+## 13. Forward redesign: patient/question model (8-9 August 2026)
+
+### 13.1 Why the case-centric model was replaced, not extended
+
+During the UX/UI redesign (§7), surfacing each case's `short_description`
+on the case list exposed a pre-existing, previously invisible pedagogical
+flaw: `CASE-003`/`005`/`006`/`007` had single-code response domains, so a
+learner reading the description before answering could see the correct
+family/depth without having actually applied any rule. This was not a
+redesign regression — it was documented, intentional verification-coverage
+design from before the redesign — but the project owner judged, correctly,
+that it undermined the learner-facing point of a coding *exercise* once
+that description was surfaced prominently. The candidate fix (add more
+single-question cases with richer response domains) was rejected in favour
+of a structural rethink: the one-case/one-question model itself was the
+limiting factor, not any individual case's data. Commissioned externally
+(a separate agent tasked with the specification-level revision) and
+returned as a complete forward package: `PATIENTBASE-0.1` (6 synthetic
+patients) / `QUESTIONBASE-0.1` (25 atomic learner questions, 3/3/3/5/5/6
+per patient, plus the 8 historical fixtures retained as hidden
+`verification_only` regression anchors) / `MODELBASE-0.2` (normalized
+9-table schema) / `RULEBASE-0.2` (extended rule set) / `UXBASE-0.1`
+(the visual/gameful polish concept, §14) / `APIBASE-0.1` (API/feedback
+contract clarification).
+
+This is a genuinely different unit of pedagogy, not a bigger version of
+the old one: a *patient* is now the learner-facing session container (one
+choice, one narrative, one dossier), and a *question* is the atomic,
+independently-evaluable, independently-randomizable unit underneath it —
+where before, case and question were the same object. `REQ-MOD-02`/`03`
+formalize this split explicitly so it can't quietly collapse back.
+
+### 13.2 The required implementation order was followed, and mattered
+
+`chapter3_forward_implementation_instruction_0_5.md` fixed a 10-step order
+(persistence → PHP/API → React functional lifecycle → UX polish → tests →
+oracle audit → freeze) specifically so that no layer's "verified" claim
+would rest on an unverified layer beneath it. This was followed
+literally — and the one place it was *nearly* violated (§13.3) is exactly
+where the cost of skipping ahead showed up.
+
+### 13.3 The persistence-integration gap: a lesson worth keeping visible
+
+Steps 2-3 (integrate and prove `MODELBASE-0.2` against MySQL) were
+completed and verified — against a scratch `docker run` MySQL container on
+a non-default port, torn down after each check. Step 6 (functional React
+lifecycle) was likewise verified — against the Vite dev server. Both were
+real, honest verifications of what they tested. What nobody checked until
+the project owner opened a browser at the repository's own `docker compose
+up` URL and saw `CASE-001`/COPD content: the *actual* deployment path
+(`docker-compose.yml`'s `bootstrap` service) was still building from
+`prototype_baseline_0_1/Dockerfile.bootstrap` — the historical
+`CASEBASE-0.2` pipeline — and the already-published GHCR `app` image
+predated the migration entirely. Every layer above persistence had been
+built and verified correctly; the persistence layer itself had been
+verified in isolation but never actually wired into the path a real user
+would hit.
+
+The fix (`prototype_baseline_0_2_design/Dockerfile.bootstrap`, wired into
+both Compose files — `IMPLEMENTATION_SPECIFICATION.md` §6.3) was
+mechanical. The lesson is the point of writing this down: **"verified in
+isolation" and "verified in the path a user actually takes" are different
+claims, and this project had, once, quietly conflated them across two
+separate implementation steps.** Every "Verified" row added to
+`REQUIREMENTS_TRACEABILITY.md` after this was discovered was checked
+against the real running container, not a scratch substitute — and this
+section exists so a future reader has the concrete cautionary example, not
+just the abstract rule.
+
+### 13.4 Test-suite migration was deliberately not attempted opportunistically
+
+`app/tests/*` still targets the deleted `CaseFacts`/`CaseRepository`/
+`CaseController` classes (`php vendor/bin/phpunit --testsuite unit`: 47 of
+49 erroring). This was not an oversight discovered late — it is
+implementation-order step 8, explicitly sequenced *after* the functional
+lifecycle (step 6) and UX polish (step 7) in the instruction document, and
+every verification performed during steps 4-7 used ad hoc `curl`/Selenium
+checks against the real running stack instead, precisely because the
+committed suite was known to be non-functional throughout. Migrating tests
+opportunistically alongside feature work — rather than as its own
+dedicated pass — was rejected: a rule-engine migration this size deserves
+a test rewrite that is reviewed as its own unit of work, not scattered
+across a dozen unrelated diffs and harder to audit as a result.
+
+## 14. Forward redesign step 7: `UXBASE-0.1` visual/gameful polish
+
+Full mechanic-by-mechanic verification: `docs/CHANGELOG.md`'s two
+2026-08-09 "Step 7"/"German content translation" entries. This section
+records the decisions that weren't obvious from the concept document
+alone.
+
+### 14.1 Scoped to `Must`-priority mechanics plus accessibility, not the full list
+
+`chapter3_ux_ui_gamification_concept_0_1.md` §10 explicitly permits
+reducing step 7 to "the `Must` mechanics and accessibility-critical
+presentation requirements" under schedule pressure, without sacrificing
+steps 1-3 or the verification boundary. That reduction was taken
+deliberately, not by default: orientation/legend (`REQ-UI-01`), the visual
+progress indicator, the technical-details disclosure, restrained
+completion acknowledgment, and the aggregate "all completed" message were
+built; code-option display-order permutation (an explicit "may", not a
+"shall") and a literal separate "Home" screen (materially the same
+requirement as satisfied by the roster-mounted orientation block, at the
+cost of navigation-state complexity a second view would add) were not.
+
+### 14.2 Two-directional content translation, kept out of the database
+
+The EN/DE switch (`lib/i18n.jsx`) started as UI-chrome-only, per the
+architecture-separation principle already established for the case-centric
+redesign (§7): translating interface text is a presentation concern,
+never a data-model change. Two rounds of real use immediately exposed the
+limits of that boundary as first drawn:
+
+1. Switching to German left patient summaries, context items, and
+   question prompts in English — chrome was translated, *content* wasn't.
+2. Switching to English left ICD-10 code designations in German — the
+   runtime catalogue (`SUBSET-0.2`) is authored in German only (the
+   Austrian BMASGPK edition); there was never an English variant to fall
+   back to.
+
+Both were fixed the same way: an additive, frontend-only translation
+lookup (`contentTranslations.js` for German content, `catalogueTranslations.js`
+for English code titles) keyed by the same IDs the API already returns,
+consulted only for the locale that needs it, falling back to the API's own
+text on any miss. Deliberately **not** a database/schema change or a new
+API field for either direction — this stays a `REQ-ARC-01` presentation
+concern. Evaluator *explanations* were handled differently and do live in
+the API response (`explanation_de`, `IMPLEMENTATION_SPECIFICATION.md`
+§3.3): they contain rule-derived content assembled from live values at
+evaluation time, which the frontend cannot safely reconstruct or
+paraphrase from the English string alone without risking a subtly wrong
+translation of what the rule actually decided.
+
+### 14.3 Session-local completion: an existing requirement, not a new one
+
+Adding a "this patient is done" marker to the roster looked at first like
+it might need a `REQ-INT-05` amendment (`REQ-INT-05` explicitly prohibits
+"a server-side learner account, longitudinal attempt history, or
+analytics store"). It didn't: `REQ-UI-02`, already in the catalogue,
+specifies exactly this feature — "show question-level and patient-level
+progress/completion... completion status is session-local" — and
+`REQ-INT-05`'s prohibition is scoped to *server-side* persistence. A
+client-side, `sessionStorage`-backed marker (cleared at browser-session
+end, unlike `localStorage`) satisfies both literally, with no requirements
+change needed. The "reset progress" control added alongside it is not
+separately specified anywhere — a direct project-owner request that
+followed naturally once completion state existed to reset.
+
+### 14.4 Fixing two raw-token leaks was worth doing beyond the one reported
+
+The project owner reported one specific bug: the literal string
+`none_of_above` appearing inside a "None of the above is not correct here"
+sentence. The fix for that one call site (`Evaluator::buildNoaResult()`)
+generalized into an audit of every other place an internal
+snake_case identifier could reach learner-facing prose the same way —
+found one more live path (`buildRelHardResult()`'s fallback when no cited
+fact exists, currently unreachable by the present 25-question data but
+real, reachable code) and one frontend-side instance (the `not_evaluated`
+panel interpolating a raw gate `reason` enum). Both were fixed alongside
+the reported one rather than left for "someone to notice later" — the
+underlying defect class (internal identifiers leaking into learner-facing
+text) is the same regardless of which specific string a user happens to
+trip over first.
+
+### 14.5 Austrian patient names: a naming override, deliberately narrow
+
+The project owner asked for "common names one might encounter in an
+Austrian setting, for realism when demoing." Three of six patient names
+already qualified (`Anna Berger`, `Daniel Weiss`, `Peter Gruber`); three
+read as identifiably non-Austrian-origin to a general audience
+(`Michael Novak`, `Lea Horvat`, `Sofia Marin` — Slovak/Croatian/Romance
+surnames, themselves a deliberate diversity-representation choice in the
+original patient design, paired with a `self_described_background` field
+that names the same heritage explicitly). Only the three flagged names
+were changed (`Michael Bauer`/`Lea Wagner`/`Sophie Mayer`); the matching
+`self_described_background` values were left untouched — a person whose
+surname reads as mainstream-Austrian can still self-identify with a
+different heritage without any actual inconsistency, and the instruction
+named only "names," not backgrounds. Applied as a `PATIENTBASE-0.1`
+content edit (not a version bump — same 6 patients/structure, an unfrozen
+baseline, a pure value correction), with the runtime manifest's SHA-256
+pin and the persistence candidate's own pinned canonical-digest test
+updated to match — both are designed to fail-closed on exactly this kind
+of change when it's *not* deliberate, and did, correctly, until updated.

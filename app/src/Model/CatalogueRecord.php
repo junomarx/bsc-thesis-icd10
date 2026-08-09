@@ -5,7 +5,8 @@ declare(strict_types=1);
 namespace Icd10Prototype\Model;
 
 /**
- * One SUBSET-0.1 record: the four DIAGLIST fields retained by REQ-DAT-04.
+ * One SUBSET-0.2 record: the four DIAGLIST fields retained by REQ-DAT-04.
+ * Unchanged by the MODELBASE-0.2 migration.
  */
 final class CatalogueRecord
 {

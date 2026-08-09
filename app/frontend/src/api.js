@@ -6,18 +6,24 @@ async function request(path, options) {
   return { status: response.status, body }
 }
 
-export function listCases() {
-  return request('/api/cases')
+export function listPatients() {
+  return request('/api/patients')
 }
 
-export function getCase(caseId) {
-  return request(`/api/cases/${encodeURIComponent(caseId)}`)
+export function getPatient(patientId) {
+  return request(`/api/patients/${encodeURIComponent(patientId)}`)
 }
 
-export function evaluate(caseId, submittedCode) {
-  return request(`/api/cases/${encodeURIComponent(caseId)}/evaluate`, {
+export function getQuestion(questionId) {
+  return request(`/api/questions/${encodeURIComponent(questionId)}`)
+}
+
+// response: { type: 'code', code: '...' } or { type: 'none_of_above' } - the
+// APIBASE-0.1 tagged-response contract, not { option_id }.
+export function evaluate(questionId, response) {
+  return request(`/api/questions/${encodeURIComponent(questionId)}/evaluate`, {
     method: 'POST',
     headers: JSON_HEADERS,
-    body: JSON.stringify({ submitted_code: submittedCode }),
+    body: JSON.stringify({ response }),
   })
 }

@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Icd10Prototype\Rules;
 
-use Icd10Prototype\Model\CaseFacts;
 use Icd10Prototype\Model\CatalogueRecord;
+use Icd10Prototype\Model\CodingQuestion;
 
 /**
  * RULE-STATUS-01: prohibited `!` main-diagnosis use (PAT-STATUS-01).
@@ -13,21 +13,26 @@ use Icd10Prototype\Model\CatalogueRecord;
  * Source: SRC-AT-DOC-2026, printed pp. 10-11, 18. `!` is context-dependent
  * (p. 22 permits it in ordinary hospital-outpatient use), so a non-match
  * here does not by itself prove the response is otherwise correct.
+ * Unchanged predicate; facts now read from `question_fact` rather than
+ * named `CaseFacts` properties.
  */
 final class RuleStatus
 {
     public const CRITERION = 'context_status_incompatibility';
 
-    public static function matches(CaseFacts $case, CatalogueRecord $record): bool
+    public static function matches(CodingQuestion $question, CatalogueRecord $record): bool
     {
-        if ($record->marker !== '!' || $case->diagnosisRole !== 'main') {
+        $diagnosisRole = $question->facts->getEnum('diagnosis_role');
+        $encounterSetting = $question->facts->getEnum('encounter_setting');
+
+        if ($record->marker !== '!' || $diagnosisRole !== 'main') {
             return false;
         }
 
-        if ($case->encounterSetting === 'inpatient') {
+        if ($encounterSetting === 'inpatient') {
             return true;
         }
 
-        return $case->encounterSetting === 'hospital_outpatient' && $case->inpatientLkfScored === true;
+        return $encounterSetting === 'hospital_outpatient' && $question->facts->getBool('inpatient_lkf_scored') === true;
     }
 }

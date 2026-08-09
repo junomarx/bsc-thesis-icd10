@@ -1,0 +1,66 @@
+{
+  "manifest_id": "DESIGNMAT-0.1",
+  "status": "materialized_forward_design_not_application_baseline",
+  "date": "2026-08-08",
+  "requirements_revision": "REQ forward revision 0.6",
+  "source_audit": "QSAUDIT-0.1",
+  "rule_baseline": "RULEBASE-0.2",
+  "model_baseline": "MODELBASE-0.2",
+  "subset_baseline": "SUBSET-0.2",
+  "patient_baseline": "PATIENTBASE-0.1",
+  "question_baseline": "QUESTIONBASE-0.1",
+  "catalogue_edition": "ICD-10 BMASGPK 2026",
+  "diaglist_sha256": "66713da5d63afcd37b0152ae7058f2188bf34d557bfa06ad4ce008825fb94a4b",
+  "counts": {
+    "catalogue_subset_records": 99,
+    "learner_domain_unique_codes": 92,
+    "retained_historical_subset_codes": 13,
+    "patients": 6,
+    "patient_context_items": 32,
+    "learner_questions": 25,
+    "typed_question_facts": 60,
+    "question_code_domain_relations": 100,
+    "question_relation_fact_links": 142,
+    "displayed_code_options": 95,
+    "displayed_none_of_above_options": 25,
+    "displayed_options_total": 120,
+    "legacy_verification_questions": 8,
+    "legacy_verification_relations": 18,
+    "candidate_reference_responses": 143
+  },
+  "patient_question_counts": {
+    "PATIENT-001": 3,
+    "PATIENT-002": 3,
+    "PATIENT-003": 3,
+    "PATIENT-004": 5,
+    "PATIENT-005": 5,
+    "PATIENT-006": 6
+  },
+  "none_of_above_correct_controls": [
+    "Q-004-05",
+    "Q-005-05"
+  ],
+  "learner_copd_patient": "PATIENT-001",
+  "excluded_control": {
+    "code": "Z01.8",
+    "expected_marker": "!"
+  },
+  "verification_oracle_in_runtime": false,
+  "candidate_reference_response_baseline": "RCBASE-0.3",
+  "candidate_oracle_counts": {
+    "learner_code_responses": 100,
+    "learner_none_of_above_responses": 25,
+    "historical_regression_responses": 18,
+    "total": 143,
+    "correct": 33,
+    "suboptimal": 20,
+    "incorrect": 90
+  },
+  "legacy_reconciliation": {
+    "exact_semantic_carry_forward_rows": 14,
+    "provisional_documentation_reconstruction_rows": 4,
+    "reconciliation_required_before_freeze": true
+  },
+  "implementation_claim": "none",
+  "verification_claim": "none; local validation covers authoring/data-contract/oracle-completeness invariants only"
+}

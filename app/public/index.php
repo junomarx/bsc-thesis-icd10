@@ -22,9 +22,10 @@ try {
 }
 
 $result = match (true) {
-    $method === 'GET' && $path === '/api/cases' => $app->caseController->list(),
-    $method === 'GET' && (bool) preg_match('#^/api/cases/([^/]+)$#', $path, $m) => $app->caseController->show($m[1]),
-    $method === 'POST' && (bool) preg_match('#^/api/cases/([^/]+)/evaluate$#', $path, $m) => $app->evaluationController->evaluate($m[1], decodeJsonBody()),
+    $method === 'GET' && $path === '/api/patients' => $app->patientController->list(),
+    $method === 'GET' && (bool) preg_match('#^/api/patients/([^/]+)$#', $path, $m) => $app->patientController->show($m[1]),
+    $method === 'GET' && (bool) preg_match('#^/api/questions/([^/]+)$#', $path, $m) => $app->questionController->show($m[1]),
+    $method === 'POST' && (bool) preg_match('#^/api/questions/([^/]+)/evaluate$#', $path, $m) => $app->evaluationController->evaluate($m[1], decodeJsonBody()),
     default => new ApiResult(404, ['error' => 'not_found']),
 };
 

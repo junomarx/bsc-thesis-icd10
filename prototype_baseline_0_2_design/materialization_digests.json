@@ -1,0 +1,16 @@
+{
+  "status": "materialized_design_files_only_not_application_verification",
+  "generated_on": "2026-08-08",
+  "digests": {
+    "config/subset_definition_0_2.json": "e96045f3df8c0654d56f80154f2f75b5674c24d7e0d23a8e83651f2e3aa59131",
+    "data/subset_0_2.csv": "1ae5c0c7704cbf1b026fee09dea4db26955ec506def024dce709a0541cd40637",
+    "data/patients_0_1.csv": "f8d39371b84f2ebfb219714a13025dde60cc2fd219c73e1e798f23a66a13c24c",
+    "data/patient_context_items_0_1.csv": "72bd52d4d0a3c791b7ac1ed3b3abefce1e34955cbdd47b38647697b596e33c5a",
+    "data/questions_0_1.csv": "9b836a4809c0c43eba1cf5fae5cbc6969795d6160038a0078334816914986a2a",
+    "data/question_facts_0_1.csv": "03b852892fec73d1769ec19a42d21e135bb006d1a75cadca11752ec3a653eba6",
+    "data/question_code_domain_0_1.csv": "af270a1312fa8b7aa90934eeffb348b643703e292f0438f28085397ecf85049a",
+    "data/question_relation_facts_0_1.csv": "e41da67d9ee155033516de5a6665da1db49a8a1798a7383e9d0d71770eb74993",
+    "data/question_options_0_1.csv": "a2a64a017084a636e6e6b53257ca64ec4b7eaa4554e4d40df70a9fadeac4c5a3",
+    "review/materialized_dataset_review.xlsx": "f441ff6b0a31bb1ab9a256d7aaadf0398c333e6d631ec4c4257bb548c78406a8"
+  }
+}

@@ -30,8 +30,9 @@ final class BaselineRepository
             $row['source_register_version'],
             $row['domain_baseline_id'],
             $row['rule_baseline_id'],
-            $row['case_baseline_id'],
             $row['subset_baseline_id'],
+            $row['patient_baseline_id'],
+            $row['question_baseline_id'],
             $row['catalogue_edition'],
             $row['diaglist_sha256'],
         );

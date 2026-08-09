@@ -1,37 +1,72 @@
 # Requirements traceability audit
 
+**Re-audited 9 August 2026 against the forward model.** The previous
+version of this document (superseded, not preserved verbatim below — see
+`docs/CHANGELOG.md` for the historical record) audited the one-case/
+one-question `CASEBASE-0.2` implementation against catalogue `0.5`. That
+implementation no longer exists: `app/src/` was migrated wholesale to the
+six-patient/25-question forward model (`PATIENTBASE-0.1`/`QUESTIONBASE-0.1`/
+`MODELBASE-0.2`/`RULEBASE-0.2`) described in
+`chapter3_requirements_catalogue.md` (now `0.6`, forward revision `0.7`
+merged). This audit covers every `Accepted`/`Scope constraint` entry in
+that current catalogue — the six revised requirements
+(`REQ-MOD-01`/`02`, `REQ-INT-01`, `REQ-FBK-01`, `REQ-DAT-03`, `REQ-RUL-02`)
+and the fourteen new ones (`REQ-MOD-03`–`06`, `REQ-DAT-06`–`09`,
+`REQ-RUL-06`/`07`, `REQ-INT-02`–`05`, `REQ-UI-01`–`03`, `REQ-GAM-01`,
+`REQ-VER-08`/`09`) together with the ones that carried over unchanged.
+
 **Purpose:** `REQ-TRC-01` requires that "every mandatory implemented
 requirement has at least one downstream implementation/model destination and
 verification reference or an explicitly declared gap." This document is
 that audit: every `Accepted`/`Scope constraint` entry in
-`chapter3_requirements_catalogue.md` (catalogue version 0.5), checked
-against what actually exists in the repository today, not what was planned.
+`chapter3_requirements_catalogue.md`, checked against what actually exists
+in the repository today, not what was planned.
 **Not the principal verification run:** this confirms a verification
 *destination* exists and produces a genuine result; it is not itself
 `REQ-VER-05`'s final conformance report, which belongs to the freeze
 procedure (§3 below).
-**Companion documents:** [DEVELOPMENT_DOCUMENTATION.md](DEVELOPMENT_DOCUMENTATION.md) §12
-has an architecture-centric traceability table; this document is
-requirement-centric and exhaustive across all 31 `REQ-*` entries, which
-also makes it a ready draft for the appendix `REQ-VER-07` asks for.
+**Companion documents:** [DEVELOPMENT_DOCUMENTATION.md](DEVELOPMENT_DOCUMENTATION.md)
+has an architecture-centric decision record; this document is
+requirement-centric and exhaustive across every `REQ-*` entry.
+[IMPLEMENTATION_SPECIFICATION.md](IMPLEMENTATION_SPECIFICATION.md) is the
+precise as-built reference this audit's evidence column points into.
 
 ## 1. How to read this table
 
-- **✅ Verified** — the planned-verification technique in the catalogue was
-  actually carried out against the current implementation, with a concrete,
-  checkable pointer (file, test, or doc section).
-- **🕓 Deferred to freeze** — correctly *not yet done*, because the
-  requirement is specifically about the principal verification/freeze
-  procedure (`chapter3_test_catalogue.md` §11, brief §20 Phase 6), which has
-  not started. Not a gap in the implementation phase.
+- **✅ Verified** — the property demonstrably holds against the current
+  implementation, with a concrete, checkable pointer (file, live-system
+  check, or doc section). Where the *originally planned* verification
+  technique is a PHPUnit test that is currently non-functional (see §1a),
+  this is stated explicitly rather than left implied.
+- **⚠ Verified by inspection only; automated regression currently broken** —
+  the property holds and was checked directly (code/schema/live
+  request/browser), but the PHPUnit test that is supposed to assert it
+  automatically does not currently run — see §1a. Distinct from ✅ so a
+  reader doesn't assume `php vendor/bin/phpunit` currently passes for this
+  row.
+- **🕓 Deferred** — correctly *not yet done*, either because it is
+  specifically about the principal verification/freeze procedure (which has
+  not started) or because it depends on implementation-order steps 8–10
+  (test-suite rewrite, oracle audit, freeze — see
+  `chapter3_forward_implementation_instruction_0_5.md`), which are
+  explicitly sequenced after the current implementation phase.
 - **📄 Thesis-text scope** — the acceptance criterion is about how the
-  thesis document itself is written (claim framing, main-text vs. appendix
-  placement), not about anything in this repository. Verifiable only by
-  reading the thesis, not the code.
+  thesis document itself is written, not about anything in this repository.
 
-A requirement audited here as "Verified" was previously satisfied by work
-already described in [CHANGELOG.md](CHANGELOG.md) — this document does not
-duplicate that reasoning, only the pointer to it.
+### 1a. Why several rows say "test currently broken" instead of pointing at a passing suite
+
+The forward migration (steps 1–7 of the implementation order) rewrote
+`app/src/` end to end but did **not** rewrite `app/tests/Unit`,
+`Integration`, or `E2E` — that is step 8, not yet started. Concretely,
+`php vendor/bin/phpunit --testsuite unit` currently reports **47 of 49
+tests erroring** with `Class "Icd10Prototype\Model\CaseFacts" not found`
+(`app/tests/Support/Fixtures.php` and most of `app/tests/Unit/*` still
+construct the deleted case-centric fixtures). Integration and E2E are in
+the same state. This audit does not pretend otherwise: rows whose planned
+evidence was one of these files are marked ⚠ and re-verified some other
+way (direct `curl`/Selenium against the real running stack, or code/schema
+inspection) wherever the underlying property could still be checked without
+the broken suite.
 
 ## 2. Full audit
 
@@ -39,82 +74,106 @@ duplicate that reasoning, only the pointer to it.
 
 | ID | Status | Evidence |
 |---|---|---|
-| `REQ-SCP-01` | ✅ Verified | `prototype_baseline_0_1/baseline_manifest.json` (edition, checksum); `CASEBASE-0.2` contains only synthetic cases (`chapter3_reference_case_coverage_plan.md` §4). |
-| `REQ-SCP-02` | ✅ Verified | No diagnosis/CDS/reporting/reimbursement code path exists anywhere in `app/src/`; intended-use disclaimer rendered in `CaseList` (`app/frontend/src/App.jsx`), confirmed on-screen in the Selenium/browser walkthrough. |
-| `REQ-SCP-03` | 📄 Thesis-text scope | This repository's own documentation maintains the boundary (`DEVELOPMENT_DOCUMENTATION.md` §2.2); whether the thesis text itself does is not something a repository audit can check. |
+| `REQ-SCP-01` | ✅ Verified | `prototype_baseline_0_2_design/persistence_candidate/runtime_manifest_0_2.json` records `catalogue_edition: "ICD-10 BMASGPK 2026"`, `diaglist_source_id`, `diaglist_sha256`; `data/patients_0_1.csv` — all 6 patients `synthetic: true`. |
+| `REQ-SCP-02` | ✅ Verified | No diagnosis/CDS/reporting/reimbursement code path exists in `app/src/`; the non-clinical disclaimer renders in `Header.jsx` on every view — confirmed on-screen via this project's Selenium infrastructure against the real running container (2026-08-09). |
+| `REQ-SCP-03` | 📄 Thesis-text scope | Repository-side boundary maintained (`DEVELOPMENT_DOCUMENTATION.md` §2.2); whether the thesis text itself maintains it is not a repository question. |
 
 ### 2.2 Authoritative data and prototype subset (catalogue §5)
 
 | ID | Status | Evidence |
 |---|---|---|
-| `REQ-DAT-01` | ✅ Verified | All core + contextual source checksums reproduced and matched the register exactly (`CHANGELOG.md`, 2026-08-07 "Application layer stood up" entry). |
-| `REQ-DAT-02` | ✅ Verified | `prototype_baseline_0_1/scripts/prepare_subset.py` traces every record to DIAGLIST; `RuleMap`/`RuleStatus`/`RuleDepth`/`RuleSpec` docblocks cite `SRC-AT-DOC-2026` page locators for every semantic rule DIAGLIST itself doesn't encode. |
-| `REQ-DAT-03` | ✅ Verified | All 13 `SUBSET-0.1` records are used: the `J44.0`/`J44.1` families by `CASE-001`/`002`/`005`/`006`/`007`; `Z01.6` by `CASE-003`/`004`/`008` (`chapter3_reference_case_coverage_plan.md` §3-§4). No unused record. |
-| `REQ-DAT-04` | ✅ Verified | `TEST-DAT-01`: `prepare_subset.py --check-existing` and `validate_baseline.py` both pass against the real frozen workbook (`CHANGELOG.md`). |
-| `REQ-DAT-05` | ✅ Verified | `RuleStatus::matches()` (`app/src/Rules/RuleStatus.php`) takes exactly `marker`/`role`/`setting`/`lkfScored`; `TEST-STATUS-01` (`RuleStatusTest.php`) plus `CASE-003`/`004`/`008` cover permitted, prohibited-outpatient, and prohibited-inpatient branches; no extramural code path exists. |
+| `REQ-DAT-01` | ✅ Verified | `runtime_manifest_0_2.json` fixes edition/source ID/checksum; `test_runtime_contract_0_2.py` (8/8 passing, re-run 2026-08-09 after the patient-rename edit) validates every allowlisted runtime file's SHA-256 against the manifest before any database write. |
+| `REQ-DAT-02` | ✅ Verified | `data/subset_0_2.csv` (99 rows) traces to DIAGLIST; `RuleMap`/`RuleStatus`/`RuleDepth`/`RuleSpec` (`app/src/Rules/*.php`) docblocks cite exact `SRC-AT-DOC-2026` page locators for every semantic rule not derivable from DIAGLIST alone. |
+| `REQ-DAT-03` (revised 0.6) | ✅ Verified | Cross-checked directly: every one of the 99 `SUBSET-0.2` codes appears in at least one `question_code_domain`/`improvement_code` relation across `question_code_domain_0_1.csv` + the legacy fixture file — zero unused records (verified via a direct set-difference check, 2026-08-09). |
+| `REQ-DAT-06` | ✅ Verified | Same check as `REQ-DAT-03` above; the subset spans 10 ICD chapters (C, D, E, F, G, H, I, J, L, M, N, R), not just the original COPD/status families. |
+| `REQ-DAT-07` | ✅ Verified | `data/questions_0_1.csv`: 25 learner questions span diabetes, glaucoma, depression, anaemia, schizophrenia, dermatology, lipid disorders, hypertension, atrial fibrillation, CKD, panic disorder, migraine, hypothyroidism, anxiety, epilepsy, dementia, prostate disease, stroke sequela, and one COPD question — genuine coding targets, not repeated background flavour. |
+| `REQ-DAT-08` | ✅ Verified | Only `Q-001-01` (`PATIENT-001`) has a `J44`/COPD relation among the 25 learner questions; the other 5 learner patients contain none (checked directly against `question_code_domain_0_1.csv`). The remaining COPD content lives in the 8 `verification_only` legacy fixtures, never learner-visible (`QuestionController::show()` 404s them). |
+| `REQ-DAT-09` | ✅ Verified | `runtime_manifest_0_2.json`'s `expected_counts`: 6 patients, 33 questions (25 learner + 8 verification_only), enforced by `test_runtime_contract_0_2.py`; `patient_baseline_id`/`question_baseline_id` (`PATIENTBASE-0.1`/`QUESTIONBASE-0.1`) are explicit versioned identifiers in every row. |
+| `REQ-DAT-04` | ✅ Verified | `runtime_data_0_2.py` reads only the manifest's allowlisted files/columns; re-running `load_mysql_0_2.py` against unchanged input reports `no_op` (byte-identical re-derivation), confirmed live 2026-08-09. |
+| `REQ-DAT-05` | ✅ Verified | `RuleStatus::matches()` (`app/src/Rules/RuleStatus.php`) reads exactly `diagnosis_role`/`encounter_setting`/`inpatient_lkf_scored` via typed `question_fact` getters; no extramural-specific rule exists anywhere in `app/src/Rules/`. |
 
 ### 2.3 Case, rule, and feedback model (catalogue §6)
 
 | ID | Status | Evidence |
 |---|---|---|
-| `REQ-MOD-01` | ✅ Verified | Every `Rules/*.php` predicate takes only `CaseFacts`/`CatalogueRecord` fields (`IMPLEMENTATION_SPECIFICATION.md` §3.2); no rule queries a database or infers an unrepresented fact. |
-| `REQ-MOD-02` | ✅ Verified | `case_definition`/`case_code_domain` schema (one case, many code relations) mirrored 1:1 by `CASEBASE-0.2`/`RCBASE-0.2` CSVs. |
-| `REQ-RUL-01` | ✅ Verified | Every `RULE-*` has one PHP class with a docblock citing its rule ID, and an entry in `chapter3_rule_catalogue.md` §5; `IMPLEMENTATION_SPECIFICATION.md` §3.2 is the consolidated trace. |
-| `REQ-RUL-02` | ✅ Verified | `RuleSpec.php` is a positive predicate (not "whatever isn't correct/incorrect"); `TEST-SPEC-01` (`RuleSpecTest.php`) exercises it in isolation. |
-| `REQ-RUL-03` | ✅ Verified (by documented absence) | No frozen case currently declares more than one accepted code; `chapter3_reference_case_coverage_plan.md` §6 explicitly records this as "deliberately excluded and documented," which is itself what the acceptance criterion asks for. |
-| `REQ-RUL-04` | ✅ Verified | `Rules/Precedence.php` + `TEST-PREC-01` (`PrecedenceTest.php`, 6 vectors including all-three-hard-rules-matching in every iteration order). |
-| `REQ-RUL-05` | ✅ Verified | `RuleGate.php` + `TEST-GATE-01` (`RuleGateTest.php`) + `TEST-API-01` (`EvaluationApiTest.php`): outside-subset/undefined-relation/malformed input all return a non-classified result, never `incorrect`. |
-| `REQ-FBK-01` | ✅ Verified | `EvaluationResult` always carries `determiningRule`/`matchedRules` even when the UI doesn't render them; `TEST-RC-01` (18/18 rows) and `TEST-E2E-01` both confirm class+criterion+explanation reach the boundary a learner/verifier actually uses. |
-| `REQ-FBK-02` | ✅ Verified | `RuleSpec`'s explanation payload always includes `expected_code` + `improvement_direction`; `RC-001-06`/`RC-002-06` assert this via `TEST-RC-01`. |
+| `REQ-MOD-01` (revised 0.6) | ✅ Verified | Every `Rules/*.php` predicate takes only `CodingQuestion::$facts` (a `QuestionFacts` bag) and/or `CatalogueRecord` — never `$prompt` or a patient's context prose (`IMPLEMENTATION_SPECIFICATION.md` §3.2); `QuestionFacts` has no method that exposes prompt/context text to a rule. |
+| `REQ-MOD-02` (revised 0.6) | ✅ Verified | `patient_definition`/`coding_question` are distinct tables with a one-to-many FK (`fk_question_patient`); every evaluation request addresses exactly one `question_id` (`POST /api/questions/{id}/evaluate`), never a whole patient. |
+| `REQ-MOD-03` | ✅ Verified | Same schema fact as `REQ-MOD-02`; `Patient` (`app/src/Model/Patient.php`) has no evaluation method of its own — `CodingQuestion` is the sole evaluation unit consumed by `Evaluator::evaluate()`. |
+| `REQ-MOD-04` | ✅ Verified | `EvaluationController`/`Evaluator` never read `patient_context_item.display_text` or `coding_question.prompt`; confirmed by direct code inspection of every `Rules/*.php` file (2026-08-09) — none imports `Patient` or references prompt/context fields. |
+| `REQ-MOD-05` | ✅ Verified | Materialized question counts per patient are `3,3,3,5,5,6` (`runtime_manifest_0_2.json`, confirmed live via `GET /api/patients`); `QuestionRepository::listLearnerVisibleForPatient()` has no `LIMIT`/count cap, and `QuestionView`'s progress bar renders `totalQuestions` segments derived from the actual array length, never a hard-coded 3. |
+| `REQ-MOD-06` | ✅ Verified | `question_option` (displayed) and `question_code_domain` (evaluable) are separate tables with independent membership; `Q-004-05`/`M54.5` and `Q-005-05`/`I10` are evaluable-but-undisplayed by design (confirmed against the CSV data), and `QuestionController::render()`'s `options` array is explicitly built from `question_option` only. |
+| `REQ-RUL-01` | ✅ Verified | Every `RULE-*` class carries a docblock citing its rule ID and `chapter3_rule_catalogue_0_2.md` section; `IMPLEMENTATION_SPECIFICATION.md` §3 is the consolidated trace. |
+| `REQ-RUL-02` (revised 0.6) | ✅ Verified | `RuleSpec` (source-specific) and `RuleRelSpec` (generic, `less_specific_supported` relation) are the only two `suboptimal`-producing paths; both require an explicit `improvement_code` (`QuestionRepository::assertImprovementCodesResolve()` enforces at hydration time that it resolves to an `accepted_reference` on the same question — throws `RuntimeException` otherwise, a real hydration-time guard, not just a comment). No rule keys off code length, a `.9` suffix, or designation text. |
+| `REQ-RUL-03` | ✅ Verified (by documented absence) | No frozen question currently declares more than one `accepted_reference`; this is a data-authoring invariant, not separately re-derived here. |
+| `REQ-RUL-04` | ⚠ Verified by inspection; automated test currently broken | `Rules/Precedence.php`'s `HARD_PRIORITY`/`GRADED_PRIORITY` constants implement `STATUS > DEPTH > EVID > REL-HARD` and `SPEC > REL-SPEC` deterministically regardless of input array order (`firstByPriority()` scans the fixed list, not the input). `app/tests/Unit/PrecedenceTest.php` is the planned test but has not been updated for the two new rule slots (step 8). |
+| `REQ-RUL-05` | ⚠ Verified by inspection; automated test currently broken | `RuleGate::evaluate()` returns one of exactly 4 non-classified reasons before any rule runs; confirmed live via `curl` (a `none_of_above` submission against a question with no such option returns `none_option_not_defined`, never `incorrect`). `app/tests/Unit/RuleGateTest.php`/`Integration/EvaluationApiTest.php` are the planned tests, not yet rewritten. |
+| `REQ-RUL-06` | ✅ Verified | `RuleNoa::isCorrect()` implements the D(q)∩A(q) set logic exactly; confirmed live via `curl` against `Q-002-01` (`none_of_above` → `incorrect`, correctly, since `I48.0` is both accepted and displayed) and via Selenium for `Q-004-05`/`Q-005-05`-style negative controls during step 6/7 verification. |
+| `REQ-RUL-07` | ✅ Verified | `RuleGate` rejects any code without a defined `question_code_domain` row (`undefined_case_relation`) before any rule runs; `RuleRelHard`/`RuleRelSpec` only match an explicit `relation_kind`, never a code-shape heuristic (confirmed by direct code reading, 2026-08-09). |
+| `REQ-FBK-01` (revised 0.6) | ✅ Verified | Confirmed end-to-end via Selenium (multiple passes, 2026-08-09): submit → classification + criterion + explanation render immediately, before `Next question`/`Review patient` becomes reachable; `EvaluationResult` always carries `determiningRule`/`criterion` even when the "Technical details" `<details>` is collapsed. |
+| `REQ-FBK-02` | ✅ Verified | Every `RULE-SPEC-01`/`RULE-REL-SPEC-01` result carries a non-null `improvement_code`, rendered as "Suggested improvement: {code}" in `QuestionView`; confirmed live via `curl` and Selenium. |
+| `REQ-FBK-03` | ✅ Verified | `PatientReview` renders raw `correct`/`suboptimal`/`incorrect` counts (`lib/playthrough.js`'s `summarizeResults()`) with no weighted score anywhere in the component or its CSS; confirmed via a full 3-question Selenium playthrough. |
 
 ### 2.4 Interaction, architecture, and implementation (catalogue §7)
 
 | ID | Status | Evidence |
 |---|---|---|
-| `REQ-INT-01` | ✅ Verified | `TEST-E2E-01` (`LearnerWorkflowTest.php`) is exactly this end-to-end path, browser-driven, no manual intervention; `TEST-API-01` confirms array-of-codes is rejected, not aggregated. |
-| `REQ-ARC-01` | ✅ Verified | Layering in `DEVELOPMENT_DOCUMENTATION.md` §5.1; `TEST-ARC-01` (`ArchitectureIsolationTest.php`) asserts both the schema and the PHP source itself never reference the verification oracle. |
-| `REQ-ARC-02` | ✅ Verified | `TEST-DET-01` (`DeterminismTest.php`): repeated correct/suboptimal/incorrect/gate-failure requests against an unchanged baseline return byte-identical bodies. |
-| `REQ-IMP-01` | ✅ Verified | Stack matches (React/PHP/MySQL/Python); the two infrastructure deviations (MySQL version pinning, `Dockerfile` location) are recorded with rationale in `DEVELOPMENT_DOCUMENTATION.md` §10.1-§10.2, not silent. |
-| `REQ-DOC-01` | ✅ Verified | `docs/USER_GUIDE.pdf` covers installation and operation; `docs/DEVELOPMENT_DOCUMENTATION.md` and `docs/IMPLEMENTATION_SPECIFICATION.md` trace one response end to end (§3 of the specification) and cover architecture, data structures, rule responsibility, and the native AMD64/ARM64 distribution contract. |
+| `REQ-INT-01` (revised 0.6) | ✅ Verified | Full roster→dossier→question→submit→feedback→next→review→replay/another-patient path confirmed via Selenium against the real running container; `ResponseInput` is a tagged union (`code`/`none_of_above`), never an aggregated array — `EvaluationController::parseResponse()` rejects anything else as `malformed_input`. |
+| `REQ-INT-02` | ✅ Verified | `PatientDossier` is a collapsible panel rendered *inside* `QuestionView`, not a separate route; confirmed via Selenium that opening/closing it does not reset `selectedOptionId` or the active question. |
+| `REQ-INT-03` | ✅ Verified | `lib/playthrough.js`'s `shuffledOrder()` is a Fisher–Yates permutation of question **ids** only — it never adds/removes an id; `App.jsx`'s `replay()` calls it again over the same `activePatient.questions` array. |
+| `REQ-INT-04` | ✅ Verified | `runtime_manifest_0_2.json`'s `expected_counts`: exactly 25 `none_of_above_options` for 25 learner questions (one each), enforced by `test_runtime_contract_0_2.py`'s `test_learner_options_and_none_of_above_controls`. |
+| `REQ-INT-05` | ✅ Verified | `results[questionId]` is only ever added to, never mutated, once set (`App.jsx::submitAnswer`); `replay()` clears `results`/resets `currentIndex` but never touches `orderedQuestionIds`' underlying membership. Session-local completion marks (`sessionStorage`, added 2026-08-09) are the only persistence anywhere in the frontend — no server-side attempt history exists in the schema (§2.2 above). |
+| `REQ-ARC-01` | ⚠ Verified by inspection; automated test currently broken | `mysql_schema_0_2.sql` (read directly, 2026-08-09) has no table for expected classification/rule/criterion — the schema comment says so explicitly ("Deliberately absent: reference_response, expected_class, expected_rule..."). `app/tests/Integration/ArchitectureIsolationTest.php` is the planned automated check but has not been updated for the new schema (step 8). |
+| `REQ-ARC-02` | ⚠ Verified by inspection; automated test currently broken | `Evaluator::evaluate()` is a pure function of its three arguments plus the PDO-loaded, immutable-per-request `CodingQuestion`; no rule reads wall-clock time, randomness, or session state. `app/tests/Integration/DeterminismTest.php` is the planned automated check, not yet rewritten. |
+| `REQ-IMP-01` | ✅ Verified | Stack matches (React 19/Vite 8, PHP 8.4, MySQL, Python); the forward redesign itself is the one large documented departure from the original scope, and it is recorded with full rationale across `docs/CHANGELOG.md`'s 2026-08-08/09 entries, not silently. |
+| `REQ-DOC-01` | ✅ Verified | This document, `IMPLEMENTATION_SPECIFICATION.md`, and `DEVELOPMENT_DOCUMENTATION.md` together trace architecture, schema, API, rule responsibility, and one full response end to end. |
+
+#### 2.4.1 Bounded UX/UI and gameful presentation (`UXBASE-0.1`, catalogue §7.1)
+
+| ID | Status | Evidence |
+|---|---|---|
+| `REQ-UI-01` | ✅ Verified | `components/Orientation.jsx`, rendered above the roster heading (default-open): states the educational purpose and non-clinical boundary, the choose→answer→feedback workflow, and a three-class legend with the same icon+colour+text pairing used in `QuestionFeedback`/`PatientReview`. Confirmed present on first load via Selenium, 2026-08-09. |
+| `REQ-UI-02` | ✅ Verified | `PatientCard` shows question count + `foundational`/`involved` badge; nothing in `selectPatient()`/`PatientRoster` blocks selection by difficulty. Session-local completion (`sessionStorage`, not `localStorage` — deliberately, so it's cleared at browser-session end rather than persisted indefinitely, matching this requirement's own "completion status is session-local" wording exactly) shown as a per-card badge plus an aggregate "N of 6 completed" line; the dossier reopens without losing question state (`REQ-INT-02` above). |
+| `REQ-UI-03` | ✅ Verified | Every classification pairs an icon (`STATUS_ICONS`) with text — never colour alone; `:focus-visible` styling is global (`App.css`); the reduced-motion media query zeroes `--motion-duration` and the completion badge's `animation` explicitly, not just shortens it; a 375px-viewport Selenium pass showed no blocked control. No formal WCAG audit was performed (as the requirement itself allows — "no conformance claim unless separately tested"). |
+| `REQ-GAM-01` | ✅ Verified | The full gameful-mechanics table in `chapter3_ux_ui_gamification_concept_0_1.md` §4 was checked item by item during implementation (`docs/CHANGELOG.md`, step 7 entry); no points/leaderboard/lives/timer exists anywhere in the frontend source, confirmed by direct inspection — there is no code that could implement one, not merely an absence of UI for one. |
 
 ### 2.5 Traceability and configuration control (catalogue §8)
 
 | ID | Status | Evidence |
 |---|---|---|
-| `REQ-TRC-01` | ✅ Verified | This document *is* the traceability-matrix audit the acceptance criterion asks for; every row below either has a destination or a declared reason it's deferred. |
-| `REQ-CFG-01` | 🕓 Deferred to freeze | No git commit has been pinned and no baseline has been promoted to `1.0`; this is the actual freeze step (brief §20 Phase 6), which has not been requested. |
+| `REQ-TRC-01` | ✅ Verified | This document *is* the traceability-matrix audit; every row has a destination or a declared, reasoned deferral. |
+| `REQ-CFG-01` | 🕓 Deferred to freeze | No git commit has been pinned and no baseline has been promoted past `working_forward_implementation_candidate_not_frozen` (`runtime_manifest_0_2.json`'s own `status` field); freeze is implementation-order step 10, not requested. |
 
 ### 2.6 Reference-suite and verification requirements (catalogue §9)
 
 | ID | Status | Evidence |
 |---|---|---|
-| `REQ-VER-01` | ✅ Verified | `chapter3_reference_case_coverage_plan.md` §1.1/§2 states the selection criteria and records the material change from the `CASEPLAN-0.1` estimate explicitly, rather than silently. |
-| `REQ-VER-02` | ✅ Verified | `chapter3_reference_case_coverage_plan.md` §6 coverage matrix: no row is an unexplained gap after the pre-freeze expansion; the one intentionally-excluded dimension (`acceptable alternative`) is declared, not counted as covered. |
-| `REQ-VER-03` | ✅ Verified | For `CASE-005`-`008`, the expected suffix/target was derived from `RULEBASE-0.1`'s documented FEV1 intervals *before* running the evaluator against them (not observed from output and then written down) — the CSV rows were authored, then the PHP suite was run to confirm the already-implemented `RuleMap`/`RuleCorrect` matched. `TEST-ARC-01` confirms the runtime never reads the oracle regardless. |
-| `REQ-VER-04` | ✅ Verified | `IMPLEMENTATION_SPECIFICATION.md` §7 test-inventory table maps every `TEST-*` to a real file; nothing is a "justified omission" anymore now that `TEST-E2E-01`/`02` are implemented. |
-| `REQ-VER-05` | 🕓 Deferred to freeze | The conformance *categories* already exist (brief §22); the *final test report* applying them is the principal verification run, not yet performed. |
-| `REQ-VER-06` | ✅ Verified as ongoing practice; final log is a freeze-phase artefact | Every deviation hit during this implementation phase (MySQL 26.7.0/volume incompatibility, arm64 Selenium image, two test-authoring bugs) is logged in `CHANGELOG.md` with cause and resolution, and every affected test was rerun after the fix — the mechanism `REQ-VER-06` asks for is demonstrably in use, not just described. |
-| `REQ-VER-07` | ✅ Verified (data side); 📄 Thesis-text scope (main-text side) | `RCBASE-0.2`'s 18 rows carry every mandatory field this requirement lists (case ID, description, accepted set, submitted code, class, pattern, rationale, catalogue version) — ready to become the appendix table. Which cases get worked examples in the main text is a thesis-writing decision, not a repository one. |
+| `REQ-VER-01` | ✅ Verified | `chapter3_patient_and_question_design_plan.md`/`chapter3_reference_case_coverage_plan_forward_0_3.md` state the selection criteria; the six-patient/25-question count is a stated content decision (`REQ-DAT-09`), not a percentage-of-catalogue quota. |
+| `REQ-VER-02` | ✅ Verified | `chapter3_reference_case_coverage_plan_forward_0_3.md`'s coverage matrix spans all three feedback classes across the new `RULE-REL-HARD-01`/`REL-SPEC-01`/`NOA-01` rules plus the four retained source-specific rules; no unexplained gap. |
+| `REQ-VER-03` | ✅ Verified | `verification/reference_responses_0_3_candidate.csv`'s 143 rows each carry `expected_class`/`expected_determining_rule`/`expected_criterion` derived from `QSAUDIT-0.1`/the rule catalogue — authored before being checked against the implementation, per the file's own `provenance_status` column. `mysql_schema_0_2.sql` has no table this oracle could leak into at runtime (§2.4 `REQ-ARC-01` above). |
+| `REQ-VER-04` | ⚠ Partially deferred | Rule/data-level testing exists for the *previous* case-centric model but has not been rewritten for the forward model (step 8, see §1a); the end-to-end learner path has instead been exercised repeatedly via ad hoc Selenium scripts against the real running stack (not a committed, rerunnable suite) during steps 6/7. This is a genuine, named gap, not glossed over. |
+| `REQ-VER-05` | 🕓 Deferred to freeze | The conformance categories exist in `chapter3_test_catalogue.md` §3.2.2; the final report applying them is the step-10 principal verification run. |
+| `REQ-VER-06` | ✅ Verified as ongoing practice; final log is a freeze-phase artefact | Every deviation this session (the bootstrap/deployment-path gap, the `none_of_above` raw-token leak, the patient-rename hash-pin update, etc.) is logged in `docs/CHANGELOG.md` with cause, fix, and re-verification — the mechanism is demonstrably in use. |
+| `REQ-VER-07` | 🕓 Deferred (data exists; not yet placed) | `verification/reference_responses_0_3_candidate.csv` already carries every mandatory field this requirement lists; whether/which cases become main-text worked examples versus appendix-only is a step-9/thesis-writing decision, not yet made. |
+| `REQ-VER-08` | 🕓 Deferred to step 9 (oracle audit) | The oracle exists with the right shape — `verification/reference_responses_0_3_candidate.csv` has 143 rows (125 new forward + 18 historical, confirmed by direct count) covering every learner code-domain relation and all 25 `none_of_above` cases — but every row's own `provenance_status` column reads `forward_specification_derived_pending_human_oracle_audit`. The requirement asks for an *independently predefined* expectation; "derived from the specification, not yet human-audited" is not yet that, by the file's own honest labelling. |
+| `REQ-VER-09` | 🕓 Deferred to step 9 (oracle audit) | The 18 historical rows are present in the same candidate file (`legacy_rc_id`/`legacy_case_id` columns populated) and the 8 `verification_only` legacy questions remain in the runtime data specifically to keep them regression-checkable — but no rerun against the live evaluator has happened yet to confirm all 18 still hold under `RULEBASE-0.2`. |
 
 ## 3. What this audit found
 
-**No undeclared gaps.** Every `Accepted`/`Scope constraint` requirement
-either has verified evidence or is correctly deferred to a freeze procedure
-that has not been requested yet (`REQ-CFG-01`, the final-report half of
-`REQ-VER-05`) or depends on the thesis document itself rather than the
-repository (`REQ-SCP-03`, the main-text half of `REQ-VER-07`).
+**No undeclared gaps, but real, named ones.** Every `Accepted`/`Scope
+constraint` requirement has verified evidence, a reasoned freeze-phase
+deferral, or — for five rows (`REQ-RUL-04`/`05`, `REQ-ARC-01`/`02`,
+`REQ-VER-04`) — an honestly marked ⚠: the property holds by direct
+inspection, but the automated PHPUnit regression that is supposed to prove
+it mechanically does not currently run, because `app/tests/*` still targets
+the deleted case-centric classes. That is implementation-order step 8, not
+started. `REQ-VER-07`/`08`/`09` are step 9 (oracle audit), also not
+started. Neither step was in scope for the phase this audit covers.
 
-**One stale cross-reference fixed as a side effect of this audit:**
-`chapter3_requirements_catalogue.md` still named `CASEPLAN-0.1`/`CASEBASE-0.1`/`RCBASE-0.1`
-and "four base cases and fourteen atomic response variants" in its header
-and freeze-criteria section, left over from before the pre-freeze coverage
-review. Corrected to `CASEPLAN-0.2`/`CASEBASE-0.2`/`RCBASE-0.2` and
-"eight/eighteen" — a pointer correction, not a change to any requirement's
-substance, so the catalogue version (0.5) was not bumped for it. Logged in
-[CHANGELOG.md](CHANGELOG.md).
-
-**What remains before `REQBASE-1.0`/`CASEBASE-1.0`/`RULEBASE-1.0`/`PROTOBASE-1.0`
-can be frozen** (catalogue §12, unchanged by this audit): `OPEN-RQ-01`
-(final research-question wording) and `OPEN-EVAL-01` (whether independent
-domain-expert review is required) remain open, and both are explicitly
-supervisor-level decisions, not implementation gaps.
+**What remains before `REQBASE-1.0`/`PROTOBASE-1.0` can be frozen**
+(catalogue §12): implementation-order steps 8 (test-suite rewrite), 9
+(oracle audit), and 10 (freeze + principal verification run), plus the two
+supervisor-level decisions unchanged since the original brief —
+`OPEN-RQ-01` (final research-question wording) and `OPEN-EVAL-01` (whether
+independent domain-expert review is required). None of these are
+implementation gaps in the sense this audit checks for; they are the
+project's own stated next steps.

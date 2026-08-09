@@ -1,11 +1,27 @@
 # UX/UI stretch-goal brainstorm
 
-**Status: draft, awaiting project-owner review.** Not a living document
-per `CLAUDE.md`'s documentation-upkeep table yet — nothing here has been
-implemented, and nothing here should be treated as decided. This is raw
-material for [UX_UI_SPECIFICATION.md](UX_UI_SPECIFICATION.md), which
-narrows it down; that specification is itself still a proposal until the
-project owner has reviewed both.
+**Status: implemented and verified, 2026-08-08 — this file is now
+historical**, kept as the planning record (see
+`docs/UX_UI_SPECIFICATION.md`'s status note for where the living version
+of its conclusions now lives).
+
+**Status when approved, 2026-08-08:** The project owner
+reviewed this alongside [UX_UI_SPECIFICATION.md](UX_UI_SPECIFICATION.md)
+and made one scope call, recorded here rather than only in chat history:
+**no new case narrative/content or data-model change** is the sole
+remaining hard non-goal. Everything else this document originally flagged
+as scope-creep risk — a client-side router, autocomplete-style search
+polish, a UI framework/library, and a *lightweight* gamification layer —
+is explicitly in scope, on the condition that it stays frontend-only (the
+backend, rule engine, and data layer remain a hard limit; the E2E test
+suite may be extended/updated as needed). Gamification specifically was
+upgraded from "flag for veto" to "regarded as essential to the
+implementation succeeding," deliberately kept unelaborate rather than a
+full points/leaderboard system. See
+[UX_UI_SPECIFICATION.md §1](UX_UI_SPECIFICATION.md#1-purpose-scope-and-the-governing-constraint)
+for how this plays out concretely; the rest of this document is kept as
+originally written (including the now-superseded risk framing) as the
+historical record of the idea set the decision was made against.
 
 ## Why this exists
 
@@ -226,39 +242,45 @@ Each idea is tagged `[effort]` (S/M/L, rough relative size) and `[risk]`
 
 ---
 
-## Ideas that risk scope creep — flag for veto
+## Ideas that risk scope creep — flag for veto (superseded 2026-08-08)
 
-Listed separately and explicitly because the project owner asked ideas be
+Originally listed separately because the project owner asked ideas be
 flagged if they risk pulling scope, not silently folded into "polish."
+**Resolved 2026-08-08** — kept below verbatim as the record of what was
+flagged and why, with the actual decision noted inline. Only the first
+item remains an actual non-goal.
 
 - **Richer per-case narrative content** (full clinical vignette text
   beyond `short_description`). This is new *case data*, not a frontend
   change — it would touch `prototype_baseline_0_1/data/cases_0_2.csv`,
   the baseline-versioning discipline (`CASEBASE-0.x`), and potentially
-  `chapter3_*.md` control documents. Recommend treating as out of scope
-  for this stretch goal unless explicitly wanted, in which case it should
-  be scoped as its own small item, not bundled silently into "naming."
+  `chapter3_*.md` control documents. **Decision: stays out of scope.**
+  The one point the project owner explicitly agreed with unchanged.
 - **Progress tracking / gamification** (e.g., "cases completed," a score,
   a completion badge). No backend session/identity concept exists (by
   design — no accounts, no persistence of a learner's identity across
-  visits), so this would require either new backend state or a
-  client-only illusion of progress that resets on refresh — likely more
-  complexity than the stretch goal budget justifies. Recommend leaving out
-  entirely unless the project owner specifically wants it discussed.
-- **Any UI library or CSS framework adoption** (Tailwind, MUI, etc.). Not
-  inherently wrong, but it's a new build dependency and a real
-  `DEVELOPMENT_DOCUMENTATION.md`-grade technology decision, not a styling
-  detail — flagged as an open decision in the specification rather than
-  assumed.
-- **Reconsidering the no-router / no-autocomplete decisions.** Explicitly
-  not proposed anywhere above; called out here only to be unambiguous that
-  "make it feel more like a real app" is not code for "add the complexity
-  that was deliberately left out."
+  visits), so this needs a client-only mechanism to avoid touching the
+  data layer. **Decision: in scope, and explicitly called "essential to
+  the implementation succeeding" — deliberately not an elaborate concept.**
+  Implementation constraint from that same instruction: `localStorage`
+  only, no backend/session/data-layer change of any kind; see
+  `UX_UI_SPECIFICATION.md` for the concrete mechanism.
+- **Any UI library or CSS framework adoption** (Tailwind, MUI, etc.). A new
+  build dependency and a real `DEVELOPMENT_DOCUMENTATION.md`-grade
+  technology decision, not a styling detail. **Decision: permitted, not
+  mandated** — the specification's plain-CSS recommendation stands on its
+  own engineering merits (§2.1), not because adoption was vetoed.
+- **Reconsidering the no-router / no-autocomplete decisions.** **Decision:
+  permitted** — the project owner explicitly lifted this restriction,
+  provided it stays frontend-only. Whether either is actually *adopted* is
+  a separate call from whether it's *allowed*; see the specification for
+  what was actually implemented and why.
 - **Changing the evaluation/feedback *logic*** (thresholds, wording of
-  explanations, which class something falls into). Out of scope by
-  construction — this brainstorm is presentation-layer only; nothing here
-  should touch `app/src/Rules/*` or the explanation text content itself
-  (only how it's visually framed).
+  explanations, which class something falls into). **Decision: stays out
+  of scope** — the project owner's own framing ("the backend, the rule
+  model, the rules, anything in the data layer... is our hard limit")
+  covers this directly; nothing here touches `app/src/Rules/*` or
+  explanation text content, only how it's visually framed.
 
 ---
 
@@ -284,20 +306,24 @@ owner has trimmed this list) — just a note on natural clusters:
 
 ---
 
-## Questions for the project owner
+## Questions for the project owner (answered 2026-08-08)
 
-Called out here so they're not buried in the specification's prose:
+Originally called out so they wouldn't be buried in the specification's
+prose. Answers recorded here for the historical record; see
+`UX_UI_SPECIFICATION.md §9` for how each became a concrete default.
 
-1. Any objection to surfacing `short_description` as-is for case naming, or
-   is genuinely new case narrative text wanted (with the baseline-version
-   implications that carries)?
-2. Plain CSS (custom properties, zero new dependencies) vs. a CSS
-   framework/component library — any preference, or should the
-   specification just recommend the zero-dependency path?
-3. Is dark mode worth explicit design attention now, or "don't break the
-   free native-control support that already exists" good enough for this
-   pass?
-4. Tutorial as an auto-shown first-visit modal, contextual inline hints,
-   both, or a preference for something else entirely?
-5. Any appetite at all for progress/gamification-style ideas, or firmly
-   out of scope?
+1. `short_description` as-is vs. new case narrative text? →
+   **`short_description` as-is; no case-data change of any kind.**
+2. Plain CSS vs. a framework/library? → **No objection to either; the
+   specification's zero-dependency recommendation stands on its own
+   merits, not as a restriction.**
+3. Dark mode: explicit attention or "don't break existing support"? →
+   Not separately raised in the reply; treated as still open, specification
+   default (explicit token-level support) stands unless overridden.
+4. Tutorial shape? → Not separately raised in the reply; specification
+   default (auto-shown modal + persistent re-entry point) stands unless
+   overridden.
+5. Gamification appetite? → **In scope, and explicitly "regarded as
+   essential for the successful completion of the implementation" —
+   deliberately not an elaborate concept.** The single biggest change from
+   the original brainstorm framing.

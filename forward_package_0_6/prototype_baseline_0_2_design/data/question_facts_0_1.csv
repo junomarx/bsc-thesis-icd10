@@ -1,0 +1,61 @@
+question_baseline_id,question_id,fact_key,value_type,value_text,value_integer,value_decimal,value_boolean,value_code,value_enum,unit,learner_label,source_context_item_id
+QUESTIONBASE-0.1,Q-001-01,encounter_setting,enum,,,,,,inpatient,,Encounter setting,CTX-001-01
+QUESTIONBASE-0.1,Q-001-01,diagnosis_role,enum,,,,,,main,,Diagnosis role,CTX-001-01
+QUESTIONBASE-0.1,Q-001-01,copd_base_code,code,,,,,J44.0,,,Documented COPD base category,CTX-001-01
+QUESTIONBASE-0.1,Q-001-01,fev1_stable_pct_predicted,decimal,,,55,,,,percent_predicted,Stable-phase FEV1,CTX-001-05
+QUESTIONBASE-0.1,Q-001-01,acute_lower_respiratory_infection_documented,boolean,,,,true,,,,Acute lower-respiratory infection documented,CTX-001-01
+QUESTIONBASE-0.1,Q-001-02,diabetes_type,enum,,,,,,type_2,,Documented diabetes type,CTX-001-02
+QUESTIONBASE-0.1,Q-001-02,diabetic_complications_documented,boolean,,,,false,,,,Diabetic complication documented,CTX-001-02
+QUESTIONBASE-0.1,Q-001-03,osteoarthritis_site,enum,,,,,,knee,,Affected joint,CTX-001-03
+QUESTIONBASE-0.1,Q-001-03,laterality,enum,,,,,,bilateral,,Laterality,CTX-001-03
+QUESTIONBASE-0.1,Q-001-03,osteoarthritis_etiology,enum,,,,,,primary,,Documented osteoarthritis type,CTX-001-03
+QUESTIONBASE-0.1,Q-002-01,rhythm_diagnosis,enum,,,,,,atrial_fibrillation,,Documented rhythm diagnosis,CTX-002-01
+QUESTIONBASE-0.1,Q-002-01,rhythm_pattern,enum,,,,,,paroxysmal,,Documented rhythm pattern,CTX-002-01
+QUESTIONBASE-0.1,Q-002-02,ckd_stage,integer,,3,,,,,stage,Documented CKD stage,CTX-002-02
+QUESTIONBASE-0.1,Q-002-02,gfr,decimal,,,45,,,,mL/min/1.73m2,Recorded GFR,CTX-002-02
+QUESTIONBASE-0.1,Q-002-03,documented_diagnosis,enum,,,,,,panic_disorder,,Documented diagnosis,CTX-002-03
+QUESTIONBASE-0.1,Q-003-01,documented_diagnosis,enum,,,,,,migraine,,Documented diagnosis,CTX-003-01
+QUESTIONBASE-0.1,Q-003-01,aura_present,boolean,,,,true,,,,Aura documented,CTX-003-01
+QUESTIONBASE-0.1,Q-003-01,status_migrainosus,boolean,,,,false,,,,Status migrainosus documented,CTX-003-01
+QUESTIONBASE-0.1,Q-003-02,documented_diagnosis,enum,,,,,,hypothyroidism,,Documented diagnosis,CTX-003-02
+QUESTIONBASE-0.1,Q-003-02,etiology,enum,,,,,,postinfectious,,Documented aetiology,CTX-003-02
+QUESTIONBASE-0.1,Q-003-03,documented_diagnosis,enum,,,,,,generalized_anxiety_disorder,,Documented diagnosis,CTX-003-03
+QUESTIONBASE-0.1,Q-004-01,diabetes_type,enum,,,,,,type_2,,Documented diabetes type,CTX-004-01
+QUESTIONBASE-0.1,Q-004-01,diabetic_complications_documented,boolean,,,,false,,,,Diabetic complication documented,CTX-004-01
+QUESTIONBASE-0.1,Q-004-01,separate_glaucoma_documented,boolean,,,,true,,,,Separate glaucoma diagnosis documented,CTX-004-02
+QUESTIONBASE-0.1,Q-004-01,diabetic_eye_causality_documented,boolean,,,,false,,,,Diabetes-to-eye causal link documented,CTX-004-02
+QUESTIONBASE-0.1,Q-004-02,glaucoma_subtype,enum,,,,,,primary_open_angle,,Documented glaucoma subtype,CTX-004-02
+QUESTIONBASE-0.1,Q-004-03,depressive_course,enum,,,,,,recurrent,,Documented depressive course,CTX-004-03
+QUESTIONBASE-0.1,Q-004-03,current_episode_severity,enum,,,,,,moderate,,Current episode severity,CTX-004-03
+QUESTIONBASE-0.1,Q-004-03,manic_episode_documented,boolean,,,,false,,,,Manic episode documented,CTX-004-03
+QUESTIONBASE-0.1,Q-004-04,anaemia_type,enum,,,,,,iron_deficiency,,Documented anaemia type,CTX-004-04
+QUESTIONBASE-0.1,Q-004-04,anaemia_cause,enum,,,,,,chronic_blood_loss,,Documented cause,CTX-004-04
+QUESTIONBASE-0.1,Q-004-05,pain_location,enum,,,,,,low_back_lumbar,,Documented pain location,CTX-004-05
+QUESTIONBASE-0.1,Q-004-05,leg_radiation,boolean,,,,false,,,,Leg radiation present,CTX-004-05
+QUESTIONBASE-0.1,Q-004-05,underlying_diagnosis_established,boolean,,,,false,,,,Underlying diagnosis established,CTX-004-05
+QUESTIONBASE-0.1,Q-005-01,schizophrenia_subtype,enum,,,,,,paranoid,,Documented schizophrenia subtype,CTX-005-01
+QUESTIONBASE-0.1,Q-005-02,movement_disorder,enum,,,,,,tardive_dyskinesia,,Documented movement disorder,CTX-005-02
+QUESTIONBASE-0.1,Q-005-02,treatment_association,enum,,,,,,long_term_neuroleptic,,Documented treatment association,CTX-005-02
+QUESTIONBASE-0.1,Q-005-02,task_scope,enum,,,,,,diagnosis_code_only,,Coding-task scope,CTX-005-02
+QUESTIONBASE-0.1,Q-005-03,psoriasis_subtype,enum,,,,,,vulgaris,,Documented psoriasis subtype,CTX-005-03
+QUESTIONBASE-0.1,Q-005-04,lipid_disorder,enum,,,,,,mixed_hyperlipidaemia,,Documented lipid disorder,CTX-005-04
+QUESTIONBASE-0.1,Q-005-05,hypertension_type,enum,,,,,,essential_primary,,Documented hypertension type,CTX-005-05
+QUESTIONBASE-0.1,Q-005-05,hypertensive_heart_disease_documented,boolean,,,,false,,,,Hypertensive heart disease documented,CTX-005-05
+QUESTIONBASE-0.1,Q-005-05,secondary_cause_documented,boolean,,,,false,,,,Secondary cause documented,CTX-005-05
+QUESTIONBASE-0.1,Q-006-01,chronic_ischemic_condition,enum,,,,,,atherosclerotic_heart_disease,,Documented chronic ischaemic condition,CTX-006-02
+QUESTIONBASE-0.1,Q-006-01,old_mi_as_target,boolean,,,,false,,,,Old myocardial infarction is current coding target,CTX-006-02
+QUESTIONBASE-0.1,Q-006-01,ischemic_cardiomyopathy_as_target,boolean,,,,false,,,,Ischaemic cardiomyopathy is current coding target,CTX-006-02
+QUESTIONBASE-0.1,Q-006-02,prior_event,enum,,,,,,cerebral_infarction,,Documented prior event,CTX-006-03
+QUESTIONBASE-0.1,Q-006-02,time_since_event_years,integer,,2,,,,,years,Time since prior event,CTX-006-03
+QUESTIONBASE-0.1,Q-006-02,documented_as_sequela,boolean,,,,true,,,,Current deficit documented as sequela,CTX-006-03
+QUESTIONBASE-0.1,Q-006-03,epilepsy_type,enum,,,,,,generalized_idiopathic,,Documented epilepsy type,CTX-006-04
+QUESTIONBASE-0.1,Q-006-03,status_epilepticus,boolean,,,,false,,,,Status epilepticus documented,CTX-006-04
+QUESTIONBASE-0.1,Q-006-04,dementia_documented,boolean,,,,true,,,,Dementia documented,CTX-006-05
+QUESTIONBASE-0.1,Q-006-04,dementia_etiology_documented,boolean,,,,false,,,,Dementia aetiology documented,CTX-006-05
+QUESTIONBASE-0.1,Q-006-04,cerebrovascular_causal_link_documented,boolean,,,,false,,,,Cerebrovascular causal link documented,CTX-006-05
+QUESTIONBASE-0.1,Q-006-04,delirium_documented,boolean,,,,false,,,,Delirium documented,CTX-006-05
+QUESTIONBASE-0.1,Q-006-05,documented_diagnosis,enum,,,,,,benign_prostatic_hyperplasia,,Documented diagnosis,CTX-006-06
+QUESTIONBASE-0.1,Q-006-06,consciousness_state,enum,,,,,,unconscious,,Current consciousness state,CTX-006-07
+QUESTIONBASE-0.1,Q-006-06,diagnostic_workup_complete,boolean,,,,false,,,,Diagnostic work-up complete,CTX-006-07
+QUESTIONBASE-0.1,Q-006-06,codable_disease_cause_established,boolean,,,,false,,,,Codable disease cause established,CTX-006-07
+QUESTIONBASE-0.1,Q-006-06,epilepsy_as_current_cause_established,boolean,,,,false,,,,Epilepsy established as current cause,CTX-006-04

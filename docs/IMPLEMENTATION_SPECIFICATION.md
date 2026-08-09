@@ -1,15 +1,23 @@
 # Implementation specification
 
+**Rewritten in full 9 August 2026** for the forward patient/question model.
+The previous version of this document described the superseded one-case/
+one-question implementation (`CASEBASE-0.2`/`MODELBASE-0.1`/`RULEBASE-0.1`);
+that implementation no longer exists in `app/src/` or `app/frontend/src/`.
+See `docs/CHANGELOG.md`'s 2026-08-08/09 entries for the full change history
+this rewrite consolidates.
+
 **Scope:** precise, as-built description of the software in `app/` and its
-relationship to `prototype_baseline_0_1/` and `prototype_stack/`. This is a
-reference document — if the code and this document disagree, the code is
-correct and this document is stale; fix the document (see
+relationship to `prototype_baseline_0_2_design/` and `prototype_stack/`.
+This is a reference document — if the code and this document disagree, the
+code is correct and this document is stale; fix the document (see
 [CHANGELOG.md](CHANGELOG.md) discipline in `CLAUDE.md`).
 **Rationale for these choices:** see [DEVELOPMENT_DOCUMENTATION.md](DEVELOPMENT_DOCUMENTATION.md).
-**Rule/case semantics authority:** `chapter3_rule_catalogue.md` (`RULEBASE-0.1`)
-and `chapter3_data_model_and_interaction_baseline.md` (`MODELBASE-0.1`). This
-document describes *how* those semantics are realized in code, not their
-justification.
+**Rule/data semantics authority:** `chapter3_rule_catalogue_0_2.md`
+(`RULEBASE-0.2`) and `chapter3_data_model_and_interaction_baseline_0_2.md`
+(`MODELBASE-0.2`). This document describes *how* those semantics are
+realized in code, not their justification. The `_0_1`-suffixed predecessors
+of both files are historical, superseded authority.
 
 ## 1. Repository layout
 
@@ -18,21 +26,23 @@ Dockerfile                      multi-stage build: node build → composer insta
                                  lives at the repo root (not app/) so prototype_stack/stack.sh's
                                  `sync` can pull this repository as the app source and find it at
                                  the checkout root — see docs/DEVELOPMENT_DOCUMENTATION.md §10.2.
-                                 Two build targets: `runtime` (default, lean, deployed by
-                                 prototype_stack/compose.yaml) and `dev` (adds dev Composer deps +
-                                 app/tests/, published as the :dev image tag — see §10.6)
+                                 Two build targets: `runtime` (default) and `dev` (adds dev
+                                 Composer deps + app/tests/, published as the :dev image tag — §6.5)
 .dockerignore                   also at repo root, matching the Dockerfile's build context
 docker-compose.yml               self-contained publishable bundle (db+bootstrap+app by default,
-                                 +selenium+test behind a `test` Compose profile) — see §6.5/§10.6.
+                                 +selenium+test behind a `test` Compose profile) — see §6.5.
                                  Distinct from prototype_stack/compose.yaml (the stack.sh-managed
-                                 deployment scaffold)
+                                 deployment scaffold) — both point their `bootstrap` service at
+                                 prototype_baseline_0_2_design/ (§6.3)
 .github/workflows/ci.yml         5 jobs: python-checks, php-unit, backend-integration, e2e,
-                                 publish-images (builds+pushes the 3 images docker-compose.yml
-                                 references to GHCR, gated on the other 4 passing, main only)
+                                 publish-images (builds+pushes 3 images to GHCR, main only,
+                                 gated on the other 4 passing) — NOT YET updated for the forward
+                                 model's broken test suite (§7); still targets the old suite
 app/
-  composer.json / composer.lock PHP dependencies (runtime: none beyond ext-pdo/ext-json; dev: phpunit/phpunit, php-webdriver/webdriver)
-  phpunit.xml                   three suites: unit, integration, e2e
-  router.php                    dev-only front controller for `php -S`; NOT copied into the Docker image
+  composer.json / composer.lock PHP dependencies (runtime: none beyond ext-pdo/ext-json; dev:
+                                 phpunit/phpunit, php-webdriver/webdriver)
+  phpunit.xml                   three suites: unit, integration, e2e (currently broken, §7)
+  router.php                    dev-only front controller for `php -S`; NOT copied into the image
   docker/apache-vhost.conf       DocumentRoot=public, AllowOverride All, DirectoryIndex index.html index.php
   public/
     index.php                    the real front controller (also used by Apache + router.php)
@@ -43,48 +53,82 @@ app/
     Db.php                        PDO factory
     Bootstrap.php                 wires repositories + evaluator against one PDO connection
     Model/
-      BaselineIdentity.php        the single `prototype_baseline` row
-      CaseFacts.php                one case's rule-relevant facts + response domain
-      CatalogueRecord.php          one SUBSET-0.1 catalogue row
+      BaselineIdentity.php        the single `prototype_baseline` row (PROTOBASE-0.3 identity)
+      CatalogueRecord.php          one catalogue_code (SUBSET-0.2) row
+      Patient.php                  one patient_definition row + ordered context items
+      PatientContextItem.php       one patient_context_item row
+      CodingQuestion.php           the atomic evaluation unit — replaces CaseFacts
+      QuestionFact.php             one typed question_fact row
+      QuestionFacts.php             keyed bag over QuestionFact with typed getters (getEnum/
+                                    getCode/getDecimal/getBool/getText); missing key → null,
+                                    never throws
+      QuestionCodeDomainRelation.php  one question_code_domain row (relation_kind vocabulary)
+      QuestionRelationFact.php     one question_relation_fact row (links a relation to a fact)
+      QuestionOption.php           one displayed question_option row
+      ResponseInput.php            tagged union: code(string) | noneOfAbove()
     Repository/
       BaselineRepository.php
       CatalogueRepository.php
-      CaseRepository.php
+      PatientRepository.php         replaces CaseRepository
+      QuestionRepository.php        replaces CaseRepository; hydrates facts/domain/
+                                     relation-facts/options in one pass, see §2.2
     Rules/
-      RuleGate.php, GateResult.php         RULE-GATE-01
-      RuleMap.php, MapResult.php           RULE-MAP-01
-      RuleStatus.php                        RULE-STATUS-01
-      RuleDepth.php                         RULE-DEPTH-01
-      RuleEvid.php                          RULE-EVID-01
-      RuleSpec.php                          RULE-SPEC-01
-      RuleCorrect.php                       RULE-CORRECT-01
-      Precedence.php                        RULE-PREC-01 (policy extracted as a pure function)
+      RuleGate.php, GateResult.php           RULE-GATE-01
+      RuleMap.php, MapResult.php              RULE-MAP-01
+      RuleStatus.php                           RULE-STATUS-01
+      RuleDepth.php                            RULE-DEPTH-01
+      RuleEvid.php                             RULE-EVID-01
+      RuleSpec.php                             RULE-SPEC-01
+      RuleRelHard.php                          RULE-REL-HARD-01 (net new)
+      RuleRelSpec.php                          RULE-REL-SPEC-01 (net new)
+      RuleNoa.php                              RULE-NOA-01 (net new)
+      RuleCorrect.php                          RULE-CORRECT-01
+      Precedence.php                           RULE-PREC-01 (policy extracted as a pure function)
     Evaluation/
-      Evaluator.php                orchestrates the above in RULEBASE-0.1 §6 order
-      EvaluationResult.php          terminal result value object
+      Evaluator.php                orchestrates the above in RULEBASE-0.2 §6 order
+      EvaluationResult.php          terminal result value object (now bilingual, §3.3)
       SpecificationGapException.php thrown if an eligible relation reaches no terminal rule
     Http/
       ApiResult.php                 {status, body} — HTTP-independent controller return type
       JsonResponse.php               writes ApiResult to the actual HTTP response
-      CaseController.php             GET /api/cases, GET /api/cases/{id}
-      EvaluationController.php       POST /api/cases/{id}/evaluate
-  tests/
-    Support/Fixtures.php           test-only CaseFacts/CatalogueRecord builders
-    Unit/*                          rule predicates in isolation, no DB
-    Integration/*                   full stack against a live MySQL baseline
-    E2E/
-      SeleniumTestCase.php          RemoteWebDriver lifecycle + page-interaction helpers
-      LearnerWorkflowTest.php       TEST-E2E-01: real browser, CASE-001, all three classes
-      VerificationOnlyCaseVisibilityTest.php  TEST-E2E-02: CASE-004/008 nav exclusion
-      docker-compose.yml            standalone Selenium+browser container (not in prototype_stack)
-      README.md                     how to run: start app, start Selenium, run --testsuite e2e
+      PatientController.php          GET /api/patients, GET /api/patients/{id} — replaces CaseController
+      QuestionController.php         GET /api/questions/{id}
+      EvaluationController.php       POST /api/questions/{id}/evaluate
+  tests/                          NOT YET migrated to the forward model — §7
   frontend/
-    package.json, vite.config.js    React 19 + Vite 8; build output → ../public (emptyOutDir: false)
+    package.json, vite.config.js    React 19 + Vite 8; version/build-date baked in via `define`
+                                     (§5.6); build output → ../public (emptyOutDir: false)
     src/
-      main.jsx, App.jsx, App.css, index.css
-      api.js                        fetch wrappers for the three endpoints
+      main.jsx                      wraps <App/> in <LocaleProvider>
+      App.jsx                       owns all playthrough state; renders Header + one of
+                                     three views + Footer
+      App.css, index.css
+      api.js                        fetch wrappers for the four endpoints
+      lib/
+        playthrough.js               shuffledOrder() (Fisher–Yates over ids), summarizeResults()
+        classification.js            STATUS_LABEL_KEYS/STATUS_ICONS (i18n keys, not strings)
+        i18n.jsx                     LocaleProvider/useLocale() — EN/DE UI-chrome dictionary,
+                                      browser-language default, localStorage-persisted choice
+        contentTranslations.js       German translations of patient/question *content*
+                                      (summaries, context items, question title/prompt)
+        catalogueTranslations.js     English titles for the 87 displayed ICD-10 codes (the
+                                      runtime catalogue is German-only data)
+      components/
+        Header.jsx                   title, disclaimer, LanguageSwitch
+        LanguageSwitch.jsx           EN | DE toggle
+        Orientation.jsx              REQ-UI-01 purpose/workflow/three-class legend, on the roster
+        PatientRoster.jsx            heading, progress summary, reset-progress control, patient-list grid
+        PatientCard.jsx               one patient per card (fixed height, §5.5)
+        PatientDossier.jsx            collapsible patient identity/context panel
+        QuestionView.jsx              progress bar, prompt, options, submit, feedback + technical details
+        PatientReview.jsx             counts, per-question list, completion badge, replay/another-patient
+        Footer.jsx                    version/build date/copyright
+        icons.jsx                    hand-authored inline SVGs, no icon-font/library
 
-prototype_baseline_0_1/            adopted candidate data pipeline (Python) — see its own README.md
+prototype_baseline_0_1/            historical/superseded Python data pipeline — kept for reference,
+                                    no longer the active bootstrap source (§6.3)
+prototype_baseline_0_2_design/     active Python data pipeline + MODELBASE-0.2 persistence
+                                    candidate, now wired into the real deployment path (§6.3)
 prototype_stack/                   Docker Compose scaffold (db, bootstrap, app services)
 ```
 
@@ -92,80 +136,120 @@ prototype_stack/                   Docker Compose scaffold (db, bootstrap, app s
 
 ### 2.1 Physical schema
 
-Defined in `prototype_baseline_0_1/mysql_schema.sql`; four tables, no
-others. All are `InnoDB`, `utf8mb4_unicode_ci`.
+Defined in `prototype_baseline_0_2_design/persistence_candidate/mysql_schema_0_2.sql`;
+nine tables, no others. All `InnoDB`, `utf8mb4_unicode_ci`.
 
 | Table | Primary key | Notable columns | FK to |
 |---|---|---|---|
-| `prototype_baseline` | `prototype_baseline_id` | `model_baseline_id`, `rule_baseline_id`, `case_baseline_id`, `subset_baseline_id`, `catalogue_edition`, `diaglist_sha256` | — |
+| `prototype_baseline` | `prototype_baseline_id` | `model_baseline_id`, `patient_baseline_id`, `question_baseline_id`, `subset_baseline_id`, `catalogue_edition`, `diaglist_sha256` | — |
 | `catalogue_code` | `(subset_baseline_id, code)` | `marker` (nullable, `!`), `designation`, `short_designation` | — |
-| `case_definition` | `(case_baseline_id, case_id)` | `encounter_setting`, `diagnosis_role`, `inpatient_lkf_scored` (nullable bool), `copd_base_code` (nullable), `fev1_stable_pct_predicted` (nullable `DECIMAL(6,2)`), `intended_use` | `catalogue_code` (via `copd_base_code`) |
-| `case_code_domain` | `(case_baseline_id, case_id, subset_baseline_id, code)` | `is_acceptable` (bool) | `case_definition`, `catalogue_code` |
+| `patient_definition` | `(patient_baseline_id, patient_id)` | `display_name`, `age_years`, `sex`, `self_described_background`, `history_availability`, `difficulty_role` (`foundational`\|`involved`), `general_health_summary`, `synthetic` | — |
+| `patient_context_item` | `(patient_baseline_id, patient_id, context_item_id)` | `item_type` (6-value CHECK, incl. `information_boundary`), `information_source`, `display_text`, `canonical_position` | `patient_definition` |
+| `coding_question` | `(question_baseline_id, question_id)` | `patient_id` (nullable), `title`, `prompt`, `intended_use` (`learner_visible`\|`verification_only`), `canonical_position`, `legacy_case_id` | `patient_definition` |
+| `question_fact` | `(question_baseline_id, question_id, fact_key)` | one-of-six typed value columns (`value_text`/`_integer`/`_decimal`/`_boolean`/`_code`/`_enum`), `learner_label`, `source_context_item_id` | `coding_question` |
+| `question_code_domain` | `(question_baseline_id, question_id, subset_baseline_id, code)` | `relation_kind` (5-value CHECK), `reason_key`, `improvement_code` | `coding_question`, `catalogue_code` (twice: `code` and `improvement_code`) |
+| `question_relation_fact` | `(question_baseline_id, question_id, subset_baseline_id, code, fact_key)` | `relation_role` (5-value CHECK) | `question_code_domain`, `question_fact` |
+| `question_option` | `(question_baseline_id, question_id, option_id)` | `option_kind` (`code`\|`none_of_above`), `code` (nullable) | `coding_question`, `catalogue_code`, `question_code_domain` |
 
-CHECK constraints enforce: `encounter_setting IN ('inpatient','hospital_outpatient')`,
-`diagnosis_role IN ('main','additional')`, `intended_use IN ('learner_visible','verification_only')`,
-and — the one cross-field rule — `inpatient_lkf_scored` is `NULL` iff
-`encounter_setting = 'inpatient'` (non-`NULL` iff `hospital_outpatient`).
+CHECK constraints of note beyond the vocabularies above:
+`ck_fact_one_typed_value` (exactly one of the six value columns is non-null,
+matching `value_type`); `ck_relation_reason` (`fact_conflict`/
+`temporal_context_conflict` rows must carry a non-empty `reason_key`);
+`ck_relation_improvement` (`less_specific_supported` rows must carry a
+non-null `improvement_code` — the schema only checks the code *exists*;
+that it resolves to an `accepted_reference` on the same question is
+enforced at hydration time, `QuestionRepository::assertImprovementCodesResolve()`,
+§2.2); `ck_option_payload` (a `code` option has both `subset_baseline_id`
+and `code`, a `none_of_above` option has neither).
 
 **No table stores an expected classification, determining rule, criterion,
-or any other verification-oracle field.** This is asserted by
-`ArchitectureIsolationTest::testRuntimeSchemaHasNoExpectedOutputColumnsOrTables()`.
+or any other verification-oracle field** — the schema file's own trailing
+comment states this explicitly ("Deliberately absent: reference_response,
+expected_class, expected_rule...").
 
-### 2.2 PHP value objects (`src/Model/`)
+### 2.2 PHP value objects and repository hydration (`src/Model/`, `src/Repository/`)
 
-| Class | Fields | Built by |
-|---|---|---|
-| `BaselineIdentity` | mirrors `prototype_baseline` row 1:1 | `BaselineRepository::current()` |
-| `CatalogueRecord` | `code`, `marker` (`?string`), `designation`, `shortDesignation` | `CatalogueRepository` |
-| `CaseFacts` | `caseId`, `shortDescription`, `encounterSetting`, `diagnosisRole`, `inpatientLkfScored` (`?bool`), `copdBaseCode` (`?string`), `fev1StablePctPredicted` (`?float`), `responseDomain` (`array<string,bool>` code→is_acceptable), `intendedUse` | `CaseRepository` |
+`QuestionRepository::findById()`/`listLearnerVisibleForPatient()` hydrate a
+full `CodingQuestion` in one pass: the question row, its `question_fact`
+rows into a `QuestionFacts` bag, its `question_code_domain` rows into a
+`code => QuestionCodeDomainRelation` map (`$domain`), its
+`question_relation_fact` rows into a `code => list<QuestionRelationFact>`
+map, and its `question_option` rows into an ordered `list<QuestionOption>`.
+Evaluation-domain membership (`$domain`) and displayed-option membership
+(`$options`) are deliberately separate arrays — `relationFor($code)` can
+return a relation for a code absent from `$options` (`REQ-MOD-06`).
 
-`CaseFacts` exposes `hasDefinedRelation(code)`, `isAcceptable(code)`, and
-`isLearnerVisible()` as its only behaviour — it is otherwise a plain data
-holder consumed by the `Rules/*` predicates.
+`findById()` does **not** filter by `intended_use` — both learner-visible
+and the 8 hidden `verification_only` legacy questions resolve by ID,
+because the verification path must be able to evaluate them
+(`REQ-VER-09`). The learner-facing visibility boundary is enforced by
+callers (`listLearnerVisibleForPatient()`'s own `WHERE`, and
+`QuestionController::show()`'s explicit `isLearnerVisible()` check on a
+direct fetch) — mirroring how `EvaluationController` never filters by
+`intended_use` either.
+
+`PatientRepository` is simpler: every patient is learner-facing
+(`REQ-MOD-03`), so `findById()`/`listAll()` have no visibility filter of
+their own.
 
 ## 3. Rule engine
 
-### 3.1 Evaluation tuple and algorithm
+### 3.1 Evaluation algorithm
 
-`Evaluator::evaluate(CaseFacts $case, ?CatalogueRecord $record, string $submittedCode): EvaluationResult`
-implements exactly the pseudocode in `chapter3_rule_catalogue.md` §6:
+`Evaluator::evaluate(CodingQuestion $question, ResponseInput $response, ?CatalogueRecord $record): EvaluationResult`
+implements the pseudocode in `chapter3_rule_catalogue_0_2.md` §6:
 
 ```text
-gate = RuleGate::evaluate(case, record, submittedCode)
+gate = RuleGate::evaluate(question, response, record)
 if not gate.eligible:  return notEvaluated(gate.reason)
 
-map = RuleMap::evaluate(case)
+if response.isNoneOfAbove():
+    return buildNoaResult(question)                    # RULE-NOA-01, terminal
+
+map = RuleMap::evaluate(question)
 
 hardMatches = []
-if RuleStatus::matches(case, record):            hardMatches += RULE-STATUS-01
-if RuleDepth::matches(case, submittedCode):      hardMatches += RULE-DEPTH-01
-if RuleEvid::matches(case, submittedCode, map):  hardMatches += RULE-EVID-01
+if RuleStatus::matches(question, record):             hardMatches += RULE-STATUS-01
+if RuleDepth::matches(question, code):                 hardMatches += RULE-DEPTH-01
+if RuleEvid::matches(question, code, map):             hardMatches += RULE-EVID-01
+if RuleRelHard::matches(question, code):               hardMatches += RULE-REL-HARD-01
 
 if hardMatches not empty:
-    primary = Precedence::primaryHardRule(hardMatches)   # STATUS > DEPTH > EVID
-    return classified('incorrect', primary, ..., matchedRules=hardMatches)
+    primary = Precedence::primaryHardRule(hardMatches)   # STATUS > DEPTH > EVID > REL-HARD
+    return classified('incorrect', primary, ...)
 
-if RuleSpec::matches(case, submittedCode, map):
-    return classified('suboptimal', RULE-SPEC-01, ...)
+gradedMatches = []
+if RuleSpec::matches(question, code, map):             gradedMatches += RULE-SPEC-01
+if RuleRelSpec::matches(question, code):               gradedMatches += RULE-REL-SPEC-01
 
-if RuleCorrect::matches(case, submittedCode):
+if gradedMatches not empty:
+    primary = Precedence::primaryGradedRule(gradedMatches)  # SPEC > REL-SPEC
+    return classified('suboptimal', primary, ...)
+
+if RuleCorrect::matches(question, code):
     return classified('correct', RULE-CORRECT-01, ...)
 
 throw SpecificationGapException(...)   # never `incorrect` by default
 ```
 
+The `none_of_above` branch is terminal immediately after the gate: no
+catalogue-code rule ever runs for it, because there is no submitted code.
+
 ### 3.2 Per-rule contract
 
-| Rule class | Static method signature | Predicate (see `RULEBASE-0.1` for full rationale) |
+| Rule class | Static method signature | Predicate |
 |---|---|---|
-| `RuleGate` | `evaluate(CaseFacts, ?CatalogueRecord, string): GateResult` | `null` record → `outside_active_subset`; code not in case's domain → `undefined_case_relation`; COPD case with no FEV1, or `!`-marked main-diagnosis hospital-outpatient case with no LKF flag → `missing_required_case_fact`; else eligible |
-| `RuleMap` | `evaluate(CaseFacts): MapResult` | Inpatient + 4-char COPD base (`J44.[0-9]`) + FEV1 present → suffix `0/1/2/3` by `<35 / <50 / <70 / else`, target = base+suffix; else not applicable |
-| `RuleStatus` | `matches(CaseFacts, CatalogueRecord): bool` | `marker === '!' && role === 'main' && (inpatient \|\| (hospital_outpatient && lkfScored === true))` |
-| `RuleDepth` | `matches(CaseFacts, string): bool` | `inpatient && submittedCode` matches `/^J44\.[0-9]$/` (a bare 4-char parent) |
-| `RuleEvid` | `matches(CaseFacts, string, MapResult): bool` | 6-char code, same 4-char base as case, suffix ∈ `{0,1,2,3}`, and that suffix ≠ `MapResult::expectedSuffix` |
-| `RuleSpec` | `matches(CaseFacts, string, MapResult): bool` | inpatient + main + `MapResult` applicable + `submittedCode === copdBaseCode . '9'` (and is one of the four source-listed warning forms) |
-| `RuleCorrect` | `matches(CaseFacts, string): bool` | `case->isAcceptable(submittedCode)` |
-| `Precedence` | `primaryHardRule(array): ?string`; `terminalClass(array $hard, bool $spec, bool $accept): ?string` | Fixed priority `STATUS > DEPTH > EVID`; terminal policy hard→incorrect, else spec→suboptimal, else accept→correct, else `null` (gap) |
+| `RuleGate` | `evaluate(CodingQuestion, ResponseInput, ?CatalogueRecord): GateResult` | `none_of_above` with no such option → `none_option_not_defined`; code not in catalogue → `outside_active_subset`; code without a defined `question_code_domain` relation → `undefined_case_relation`; a COPD question with no FEV1 fact, or a `!`-marked main-diagnosis hospital-outpatient question with no LKF flag → `missing_required_case_fact`; else eligible |
+| `RuleMap` | `evaluate(CodingQuestion): MapResult` | Inpatient + 4-char COPD base (`J44.[0-9]`) + FEV1 present → suffix `0/1/2/3` by `<35 / <50 / <70 / else`, target = base+suffix; else not applicable. Applies to exactly one of the 25 learner questions (`Q-001-01`) |
+| `RuleStatus` | `matches(CodingQuestion, CatalogueRecord): bool` | `marker === '!' && role === 'main' && (inpatient \|\| (hospital_outpatient && lkfScored === true))` |
+| `RuleDepth` | `matches(CodingQuestion, string): bool` | `inpatient && submittedCode` matches `/^J44\.[0-9]$/` (a bare 4-char parent) |
+| `RuleEvid` | `matches(CodingQuestion, string, MapResult): bool` | 6-char code, same 4-char base as the question's COPD base, suffix ∈ `{0,1,2,3}`, and that suffix ≠ `MapResult::expectedSuffix` |
+| `RuleSpec` | `matches(CodingQuestion, string, MapResult): bool` | inpatient + main + `MapResult` applicable + `submittedCode === copdBaseCode . '9'` (one of the four source-listed warning forms) |
+| `RuleRelHard` | `matches(CodingQuestion, string): bool` | relation is explicitly `fact_conflict` or `temporal_context_conflict` — never `submitted != accepted` by itself |
+| `RuleRelSpec` | `matches(CodingQuestion, string): bool` | relation is explicitly `less_specific_supported`; shares `RULE-SPEC-01`'s `CRITERION` string by design (same feedback reason, one source-specific, one generic — callers key off `determining_rule`) |
+| `RuleNoa` | `isCorrect(CodingQuestion): bool` | `none_of_above` is `correct` iff the displayed code set contains no `accepted_reference` code — a pure set-membership check, D(q)∩A(q)=∅ |
+| `RuleCorrect` | `matches(CodingQuestion, string): bool` | `relationFor(code)?->relationKind === accepted_reference` |
+| `Precedence` | `primaryHardRule(array): ?string`; `primaryGradedRule(array): ?string`; `terminalClass(hard, graded, accept): ?string` | Hard priority `STATUS > DEPTH > EVID > REL-HARD`; graded priority `SPEC > REL-SPEC`; terminal policy hard→incorrect, else graded→suboptimal, else accept→correct, else `null` (specification gap) |
 
 ### 3.3 `EvaluationResult` shape
 
@@ -173,89 +257,150 @@ throw SpecificationGapException(...)   # never `incorrect` by default
 final class EvaluationResult {
     public readonly string $evaluationStatus;      // 'classified' | 'not_evaluated'
     public readonly ?string $classification;        // 'correct' | 'suboptimal' | 'incorrect' | null
-    public readonly ?string $reason;                 // gate-failure reason, only when not_evaluated
+    public readonly ?string $reason;                 // gate/HTTP-boundary reason, only when not_evaluated
     public readonly ?string $determiningRule;        // 'RULE-*'
     public readonly ?string $criterion;               // stable machine-readable key
-    public readonly ?string $explanation;             // learner-readable sentence
-    public readonly ?array  $explanationElements;      // structured payload, see §3.4
+    public readonly ?string $explanation;             // learner-readable sentence (English)
+    public readonly ?string $explanationDe;           // the same sentence in German - added
+                                                        // 9 August 2026; every classified() call
+                                                        // site must supply it (constructor
+                                                        // parameter, not optional)
+    public readonly ?array  $explanationElements;      // structured payload
     public readonly ?array  $matchedRules;             // all matched RULE-* ids, e.g. every hard match
-    public readonly ?string $improvementCode;          // ICD code, only for DEPTH/EVID/SPEC
+    public readonly ?string $improvementCode;          // ICD code, only for DEPTH/EVID/SPEC/REL-SPEC
 }
 ```
 
-### 3.4 Explanation element keys per determining rule
+Interpolated dynamic content inside both explanation strings comes from two
+places: computed values (codes, percentages — translated inline, e.g. via
+`Evaluator`'s private `encounterSettingDe()`/`suffixMeaningDe()` helpers)
+and `question_fact.learner_label` (data, authored in English only — no
+German-authored variant exists yet, so a cited fact label stays English
+inside an otherwise-German sentence when a `RULE-REL-HARD-01`/
+`RULE-REL-SPEC-01` explanation cites one; a known, logged limitation, not
+an oversight).
 
-These exact keys are what `TEST-RC-01` checks for presence/non-emptiness,
-taken verbatim from `RCBASE-0.2`'s `required_explanation_elements` column.
+### 3.4 `none_of_above` and the cross-question leakage safeguard
 
-| Determining rule | Keys present in `explanation_elements` |
-|---|---|
-| `RULE-STATUS-01` | `submitted_code`, `marker`, `diagnosis_role`, `encounter_setting`, `restriction` |
-| `RULE-DEPTH-01` | `submitted_code`, `required_coding_level`, *(also `mapped_target`, not required by the oracle but included as a corrective hint)* |
-| `RULE-EVID-01` | `submitted_code`, `fev1_stable_pct_predicted`, `submitted_suffix_meaning`, `expected_suffix`, `expected_code` |
-| `RULE-SPEC-01` | `submitted_code`, `fev1_stable_pct_predicted`, `expected_code`, `improvement_direction` |
-| `RULE-CORRECT-01` | `accepted_code` |
+`RuleNoa` treats `none_of_above` as an interaction response kind, never an
+ICD catalogue record — it has no `catalogue_code` row and is never
+confused with one downstream. Because immediate feedback (`REQ-FBK-01`)
+means a learner sees one question's answer before attempting a sibling
+question from the same patient, the authoring/audit process
+(`chapter3_ux_ui_gamification_concept_0_1.md` §7) checked that no accepted
+code for one learner question appears as a *displayed* option for a
+different question of the same patient — confirmed clean for the current
+25-question bank, not re-derived here.
 
 ## 4. HTTP API
 
 ### 4.1 `GET /api/health`
 
 Handled directly in `public/index.php`, before the database is even
-connected. `200 {"status":"ok"}` always. Used to distinguish "app container
-up, PHP working" from "app container up, DB unreachable" during startup.
+connected. `200 {"status":"ok"}` always.
 
-### 4.2 `GET /api/cases`
+### 4.2 `GET /api/patients`
 
-Returns every `intended_use = 'learner_visible'` case (i.e. excludes
-`CASE-004` and `CASE-008`, the two verification-only status fixtures),
-ordered by `case_id`.
+Returns all 6 patients, ordered by `patient_id`.
 
 ```json
 {
-  "cases": [
+  "patients": [
     {
-      "case_id": "CASE-001",
-      "short_description": "Documented COPD with acute lower-respiratory infection; stable-phase FEV1 = 55% predicted",
-      "encounter_setting": "inpatient",
-      "diagnosis_role": "main",
-      "inpatient_lkf_scored": null,
-      "fev1_stable_pct_predicted": 55
+      "patient_id": "PATIENT-001",
+      "display_name": "Anna Berger",
+      "age_years": 68,
+      "sex": "female",
+      "self_described_background": "Central European (Austrian)",
+      "history_availability": "established",
+      "difficulty_role": "foundational",
+      "general_health_summary": "Established primary-care and hospital records are available...",
+      "question_count": 3,
+      "context_items": [
+        {"context_item_id": "CTX-001-01", "item_type": "documented_condition", "information_source": "record", "display_text": "..."}
+      ]
     }
   ]
 }
 ```
 
-### 4.3 `GET /api/cases/{case_id}`
+`question_count` is computed live via
+`count($this->questions->listLearnerVisibleForPatient(...))` — never a
+stored/cached column, so it cannot drift from the actual visible set.
 
-`404 {"error":"case_not_found"}` if the case does not exist **or** is not
-`learner_visible` (this is the one place `CASE-004`/`CASE-008` are
-deliberately treated as if they do not exist — see §4.4 below for why the
-evaluate endpoint differs). On success, the same fields as the list
-endpoint plus:
+### 4.3 `GET /api/patients/{patient_id}`
+
+`404 {"error":"patient_not_found"}` if the patient does not exist. On
+success, the same fields as one list entry, plus:
 
 ```json
 {
   "...": "as above",
-  "supported_codes": [
-    {"code": "J44.0", "designation": "...", "short_designation": "..."},
-    {"code": "J44.02", "designation": "...", "short_designation": "..."}
+  "questions": [
+    {"question_id": "Q-001-01", "title": "Respiratory coding task", "canonical_position": 1}
   ]
 }
 ```
 
-`is_acceptable` is never present anywhere in this response.
+Only `learner_visible` questions appear here — this is the one place a
+`verification_only` question is deliberately excluded, mirroring the old
+`CaseController::show()`'s asymmetry with the evaluate endpoint.
 
-### 4.4 `POST /api/cases/{case_id}/evaluate`
+### 4.4 `GET /api/questions/{question_id}`
 
-Request body: `{"submitted_code": "<one code string>"}`.
+`404 {"error":"question_not_found"}` if the question does not exist **or**
+is not `learner_visible` — the 8 hidden legacy fixtures 404 here exactly
+like a nonexistent question would. On success:
+
+```json
+{
+  "question_id": "Q-001-01",
+  "patient_id": "PATIENT-001",
+  "title": "Respiratory coding task",
+  "prompt": "The represented inpatient record documents COPD with an acute lower-respiratory infection. Stable-phase FEV1 is 55% of predicted. Select the best supported Austrian ICD-10 response.",
+  "canonical_position": 1,
+  "options": [
+    {"option_id": "Q-001-01-O01", "option_kind": "code", "code": "J44.02", "designation": "...", "short_designation": "..."},
+    {"option_id": "Q-001-01-O05", "option_kind": "none_of_above"}
+  ]
+}
+```
+
+**Deliberately absent: raw `question_fact` rows.** `APIBASE-0.1` §5 fixes
+these as evaluator-internal, pre-submission data — `learner_label` is a
+post-submission explanation label, not a visibility flag. Confirmed against
+the materialized data that this is safe: every fact a learner needs is
+already stated in `prompt` and/or the patient's `context_items` (e.g.
+`Q-001-01`'s prompt states the FEV1 value directly). `options` here is the
+*displayed* set, not the evaluation domain (`REQ-MOD-06`) — a question may
+accept a code that never appears in this response (`Q-004-05`/`M54.5`,
+`Q-005-05`/`I10`).
+
+### 4.5 `POST /api/questions/{question_id}/evaluate`
+
+Request body — the **tagged-response contract** (`APIBASE-0.1`), not
+`{"option_id": "..."}`: a displayed-option-only shape could not address an
+evaluable-but-undisplayed code.
+
+```json
+{"response": {"type": "code", "code": "J44.02"}}
+{"response": {"type": "none_of_above"}}
+```
 
 | Condition | Status | Body |
 |---|---|---|
-| Case does not exist (any `intended_use`) | 404 | `{"error":"case_not_found"}` |
-| `submitted_code` missing, non-string, blank/whitespace, or an array | 400 | `{"evaluation_status":"not_evaluated","classification":null,"reason":"malformed_input"}` |
-| Gate fails (outside subset / undefined relation / missing fact) | 200 | `{"evaluation_status":"not_evaluated","classification":null,"reason":"<reason>"}` |
+| Question does not exist (any `intended_use`) | 404 | `{"error":"question_not_found"}` |
+| Body isn't `{"response": {...}}`, or `code` missing/blank | 400 | `{"evaluation_status":"not_evaluated","classification":null,"reason":"malformed_input"}` |
+| `type` is neither `code` nor `none_of_above` | 400 | `{"evaluation_status":"not_evaluated","classification":null,"reason":"unsupported_response_kind"}` |
+| Gate fails (4 possible reasons, §3.2) | 200 | `{"evaluation_status":"not_evaluated","classification":null,"reason":"<reason>"}` |
 | Classified | 200 | see below |
-| Eligible but no terminal rule matched (should not occur — §3.4 of the dev docs) | 500 | `{"error":"specification_gap","message":"..."}` |
+| Eligible but no terminal rule matched (should not occur) | 500 | `{"error":"specification_gap","message":"..."}` |
+
+`malformed_input`/`unsupported_response_kind` are HTTP-boundary errors,
+produced by `EvaluationController::parseResponse()` before a `ResponseInput`
+is even constructed — they are **not** part of `RuleGate`'s reason
+vocabulary (`APIBASE-0.1` §4, `GateResult`'s docblock states this
+explicitly).
 
 Classified response shape:
 
@@ -264,7 +409,8 @@ Classified response shape:
   "evaluation_status": "classified",
   "classification": "suboptimal",
   "criterion": "supported_specificity_not_used",
-  "explanation": "J44.09 leaves the FEV1 severity unspecified. The case already states a stable-phase FEV1 of 55%, which supports the more specific code J44.02.",
+  "explanation": "J44.09 leaves the FEV1 severity unspecified. The question already states a stable-phase FEV1 of 55%, which supports the more specific code J44.02.",
+  "explanation_de": "J44.09 lässt den FEV1-Schweregrad unspezifiziert. Die Frage gibt bereits eine stabile FEV1 von 55 % an, die den spezifischeren Code J44.02 unterstützt.",
   "explanation_elements": {
     "submitted_code": "J44.09",
     "fev1_stable_pct_predicted": 55,
@@ -277,56 +423,143 @@ Classified response shape:
 }
 ```
 
-**Note on `CASE-004`/`CASE-008`:** unlike the detail endpoint, `evaluate`
-performs no `intended_use` filtering. This is intentional
-(`ICD_PROTOTYPE_DEVELOPMENT_BRIEF.md` §15/§18: "`CASE-004` must be
-retrievable by the technical verification path but excluded from
-learner-facing case navigation" — `CASE-008` was added under the same rule
-by the pre-freeze coverage review, see
-[DEVELOPMENT_DOCUMENTATION.md](DEVELOPMENT_DOCUMENTATION.md) §10.3) — the
-verification harness needs `POST /api/cases/CASE-004/evaluate` and
-`POST /api/cases/CASE-008/evaluate` to work; only *navigating to* either
-case is blocked.
+**`intended_use` is never filtered here**, for either request or response —
+the verification harness must be able to evaluate all 8 hidden legacy
+fixtures by ID (`REQ-VER-09`), exactly as the old endpoint never filtered
+`CASE-004`/`CASE-008`. Only *navigating to* a `verification_only` question
+via §4.4 is blocked.
 
 ## 5. Frontend
 
-### 5.1 Component tree (`frontend/src/App.jsx`)
+UX/UI polish rationale (`UXBASE-0.1`, step 7): `docs/DEVELOPMENT_DOCUMENTATION.md` §7.
+This section describes only the resulting structure and contracts.
+
+### 5.1 Component tree and state (`frontend/src/`)
+
+`App.jsx` owns all playthrough state and renders `Header` + exactly one of
+three mutually exclusive views + `Footer`:
 
 ```text
-App                       — owns all state; three mutually exclusive views
- ├─ CaseList               (state: cases, loadingCases, listError)
- ├─ CaseDetail             (state: activeCase; local: search text, selected radio)
- └─ ResultView             (state: result)
+patients, loadingPatients, patientsError    — GET /api/patients, once on mount
+completedPatientIds                          — Set, sessionStorage-backed (§5.4)
+view                                          — 'roster' | 'playthrough' | 'review'
+activePatient, orderedQuestionIds, currentIndex, questionsById, results, submitting
 ```
 
-State transitions: `CaseList` → (click a case) → `CaseDetail` → (submit) →
-`ResultView` → ("try another code" → back to `CaseDetail` with the same
-case; "back to cases" → back to `CaseList`, clearing `activeCase`).
+`view === 'roster'` → `PatientRoster` (renders `Orientation` + the
+patient-card grid + reset-progress control). `view === 'playthrough'` →
+`QuestionView` for `questionsById[orderedQuestionIds[currentIndex]]`.
+`view === 'review'` → `PatientReview`. There is no client-side router;
+these are plain conditional renders inside `App.jsx`, unchanged in spirit
+from the original three-view case-centric model.
+
+State transitions: roster → (select a patient) → playthrough (question 1)
+→ (submit → feedback → next) × N → review → (`Play again` → playthrough,
+reshuffled; `Choose another patient` → roster). `QuestionView` also exposes
+an `Exit to patient list` control reachable at any point mid-question
+(confirms via `window.confirm()`, then behaves exactly like `Choose another
+patient`) — added 2026-08-09 in response to there being no other way back
+to the roster before finishing every question.
 
 ### 5.2 `api.js` — the only place `fetch()` is called
 
 ```js
-listCases()                       // GET  /api/cases
-getCase(caseId)                    // GET  /api/cases/{caseId}
-evaluate(caseId, submittedCode)    // POST /api/cases/{caseId}/evaluate
+listPatients()                           // GET  /api/patients
+getPatient(patientId)                     // GET  /api/patients/{patientId}
+getQuestion(questionId)                    // GET  /api/questions/{questionId}
+evaluate(questionId, response)             // POST /api/questions/{questionId}/evaluate
+                                            // response: {type:'code', code} | {type:'none_of_above'}
 ```
 
 Each returns `{status, body}` from the parsed JSON response; components
 branch on `status`/`body` rather than on thrown exceptions for expected
 (4xx) outcomes.
 
-### 5.3 Build output contract
+### 5.3 i18n architecture (`lib/i18n.jsx`, added 2026-08-09)
+
+`LocaleProvider`/`useLocale()` (React Context) hold `locale` (`'en'`\|`'de'`),
+a `setLocale()` that persists the choice to `localStorage`
+(`icd10-prototype:locale`), and `t(key, vars)` resolving a flat
+key→template dictionary with `{placeholder}` interpolation. Default locale
+is detected from `navigator.languages` (first `de`/`en`-prefixed entry
+wins, else `en`) on first load, before any stored preference exists.
+
+This covers **UI chrome only** (buttons, labels, headings, the three-class
+legend, gate-reason messages). Two separate, additive lookups handle
+content the backend itself doesn't translate:
+
+- `lib/contentTranslations.js` — German translations of `general_health_summary`,
+  `patient_context_item.display_text`, and question `title`/`prompt`,
+  keyed by the same `patient_id`/`context_item_id`/`question_id` the API
+  returns. Used only when `locale === 'de'`; falls back to the API's own
+  (English) text on any lookup miss.
+- `lib/catalogueTranslations.js` — English titles for the 87 distinct
+  ICD-10 codes actually displayed as a `question_option` (not the full
+  99-row catalogue subset). Used only when `locale === 'en'`, for the
+  reverse reason: the runtime catalogue is authored in German only (the
+  Austrian BMASGPK edition), so English mode would otherwise show German
+  code names inside an English interface.
+
+Both are deliberately kept in the frontend, not the database or API — a
+`REQ-ARC-01` presentation concern, not a data-model change. Evaluator
+explanations are handled differently (§3.3 above): they come from the
+backend already bilingual (`explanation`/`explanation_de`), because they
+contain rule-derived content the frontend cannot safely paraphrase.
+
+### 5.4 Session-local patient completion (`App.jsx`, added 2026-08-09)
+
+`completedPatientIds` is seeded from and written to `sessionStorage`
+(key `icd10-prototype:completed-patients`, a JSON array of patient ids) —
+**not** `localStorage`. This is deliberate: `REQ-UI-02` specifies
+"completion status is session-local," and `REQ-INT-05` prohibits
+*server-side* learner history, not a client-side, session-scoped marker.
+`sessionStorage` is cleared when the browser session ends, satisfying both
+without a requirements amendment. Marked complete when a playthrough
+reaches the `review` view (which already implies every question in that
+patient was submitted). Surfaced as a per-`PatientCard` "Completed" badge
+and an aggregate "N of 6 patients completed" line on the roster, with a
+"Reset progress" control (confirms, then clears both the state and the
+`sessionStorage` entry) shown whenever there is something to reset.
+
+### 5.5 Patient-card sizing
+
+`.patient-card` has a fixed height (`15.5rem`), not `height: 100%` under a
+stretched grid row: CSS Grid's default row-stretch only equalizes cards
+within the same row, and a 6-card/3-row roster still looked uneven across
+rows. The heading reserves a 2-line `min-height` (whether or not the
+"Completed" badge is present, since that badge can push the heading onto a
+second line) and the summary is `-webkit-line-clamp: 4` — both
+deterministic regardless of language or content length, verified
+pixel-identical across all 6 cards via Selenium.
+
+### 5.6 Build-time version/build-date injection (`vite.config.js`, added 2026-08-09)
+
+```js
+define: {
+  __APP_VERSION__: JSON.stringify(pkg.version),        // from package.json, currently "0.7.0"
+  __BUILD_DATE__: JSON.stringify(new Date().toISOString().slice(0, 10)),
+}
+```
+
+Both are static once built — not live values — and rendered by
+`Footer.jsx` as `v{version} · build {date} · © {year} Juno Anna Marx`,
+where the copyright year alone is computed at render time
+(`new Date().getFullYear()`) so it never goes stale between builds.
+Deliberately not a git commit SHA: the Docker build context excludes
+`.git` (root `.dockerignore`), and wiring a real SHA through as a build
+arg would touch the Dockerfile, both Compose files, and CI — judged out of
+proportion to a footer.
+
+### 5.7 Build output contract
 
 `vite.config.js` sets `build.outDir = '../public'` with `emptyOutDir: false`
-— i.e. `npm run build` (run from `frontend/`) writes `index.html` and a
+— `npm run build` (run from `frontend/`) writes `index.html` and a
 content-hashed `assets/` directory directly into `app/public/`, alongside
 the hand-written `index.php` and `.htaccess`, without deleting them. In the
-Docker build (`Dockerfile`, at the repo root), the frontend build runs in
-its own clean stage (no pre-existing `public/` contents to worry about); the
-runtime stage explicitly copies only `app/public/index.php` and
+Docker build, the frontend build runs in its own clean stage; the runtime
+stage explicitly copies only `app/public/index.php` and
 `app/public/.htaccess` by name from the source tree, then copies the
-frontend build stage's output on top — so a stale local host build can
-never leak into the image by accident.
+frontend build stage's output on top.
 
 ## 6. Build, environment, and deployment contract
 
@@ -340,168 +573,139 @@ never leak into the image by accident.
 | `ICD_DB_USER` | **yes** | — | Database user |
 | `ICD_DB_PASSWORD` | no | `''` | Database password |
 
+The Python bootstrap (`prototype_baseline_0_2_design/persistence_candidate/`)
+reads the identical five variables — same names, same defaults.
+
 ### 6.2 `Dockerfile` stages (repo root)
 
 | Stage | Base image | Produces |
 |---|---|---|
-| `frontend-build` | `node:22-alpine` | `/app/public/{index.html,assets/*}` (fresh, no host contamination) |
+| `frontend-build` | `node:22-alpine` | `/app/public/{index.html,assets/*}` |
 | `vendor` | `composer:2` | `/app/vendor` (`--no-dev --optimize-autoloader`) |
-| `runtime` (final) | `php:8.4-apache` | `pdo_mysql` + `rewrite` enabled; `docker/apache-vhost.conf` installed; `vendor/`, `src/`, `public/index.php`, `public/.htaccess`, and the frontend build output all copied into `/var/www/html` |
+| `runtime` (final) | `php:8.4-apache` | `pdo_mysql` + `rewrite` enabled; `vendor/`, `src/`, `public/index.php`, `public/.htaccess`, and the frontend build output copied into `/var/www/html` |
 
-The `Dockerfile` and its `.dockerignore` live at the repository root rather
-than under `app/`, specifically so `prototype_stack/stack.sh`'s `sync`/`up`
-commands — which require a `Dockerfile` at the synced checkout's root — work
-unmodified once this whole repository is configured as the app source (see
-§6.3 and [DEVELOPMENT_DOCUMENTATION.md](DEVELOPMENT_DOCUMENTATION.md) §10.2).
-Every `COPY` instruction is written relative to the repo root
-(`app/frontend/...`, `app/composer.json`, `app/src`, etc.).
+Unchanged since the case-centric implementation — the migration touched
+`app/src`/`app/frontend/src` contents, not the build stages themselves.
 
-### 6.3 `prototype_stack/compose.yaml` services
+### 6.3 Bootstrap: wired to `MODELBASE-0.2`, not the historical pipeline
+
+**This is the one part of the deployment contract that materially changed
+during the forward migration, and it changed twice** — see
+`docs/CHANGELOG.md`'s "steps 2-3 completed for real" entry for the full
+story. The `bootstrap` service in both `docker-compose.yml` and
+`prototype_stack/compose.yaml` now builds from
+`prototype_baseline_0_2_design/Dockerfile.bootstrap`
+(context: `prototype_baseline_0_2_design/`), running
+`persistence_candidate/bootstrap_mysql_0_2.py` — which applies
+`mysql_schema_0_2.sql` to an empty database, then runs the idempotent
+`load_mysql_0_2.py` loader. `prototype_baseline_0_1/Dockerfile.bootstrap`
+(the historical `CASEBASE-0.2` pipeline) still exists on disk but is no
+longer referenced by either Compose file.
 
 | Service | Role | Lifecycle |
 |---|---|---|
-| `db` | `mysql:latest`, named volume `mysql_data` | long-running; healthcheck via `mysqladmin ping`; deliberately unpinned below the major version (§8, [DEVELOPMENT_DOCUMENTATION.md](DEVELOPMENT_DOCUMENTATION.md) §10.1) |
-| `bootstrap` | built from `prototype_baseline_0_1/Dockerfile.bootstrap` | one-shot (`restart: "no"`); applies schema on an empty DB, then runs the idempotent loader |
-| `app` | built from `Dockerfile` (repo root), context `${APP_SOURCE_DIR:-.runtime/app}` | long-running; published on `${APP_HTTP_PORT:-8080}` |
+| `db` | `mysql:latest`, named volume `mysql_data` | long-running; healthcheck via `mysqladmin ping`; deliberately unpinned below the major version (`docs/DEVELOPMENT_DOCUMENTATION.md` §10.1) |
+| `bootstrap` | built from `prototype_baseline_0_2_design/Dockerfile.bootstrap` | one-shot (`restart: "no"`); applies schema on an empty DB, then runs the idempotent loader; reports `inserted` on first run, `no_op` on every identical re-run |
+| `app` | built from `Dockerfile` (repo root) | long-running; published on `${APP_HTTP_PORT:-8080}` |
 
-**`mysql:latest` and the named volume — a real operational consequence, not
-just a style preference:** `mysql:latest` currently resolves to MySQL
-**26.7.0** — a very different release line from `8.4.8`, which is what the
-named volume `mysql_data` previously held from earlier development sessions.
-MySQL's own server refuses to open a data directory across that large a
-version jump (`Invalid MySQL server upgrade: Cannot upgrade from 80408 to
-260700`); the container exits and Compose reports it unhealthy. This is not
-a Docker/Compose quirk, it is MySQL's own upgrade-compatibility check. In
-practice this means: every time `mysql:latest` moves to a materially newer
-release line, `docker compose down -v` (removing `mysql_data`) is required
-before a fresh `up` will succeed, and this destroys any not-yet-persisted
-runtime data (currently none is persisted beyond the immutable baseline
-load, so this is low-cost during development, but it would not be
-low-cost in a longer-lived environment). Because this is exactly the kind
-of concrete cost the version-relaxation decision (§10.1) should be judged
-against, it is recorded here rather than only discovered by the next person
-to run `up` after a `mysql:latest` release bump.
+**A real gap this rewrite exists partly to close on paper:** every
+"verified" claim for steps 2–3 up to 8 August 2026 was checked against a
+scratch `docker run` MySQL container, not this actual bootstrap path — so
+the repository's own `docker compose up` served the old model end to end
+until this was fixed 9 August 2026. Don't trust a "verified" claim
+anywhere in this project's history without checking it was against the
+*real* Compose path, not an isolated one; this document intentionally
+survives that lesson learned rather than quietly re-describing only the
+fixed end state.
 
-**Local-development note:** `stack.sh`'s own `up`/`doctor` commands assume
-`APP_SOURCE_DIR` is a git-synced checkout *inside* `prototype_stack/` (and
-reject any path containing `..`). Local verification instead invokes
-`docker compose` directly with `APP_SOURCE_DIR=..` exported from
-`prototype_stack/` (i.e. the repository root, where `Dockerfile` now lives
-— §6.2), bypassing `stack.sh`'s sync-oriented commands. Once
-`prototype_stack/config/git-source.conf` is pointed at this repository's own
-remote and the current work is pushed, `stack.sh sync && stack.sh up` is
-expected to work against it unmodified — see
-[DEVELOPMENT_DOCUMENTATION.md](DEVELOPMENT_DOCUMENTATION.md) §10.2.
+**`mysql:latest` and the named volume — a real operational consequence:**
+`mysql:latest` refuses to open a data directory across a major-line jump
+(e.g. `8.4.8` → `26.7.0`, "`Invalid MySQL server upgrade`"). In practice:
+every time `mysql:latest` moves to a materially newer release line, or the
+runtime schema itself changes shape (as it did for this migration),
+`docker compose down -v` (removing `mysql_data`) is required before a
+fresh `up` succeeds. The loader's own read-before-write conflict check
+adds a second reason a stale volume can block a legitimate pre-freeze
+content edit: reloading *changed* content under an *existing* versioned
+`patient_baseline_id`/`question_baseline_id` is refused by design (correct
+behaviour, not a bug) — a full `down -v` + rebuild is the correct response,
+not a workaround.
 
 ### 6.4 Local development workflows
 
 | Task | Command |
 |---|---|
-| Run PHP tests (unit only, no DB) | `cd app && php vendor/bin/phpunit --testsuite unit` |
-| Run PHP tests (unit + integration, needs live MySQL + loaded baseline) | `ICD_DB_HOST=... ICD_DB_NAME=... ICD_DB_USER=... ICD_DB_PASSWORD=... php vendor/bin/phpunit --testsuite unit,integration` |
-| Run the Selenium E2E suite (needs the app running + Selenium — see `app/tests/E2E/README.md`) | `php vendor/bin/phpunit --testsuite e2e` |
-| Run everything in one pass (needs MySQL, the app, *and* Selenium all up) | `php vendor/bin/phpunit --testsuite unit,integration,e2e` — the bare `php vendor/bin/phpunit` with no `--testsuite` is equivalent and will fail fast/clearly if Selenium or the app aren't reachable |
+| Run PHP tests | **currently broken for `unit`/`integration`/`e2e` — §7. Do not rely on `php vendor/bin/phpunit` passing until step 8 lands.** |
 | Serve the API + built frontend without Docker | `ICD_DB_*=... php -S 127.0.0.1:PORT -t public router.php` (from `app/`) |
 | Rebuild the frontend into `app/public/` | `cd app/frontend && npm run build` |
 | Frontend dev server with API proxy | `cd app/frontend && npm run dev` (proxies `/api` to `http://127.0.0.1:8080` per `vite.config.js`) |
-| Full stack via Compose (local, no git-sync) | `cd prototype_stack && APP_SOURCE_DIR=.. docker compose --env-file .env -f compose.yaml up -d --wait db && docker compose ... run --rm --no-deps bootstrap && docker compose ... up -d --wait app` |
-| Full stack via Compose (once `git-source.conf` points at this repo) | `./stack.sh sync && ./stack.sh up` |
+| Full stack via the self-contained bundle | `docker compose build bootstrap app && docker compose up -d --wait app` |
+| Full stack via `prototype_stack` (local, no git-sync) | `cd prototype_stack && APP_SOURCE_DIR=.. docker compose --env-file .env -f compose.yaml up -d --wait db && docker compose ... run --rm --no-deps bootstrap && docker compose ... up -d --wait app` |
+| Sanity-check the real running stack | `curl http://127.0.0.1:8080/api/patients` — expect 6 patients with `display_name`, not `CASE-*` ids |
+| Ad hoc browser verification | This project's own Selenium infrastructure (`app/tests/E2E/docker-compose.yml`, `php-webdriver/webdriver`) — **not Playwright**, an explicit, repeated project rule |
 
 ### 6.5 Self-contained bundle (`docker-compose.yml`, repo root) and CI
 
-Rationale: `docs/DEVELOPMENT_DOCUMENTATION.md` §10.6. This is a *different*
-compose file from `prototype_stack/compose.yaml` — no `.env` required,
-sensible defaults baked in, and it additionally bundles a `dev`-tagged app
-image (tests + dev Composer dependencies included) plus Selenium behind a
-`test` Compose profile.
+`docker compose up -d --wait app` brings up `db → bootstrap → app`,
+correctly ordered. `docker compose --profile test up -d --wait selenium &&
+docker compose --profile test run --rm test` runs the full suite fully
+containerized — **but see §7: the suite it runs is currently the broken,
+unmigrated one.** Published image tags (`.github/workflows/ci.yml`'s
+`publish-images` job, `main` only, gated on the other four jobs passing)
+have **not** been rebuilt against the forward model as of this rewrite —
+the last real CI run predates the migration. Anyone pulling
+`ghcr.io/junomarx/bsc-thesis-icd10:latest` today gets the pre-migration
+case-centric image; `docker compose build bootstrap app` (native source
+build) is the only way to run the current forward model, until CI is
+re-run and republishes.
 
-| Task | Command |
-|---|---|
-| Build the normal-use images locally (native host architecture) | `docker compose build bootstrap app` |
-| Build the optional test image locally | `docker compose --profile test build test` |
-| Bring up the app (db → bootstrap → app, correctly ordered via `depends_on: condition: service_completed_successfully`) | `docker compose up -d --wait app` |
-| Run the *entire* test suite (unit+integration+e2e) fully containerized, no host PHP/Composer/Node/Python needed | `docker compose --profile test up -d --wait selenium && docker compose --profile test run --rm test` |
-| Pull the published images (Docker selects the host's AMD64 or ARM64 variant) | `docker compose pull` |
-| Override any published image tag | `APP_IMAGE=... APP_DEV_IMAGE=... BOOTSTRAP_IMAGE=...` env vars, or edit the `image:` lines directly |
+## 7. Test inventory — currently broken, honestly stated
 
-Published image tags (built and pushed by `.github/workflows/ci.yml`'s
-`publish-images` job, on every push to `main`, only after the other four
-jobs pass):
+**`app/tests/Unit`, `Integration`, and `E2E` were not migrated during
+steps 1–7 of the forward implementation order; this is implementation-order
+step 8, not started.** `php vendor/bin/phpunit --testsuite unit` reports
+**47 of 49 tests erroring** with `Class "Icd10Prototype\Model\CaseFacts"
+not found` — `app/tests/Support/Fixtures.php` and most of
+`app/tests/Unit/*` still construct the deleted case-centric fixtures.
+Integration and E2E are in the same state (they depend on the same
+fixtures and/or the deleted `CaseController`/`/api/cases*` routes). The old
+`TEST-*` → file mapping this section used to carry is not reproduced here
+because it would misrepresent current reality — every row would need a
+"currently non-functional" caveat, which is better stated once, above,
+than 15 times below.
 
-| Tag | Dockerfile target | Contents |
-|---|---|---|
-| `ghcr.io/junomarx/bsc-thesis-icd10:latest` | `runtime` | Lean deployment image — same as `prototype_stack/compose.yaml`'s `app` |
-| `ghcr.io/junomarx/bsc-thesis-icd10:dev` | `dev` | Runtime + dev Composer deps + `app/tests/` — this is what the bundle's `test` service runs |
-| `ghcr.io/junomarx/bsc-thesis-icd10-bootstrap:latest` | — (`prototype_baseline_0_1/Dockerfile.bootstrap`) | The Python data-pipeline bootstrap image |
-
-Each tag is an OCI multi-platform index with required
-`linux/amd64` and `linux/arm64` variants. The `publish-images` job installs
-QEMU before Buildx, passes both values through each build action's
-`platforms` input, and queries all three registry manifests after publication;
-the job fails unless both Linux architectures are present for every tag.
-This preserves native execution on Apple Silicon instead of forcing an
-AMD64 `platform:` override and emulation in `docker-compose.yml`.
-
-**Publication verification:** GitHub Actions run
-[31257017708](https://github.com/junomarx/bsc-thesis-icd10/actions/runs/31257017708)
-completed successfully on 8 August 2026. Its final assertion found both
-required architectures in all three published indexes; an independent
-`docker buildx imagetools inspect` check confirmed the same. On an ARM64
-Docker daemon, the exact user-guide sequence `docker compose pull` followed
-by `docker compose up -d --wait app` then selected the published ARM64
-variants, loaded the baseline, returned `{"status":"ok"}`, and exposed the
-learner-visible cases. `docker compose build bootstrap app` remains the
-registry-independent native fallback.
-
-## 7. Test inventory (file/method → upstream `TEST-*`)
-
-| `TEST-*` | Implementing file(s) |
-|---|---|
-| `TEST-DAT-01` | `prototype_baseline_0_1/scripts/prepare_subset.py --check-existing`, `validate_baseline.py` |
-| `TEST-DAT-02` | `prototype_baseline_0_1/tests/test_mysql_persistence.py` |
-| `TEST-ARC-01` | `app/tests/Integration/ArchitectureIsolationTest.php` (behavioural half); `prototype_baseline_0_1/scripts/runtime_data.py` allowlist (structural half) |
-| `TEST-MAP-01` | `app/tests/Unit/RuleMapTest.php` |
-| `TEST-GATE-01` | `app/tests/Unit/RuleGateTest.php` |
-| `TEST-STATUS-01` | `app/tests/Unit/RuleStatusTest.php` |
-| `TEST-DEPTH-01` | `app/tests/Unit/RuleDepthTest.php` |
-| `TEST-EVID-01` | `app/tests/Unit/RuleEvidTest.php` |
-| `TEST-SPEC-01` | `app/tests/Unit/RuleSpecTest.php` |
-| `TEST-CORRECT-01` | `app/tests/Unit/RuleCorrectTest.php` |
-| `TEST-PREC-01` | `app/tests/Unit/PrecedenceTest.php` |
-| `TEST-API-01` | `app/tests/Integration/EvaluationApiTest.php` |
-| `TEST-RC-01` | `app/tests/Integration/ReferenceResponseTest.php` |
-| `TEST-DET-01` | `app/tests/Integration/DeterminismTest.php` |
-| `TEST-E2E-01` | `app/tests/E2E/LearnerWorkflowTest.php` |
-| `TEST-E2E-02` | `app/tests/E2E/VerificationOnlyCaseVisibilityTest.php` |
-| `TEST-CFG-01` | version pins in `Dockerfile` (repo root), `prototype_stack/compose.yaml`, §8 below |
+**What this rewrite's own verification actually used instead**, pending
+step 8: direct `curl` against the real running container for API-shape
+checks, and ad hoc Selenium scripts (this project's own
+`php-webdriver/webdriver` infrastructure, run against the real running
+`app` container, never Playwright) for browser-level checks — both
+documented per-change in `docs/CHANGELOG.md`, neither a committed,
+rerunnable regression suite. `docs/REQUIREMENTS_TRACEABILITY.md` §1a/§2
+records exactly which requirements this leaves with inspection-only
+(⚠) evidence instead of an automated test.
 
 ## 8. Exact tool/version pins observed in this implementation
 
 | Component | Version | Where pinned |
 |---|---|---|
 | PHP (runtime image) | 8.4.24 | `php:8.4-apache` base image |
-| PHP (host dev CLI) | 8.4.7 | host `php` binary (not shipped) |
-| MySQL | deliberately unpinned below major version; observed as **26.7.0** at time of writing | `mysql:latest` image in `compose.yaml` — see §6.3 for the concrete cost of this choice |
+| MySQL | deliberately unpinned below major version | `mysql:latest` in both Compose files — §6.3 |
 | Node (build stage only) | 22-alpine | `Dockerfile` (repo root) |
 | React | 19.2.8 | `app/frontend/package.json` |
 | Vite | 8.2.x | `app/frontend/package.json` |
-| PHPUnit | 11.5.56 | `app/composer.lock` |
+| Frontend app version | 0.7.0 | `app/frontend/package.json`, rendered in the footer (§5.6) |
+| PHPUnit | 11.5.x | `app/composer.lock` (suite currently broken regardless of version, §7) |
 | php-webdriver/webdriver | 1.16.0 | `app/composer.lock` |
-| Selenium/browser (E2E only, not the app) | `seleniarm/standalone-chromium:latest` (arm64) / `selenium/standalone-chrome:latest` (amd64) | `app/tests/E2E/docker-compose.yml` — deliberately unpinned to an exact tag; not part of the deployed application |
-| Composer | 2.10.2 | `app/composer.phar` (not committed) |
-| Docker Engine (host) | 28.5.1 | host install |
-
-An exact MySQL version is not "observed as frozen" here the way the other
-rows are — it is expected to change whenever `mysql:latest` moves, by
-design (§6.3, [DEVELOPMENT_DOCUMENTATION.md](DEVELOPMENT_DOCUMENTATION.md)
-§10.1). `TEST-CFG-01`'s eventual evaluation freeze is where an exact MySQL
-version becomes a real pin, recorded at that time.
+| Selenium/browser (ad hoc verification only, not the app) | `seleniarm/standalone-chromium:latest` (arm64) | `app/tests/E2E/docker-compose.yml` |
 
 ## 9. Explicit non-implementations
 
-Mirrors `ICD_PROTOTYPE_DEVELOPMENT_BRIEF.md` §2/§11, stated here as "does
-not exist in the code" rather than "is out of scope": no authentication/user
-model anywhere in `src/`; no table or column for learner attempt history; no
-route accepting more than one `submitted_code`; no extramural-specific rule
-class; no LKF pricing/reimbursement logic; no client-side router in the
-frontend.
+No authentication/user model anywhere in `src/`; no table or column for
+learner attempt history (session-local completion marks live in the
+browser's `sessionStorage`, never in `app/src/` or the schema — §5.4); no
+route accepting more than one response per request; no extramural-specific
+rule class; no LKF pricing/reimbursement logic; no client-side router in
+the frontend (three plain conditional views in `App.jsx`); no points,
+leaderboard, timer, or lives anywhere in the gameful-presentation layer
+(`REQ-GAM-01`, checked by direct code inspection, not merely absent from
+the UI).

@@ -1,0 +1,67 @@
+{
+  "prototype_baseline_id": "PROTOBASE-0.3",
+  "status": "working_forward_implementation_candidate_not_frozen",
+  "model_baseline_id": "MODELBASE-0.2",
+  "requirements_catalogue_version": "forward-0.7",
+  "source_register_version": "0.4",
+  "domain_baseline_id": "DOMBASE-0.1",
+  "rule_baseline_id": "RULEBASE-0.2",
+  "subset_baseline_id": "SUBSET-0.2",
+  "patient_baseline_id": "PATIENTBASE-0.1",
+  "question_baseline_id": "QUESTIONBASE-0.1",
+  "catalogue_edition": "ICD-10 BMASGPK 2026",
+  "diaglist_source_id": "SRC-AT-DIAGLIST-2026",
+  "diaglist_sha256": "66713da5d63afcd37b0152ae7058f2188bf34d557bfa06ad4ce008825fb94a4b",
+  "interaction_cardinality": "one_tagged_response_per_question_evaluation",
+  "verification_oracle_runtime_access": false,
+  "runtime_files": {
+    "catalogue": ["data/subset_0_2.csv"],
+    "patients": ["data/patients_0_1.csv"],
+    "patient_context": ["data/patient_context_items_0_1.csv"],
+    "questions": [
+      "data/questions_0_1.csv",
+      "data/verification_questions_legacy_0_1.csv"
+    ],
+    "question_facts": [
+      "data/question_facts_0_1.csv",
+      "data/verification_question_facts_legacy_0_1.csv"
+    ],
+    "question_code_domain": [
+      "data/question_code_domain_0_1.csv",
+      "data/verification_question_code_domain_legacy_0_1.csv"
+    ],
+    "question_relation_facts": [
+      "data/question_relation_facts_0_1.csv",
+      "data/verification_question_relation_facts_legacy_0_1.csv"
+    ],
+    "question_options": ["data/question_options_0_1.csv"]
+  },
+  "runtime_file_sha256": {
+    "data/subset_0_2.csv": "1ae5c0c7704cbf1b026fee09dea4db26955ec506def024dce709a0541cd40637",
+    "data/patients_0_1.csv": "41167062cc7d03ba1873ff58040361d8975a40022eb5ffef995b16e4d9ef2727",
+    "data/patient_context_items_0_1.csv": "72bd52d4d0a3c791b7ac1ed3b3abefce1e34955cbdd47b38647697b596e33c5a",
+    "data/questions_0_1.csv": "9b836a4809c0c43eba1cf5fae5cbc6969795d6160038a0078334816914986a2a",
+    "data/verification_questions_legacy_0_1.csv": "a4481b7e1c20a9c305680dbe674a8588c79d2c87488d3a9790fa402ad4bdb474",
+    "data/question_facts_0_1.csv": "03b852892fec73d1769ec19a42d21e135bb006d1a75cadca11752ec3a653eba6",
+    "data/verification_question_facts_legacy_0_1.csv": "1f5067d5bc92b0664d3c0966c7f52ae6b3f1dcac383abb6421150ba060d0976e",
+    "data/question_code_domain_0_1.csv": "af270a1312fa8b7aa90934eeffb348b643703e292f0438f28085397ecf85049a",
+    "data/verification_question_code_domain_legacy_0_1.csv": "443af27a1602e899acd750bcce73d778f5e2bdbc54409d21c5bd48d5d160f57a",
+    "data/question_relation_facts_0_1.csv": "e41da67d9ee155033516de5a6665da1db49a8a1798a7383e9d0d71770eb74993",
+    "data/verification_question_relation_facts_legacy_0_1.csv": "5c579245d60abb7386f5703e811233400e7eca6fbdbc4b3477862247240eeb15",
+    "data/question_options_0_1.csv": "a2a64a017084a636e6e6b53257ca64ec4b7eaa4554e4d40df70a9fadeac4c5a3"
+  },
+  "expected_counts": {
+    "catalogue": 99,
+    "patients": 6,
+    "patient_context": 32,
+    "questions": 33,
+    "learner_questions": 25,
+    "verification_questions": 8,
+    "question_facts": 88,
+    "question_code_domain": 118,
+    "question_relation_facts": 182,
+    "question_options": 120,
+    "code_options": 95,
+    "none_of_above_options": 25
+  }
+}

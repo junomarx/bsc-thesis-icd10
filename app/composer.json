@@ -1,6 +1,6 @@
 {
     "name": "icd10-prototype/app",
-    "description": "Austrian ICD-10 BMASGPK 2026 educational prototype: PHP evaluation service and API (RULEBASE-0.1 / MODELBASE-0.1).",
+    "description": "Austrian ICD-10 BMASGPK 2026 educational prototype: PHP evaluation service and API (RULEBASE-0.2 / MODELBASE-0.2).",
     "type": "project",
     "license": "proprietary",
     "require": {

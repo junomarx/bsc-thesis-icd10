@@ -21,3 +21,5 @@ __pycache__/
 /docs/USER_GUIDE.log
 /docs/USER_GUIDE.out
 /docs/USER_GUIDE.toc
+CLAUDE.md
+.claude/
