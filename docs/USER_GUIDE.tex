@@ -116,7 +116,7 @@
   }
   \vfill
   \begin{tabular}{@{}ll@{}}
-    \textbf{Guide revision} & 0.4 \\
+    \textbf{Guide revision} & 0.5 \\
     \textbf{Last updated} & 9 August 2026 \\
     \textbf{Prototype data} & BMASGPK 2026 working baseline (6 patients, 25 questions) \\
     \textbf{Repository} & \href{https://github.com/junomarx/bsc-thesis-icd10}{github.com/junomarx/bsc-thesis-icd10}
@@ -299,6 +299,20 @@ authored; the prototype supplies English titles for these instead when the
 interface is set to English, since no official English designation exists
 in the source data.
 
+\subsection{Switch appearance}
+
+A small sun or moon button sits beside the language switch in the header.
+Use it to switch the whole application between light and dark appearance,
+including the tutorial and feedback views. The compact button shows its
+action when hovered and provides a localized accessible toggle state; it
+remains available on every screen.
+
+On the first visit, the prototype follows the browser or operating system's
+light/dark preference. After the button is used, that explicit choice is
+remembered in this browser and reused on later visits. The appearance value
+is stored only as a local interface preference; it is never sent to the
+server and does not contain learner answers or patient data.
+
 \subsection{How this works: interactive tutorial}
 
 On the first visit in a browser, a four-step \textbf{How this works}
@@ -307,7 +321,8 @@ to move through choosing a patient, reviewing the patient record, answering
 one question at a time, and interpreting feedback. The final step explains
 the three feedback classes with the same icon and colour used later in the
 actual results. Choose \textbf{Skip tutorial}, the close button, or press
-Escape to leave it at any time.
+Escape to leave it at any time. You can also click or tap the dimmed area
+outside the tutorial card.
 
 After the tutorial is closed, the browser remembers that it has been seen
 and does not open it automatically on later page loads. It remains available
@@ -578,10 +593,10 @@ these ports; they belong only to the optional Selenium service.
         per-patient \textit{Completed} marks described in
         Section~\ref{sec:learner-workflow} live only in the browser, only
         for the current session, and are never sent to the server.
-  \item The selected language and the fact that the first-visit tutorial
-        has been dismissed are stored locally in the browser so those two
-        interface preferences survive a reload. Neither value contains a
-        learner response or is sent to the server.
+  \item The selected language and appearance, and the fact that the
+        first-visit tutorial has been dismissed, are stored locally in the
+        browser so those three interface preferences survive a reload.
+        None contains a learner response or is sent to the server.
   \item The database volume holds the versioned prototype catalogue,
         patient, question, rule-support, and reference-response baseline.
   \item The implemented catalogue is a small, traceable subset of the Austrian

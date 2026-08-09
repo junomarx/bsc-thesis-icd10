@@ -1,7 +1,7 @@
 // Hand-authored inline SVGs, not an icon-font/library dependency (see
 // docs/UX_UI_SPECIFICATION.md §2.5). Every icon here is a supporting third
 // signal alongside colour and text, never the only signal - each usage site
-// pairs it with visible text and/or a CSS colour class.
+// pairs it with visible or accessible text and/or a CSS colour class.
 
 const common = {
   width: '1em',
@@ -116,6 +116,34 @@ export function IconClose(props) {
         stroke="currentColor"
         strokeWidth="1.8"
         strokeLinecap="round"
+      />
+    </svg>
+  )
+}
+
+export function IconSun(props) {
+  return (
+    <svg {...common} {...props}>
+      <circle cx="10" cy="10" r="3.2" stroke="currentColor" strokeWidth="1.6" />
+      <path
+        d="M10 2v2M10 16v2M2 10h2M16 10h2M4.35 4.35l1.4 1.4M14.25 14.25l1.4 1.4M15.65 4.35l-1.4 1.4M5.75 14.25l-1.4 1.4"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+      />
+    </svg>
+  )
+}
+
+export function IconMoon(props) {
+  return (
+    <svg {...common} {...props}>
+      <path
+        d="M15.8 12.4A6.2 6.2 0 0 1 7.6 4.2 6.4 6.4 0 1 0 15.8 12.4z"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
       />
     </svg>
   )

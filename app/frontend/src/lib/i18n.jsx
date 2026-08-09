@@ -12,6 +12,9 @@ const STRINGS = {
     'app.disclaimer':
       'Synthetic teaching patients only. This tool does not diagnose patients, does not provide clinical decision support, and is not used for official coding, reporting, or reimbursement.',
     'language.label': 'Language',
+    'theme.label': 'Dark mode',
+    'theme.switchToDark': 'Switch to dark mode',
+    'theme.switchToLight': 'Switch to light mode',
     'tutorial.open': 'How this works',
     'tutorial.close': 'Close tutorial',
     'tutorial.eyebrow': 'Interactive tutorial',
@@ -99,6 +102,9 @@ const STRINGS = {
     'app.disclaimer':
       'Ausschließlich synthetische Lehrfälle. Dieses Werkzeug stellt keine Diagnosen, bietet keine klinische Entscheidungsunterstützung und wird nicht für die offizielle Kodierung, Meldung oder Abrechnung verwendet.',
     'language.label': 'Sprache',
+    'theme.label': 'Dunkelmodus',
+    'theme.switchToDark': 'Zum Dunkelmodus wechseln',
+    'theme.switchToLight': 'Zum Hellmodus wechseln',
     'tutorial.open': 'So funktioniert es',
     'tutorial.close': 'Tutorial schließen',
     'tutorial.eyebrow': 'Interaktives Tutorial',

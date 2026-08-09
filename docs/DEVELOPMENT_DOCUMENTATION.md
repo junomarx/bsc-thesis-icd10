@@ -294,14 +294,27 @@ version of their conclusions).
   untouched by it.
 - **Design tokens over a CSS framework.** The stretch-goal redesign added
   a `:root` custom-property palette/type/spacing/motion scale to
-  `App.css` (colours for both light and dark, per the existing
-  `color-scheme: light dark` declaration) rather than adopting a UI
+  `App.css` (light defaults plus a dark token override selected by the
+  root `data-theme` attribute) rather than adopting a UI
   framework/component library. The project owner's instruction explicitly
   permitted either; plain CSS custom properties were chosen on their own
   merits — zero new build dependency, consistent with this project's
   general "add complexity only where the workflow needs it" posture, and
   fully sufficient for an app with three views and no design-system reuse
   outside itself.
+- **An explicit theme preference, with the OS preference only as the
+  initial default.** Relying solely on `prefers-color-scheme` supplied no
+  in-app way to choose a different appearance. The compact `ThemeSwitch`
+  now lives in the existing header-action cluster and uses a single
+  sun/moon icon, accessible toggle state, and action title rather than
+  another permanent text control. `lib/theme.js` resolves the first visit
+  from the OS, then saves an explicit `light`/`dark` choice under the
+  browser-only `icd10-prototype:theme` key and applies it before React
+  mounts. Keeping the preference beside the locale/tutorial browser state,
+  rather than adding a backend field or user model, matches its purely
+  presentational scope. Selenium fixes a deterministic light starting
+  value and verifies the dark roster/tutorial palette, reload persistence,
+  and switching back, so CI does not depend on the browser host's theme.
 - **Gamification layer — client-side only, deliberately small.** The
   project owner's stretch-goal instruction called a lightweight sense of
   progress "essential... but not an elaborate concept." In the current
@@ -320,8 +333,9 @@ version of their conclusions).
   four focused Back/Next steps (patient → dossier → answer → feedback),
   shown automatically only when a versioned `localStorage` flag is absent
   and manually reopenable from the persistent header on every view. It
-  traps focus, closes on Escape, restores trigger focus, and is covered by
-  Selenium against the real first-visit path. This keeps the orientation
+  traps focus, closes on Escape or an explicit click/tap outside the dialog,
+  restores trigger focus, and is covered by Selenium against the real
+  first-visit path. This keeps the orientation
   content available while following the same "state it once, make it
   findable, don't nag" reasoning applied elsewhere.
 
@@ -778,7 +792,7 @@ both fully rewritten for the forward model on the same date.
 | `app/frontend/src/App.jsx` + `components/*.jsx` | `REQ-INT-01`-`05`, `REQ-FBK-01`-`03`, `REQ-SCP-02`, `REQ-UI-01`-`03`, `REQ-GAM-01` |
 | `app/frontend/src/lib/i18n.jsx`/`contentTranslations.js`/`catalogueTranslations.js` | §14.2 — no upstream `REQ-*`/`TEST-*`, presentation-layer only |
 | `prototype_baseline/Dockerfile.bootstrap` + `persistence_candidate/*` | `MODELBASE-0.2`, `DATAMIG-0.2`, `PROTOBASE-0.3` — §13.3 |
-| `app/tests/Unit`/`Integration`/`E2E` | Migrated in step 8; current counts 77/160/8 after the tutorial regression — see §13.4 and the latest changelog entry |
+| `app/tests/Unit`/`Integration`/`E2E` | Migrated in step 8; current counts 77/160/9 after the tutorial and theme regressions — see §13.4 and the latest changelog entry |
 
 ## 13. Forward redesign: patient/question model (8-9 August 2026)
 

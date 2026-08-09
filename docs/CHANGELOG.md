@@ -13,6 +13,74 @@ Reference `REQ-*`/`RULE-*`/`TEST-*` identifiers where a change implements or
 affects one. Every entry should let a reader answer "what changed, why, and
 was it actually tested" without opening the diff.
 
+## 2026-08-09 — Tutorial closes from the outside backdrop
+
+Project-owner follow-up: the tutorial should be dismissible with the mouse
+from outside its card, in addition to its existing close/skip/finish and
+Escape paths.
+
+### Changed
+
+- `Tutorial.jsx` now closes when the dimmed backdrop itself is clicked or
+  tapped. The handler checks `event.target === event.currentTarget`, so
+  ordinary interactions inside the dialog can bubble without dismissing it.
+- `TutorialTest.php` now reopens the modal and activates a point on the
+  outside backdrop, then verifies both dismissal and focus restoration.
+- The user guide, implementation/development documentation, requirements
+  traceability, and E2E README describe the added pointer/touch path.
+
+### Verified
+
+- `php app/vendor/bin/phpunit -c app/phpunit.xml --testsuite e2e` against
+  the rebuilt real Docker application plus Selenium/Chromium: **9/9
+  passing, 59 assertions**.
+- Frontend lint/build, PHP syntax, regenerated `USER_GUIDE.pdf`, and
+  `git diff --check`: PASS (see the immediately following dark-mode entry
+  for the unchanged tool versions and lint-warning detail).
+
+## 2026-08-09 — Persisted light/dark appearance setting
+
+Project-owner request: add an unobtrusive dark-mode setting to the existing
+interface, persist it alongside the app's other browser-local preferences,
+and include it in the real Selenium regression boundary.
+
+### Added
+
+- `lib/theme.js`, which resolves `light`/`dark` from the saved
+  `icd10-prototype:theme` value or, on first use, the operating-system
+  preference; applies it to `<html data-theme>` before React mounts; and
+  saves an explicit selection back to `localStorage`.
+- A compact icon-only `ThemeSwitch` in the existing header action group,
+  with localized accessible/action text, `aria-pressed`, a 44×44 px target,
+  and hand-authored sun/moon SVGs. It adds no permanent header label or new
+  dependency.
+- `app/tests/E2E/ThemeTest.php`: fixes a deterministic light starting value,
+  selects dark, verifies the live roster/native-control palette and tutorial
+  surface, reloads to prove browser-storage persistence, then switches back
+  to light.
+
+### Changed
+
+- `App.css` now selects its existing dark design-token palette through
+  `:root[data-theme='dark']` instead of relying only on the host
+  `prefers-color-scheme`; every view and native form control follows the
+  selected setting through the shared tokens and `color-scheme`.
+- The implementation/development specifications, requirements traceability,
+  E2E README, user guide source/PDF, documentation index, and handoff now
+  describe the preference and its test boundary.
+
+### Verified
+
+- `npm run lint`: completes with only the pre-existing
+  `react(only-export-components)` Fast Refresh warning in `lib/i18n.jsx`.
+- `npm run build`: PASS (Vite 8.2.1, 35 modules transformed).
+- `php app/vendor/bin/phpunit -c app/phpunit.xml --testsuite e2e` against
+  the rebuilt real Docker application plus Selenium/Chromium: **9/9
+  passing, 58 assertions**.
+- `php app/vendor/bin/phpunit -c app/phpunit.xml --testsuite unit`:
+  **77/77 passing, 117 assertions**.
+- `php -l app/tests/E2E/ThemeTest.php` and `git diff --check`: PASS.
+
 ## 2026-08-09 — Default-expanded orientation replaced with a first-visit interactive tutorial
 
 Project-owner request: the current patient/question frontend's

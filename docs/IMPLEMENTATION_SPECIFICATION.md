@@ -100,9 +100,10 @@ app/
   tests/                          migrated to the forward model, step 8 — §7
   frontend/
     package.json, vite.config.js    React 19 + Vite 8; version/build-date baked in via `define`
-                                     (§5.7); build output → ../public (emptyOutDir: false)
+                                     (§5.8); build output → ../public (emptyOutDir: false)
     src/
-      main.jsx                      wraps <App/> in <LocaleProvider>
+      main.jsx                      applies the stored/OS-derived theme, then wraps <App/> in
+                                     <LocaleProvider>
       App.jsx                       owns playthrough/tutorial state; renders Header + one of
                                      three views + Footer + conditional Tutorial modal
       App.css, index.css
@@ -112,16 +113,18 @@ app/
         classification.js            STATUS_LABEL_KEYS/STATUS_ICONS (i18n keys, not strings)
         i18n.jsx                     LocaleProvider/useLocale() — EN/DE UI-chrome dictionary,
                                       browser-language default, localStorage-persisted choice
+        theme.js                     light/dark preference bootstrap, application, persistence
         contentTranslations.js       German translations of patient/question *content*
                                       (summaries, context items, question title/prompt)
         catalogueTranslations.js     English titles for the 87 displayed ICD-10 codes (the
                                       runtime catalogue is German-only data)
       components/
-        Header.jsx                   title, disclaimer, tutorial re-entry, LanguageSwitch
+        Header.jsx                   title, disclaimer, tutorial re-entry, ThemeSwitch, LanguageSwitch
         LanguageSwitch.jsx           EN | DE toggle
+        ThemeSwitch.jsx              compact persisted light/dark toggle
         Tutorial.jsx                 REQ-UI-01 four-step first-visit modal, manually reopenable
         PatientRoster.jsx            heading, progress summary, reset-progress control, patient-list grid
-        PatientCard.jsx               one patient per card (fixed height, §5.6)
+        PatientCard.jsx               one patient per card (fixed height, §5.7)
         PatientDossier.jsx            collapsible patient identity/context panel
         QuestionView.jsx              progress bar, prompt, options, submit, feedback + technical details
         PatientReview.jsx             counts, per-question list, completion badge, replay/another-patient
@@ -446,8 +449,8 @@ conditionally above any of them:
 
 ```text
 patients, loadingPatients, patientsError    — GET /api/patients, once on mount
-completedPatientIds                          — Set, sessionStorage-backed (§5.5)
-tutorialOpen                                 — first-visit localStorage flag + transient modal state (§5.4)
+completedPatientIds                          — Set, sessionStorage-backed (§5.6)
+tutorialOpen                                 — first-visit localStorage flag + transient modal state (§5.5)
 view                                          — 'roster' | 'playthrough' | 'review'
 activePatient, orderedQuestionIds, currentIndex, questionsById, results, submitting
 ```
@@ -514,7 +517,34 @@ explanations are handled differently (§3.3 above): they come from the
 backend already bilingual (`explanation`/`explanation_de`), because they
 contain rule-derived content the frontend cannot safely paraphrase.
 
-### 5.4 First-visit tutorial (`App.jsx`, `Header.jsx`, `Tutorial.jsx`)
+### 5.4 Explicit light/dark setting (`lib/theme.js`, `ThemeSwitch.jsx`)
+
+`lib/theme.js` owns the browser-only appearance contract. It accepts the
+values `light` and `dark` under the `localStorage` key
+`icd10-prototype:theme`. When that key is absent or unavailable, the first
+value comes from `matchMedia('(prefers-color-scheme: dark)')` (falling back
+to light where that API is unavailable). The module applies the resolved
+value to `<html data-theme="…">` during module initialization, before React
+mounts, and `main.jsx` imports it explicitly to keep that early bootstrap
+order visible.
+
+`ThemeSwitch` is an icon-only 44×44 px toggle in the existing header action
+group, between tutorial re-entry and the EN/DE switch. A sun/moon icon keeps
+the control visually compact; its localized accessible name, action title,
+visually hidden text, and `aria-pressed` state preserve its meaning without
+adding a permanent text label to the header. Selecting a value applies it
+immediately and writes it to the same browser preference store used for the
+locale/tutorial preferences. There is no account, cookie, API call, schema
+field, or server-side theme state.
+
+`App.css` keeps light values as the base design tokens and overrides the
+same token set under `:root[data-theme='dark']`; setting `color-scheme` on
+each resolved theme also aligns native form controls. Consequently the
+roster, question flow, feedback colours, review, tutorial, and footer all
+consume one palette contract rather than maintaining component-specific
+dark styles.
+
+### 5.5 First-visit tutorial (`App.jsx`, `Header.jsx`, `Tutorial.jsx`)
 
 The current tutorial is a new patient/question-model implementation, not
 the deleted case-centric `Tutorial.jsx` recorded in the historical UX
@@ -527,18 +557,20 @@ used by the application.
 
 `App.jsx` initializes `tutorialOpen` by checking the versioned
 `localStorage` key `icd10-prototype:tutorial-seen-v1`. An absent key opens
-the modal automatically; any close/skip/finish action writes `true`, so
-later page loads do not reopen it. `Header` supplies a persistent
+the modal automatically; close button, skip, finish, Escape, and backdrop
+dismissal all write `true`, so later page loads do not reopen it. `Header`
+supplies a persistent
 "How this works" / "So funktioniert es" button that opens it manually
 from any view. Clearing the site's browser storage makes the next load a
 first visit again.
 
 The modal has `role="dialog"`/`aria-modal="true"`, moves focus into itself,
-traps Tab/Shift+Tab, closes on Escape, prevents background scrolling, and
-restores focus to the manual trigger on close. No account, cookie, backend
-call, schema field, or server-side learner state is involved.
+traps Tab/Shift+Tab, closes on Escape or a click/tap on the dimmed backdrop
+(but not on bubbled clicks inside the dialog), prevents background scrolling,
+and restores focus to the manual trigger on close. No account, cookie,
+backend call, schema field, or server-side learner state is involved.
 
-### 5.5 Session-local patient completion (`App.jsx`, added 2026-08-09)
+### 5.6 Session-local patient completion (`App.jsx`, added 2026-08-09)
 
 `completedPatientIds` is seeded from and written to `sessionStorage`
 (key `icd10-prototype:completed-patients`, a JSON array of patient ids) —
@@ -553,7 +585,7 @@ and an aggregate "N of 6 patients completed" line on the roster, with a
 "Reset progress" control (confirms, then clears both the state and the
 `sessionStorage` entry) shown whenever there is something to reset.
 
-### 5.6 Patient-card sizing
+### 5.7 Patient-card sizing
 
 `.patient-card` has a fixed height (`15.5rem`), not `height: 100%` under a
 stretched grid row: CSS Grid's default row-stretch only equalizes cards
@@ -564,7 +596,7 @@ second line) and the summary is `-webkit-line-clamp: 4` — both
 deterministic regardless of language or content length, verified
 pixel-identical across all 6 cards via Selenium.
 
-### 5.7 Build-time version/build-date injection (`vite.config.js`, added 2026-08-09)
+### 5.8 Build-time version/build-date injection (`vite.config.js`, added 2026-08-09)
 
 ```js
 define: {
@@ -582,7 +614,7 @@ Deliberately not a git commit SHA: the Docker build context excludes
 arg would touch the Dockerfile, both Compose files, and CI — judged out of
 proportion to a footer.
 
-### 5.8 Build output contract
+### 5.9 Build output contract
 
 `vite.config.js` sets `build.outDir = '../public'` with `emptyOutDir: false`
 — `npm run build` (run from `frontend/`) writes `index.html` and a
@@ -710,7 +742,7 @@ re-verified while writing this section, not carried over from memory:
 | Unit | `php vendor/bin/phpunit --testsuite unit` (no DB) | **77/77 passing** |
 | Integration | `ICD_DB_*=... php vendor/bin/phpunit --testsuite integration` (needs a `MODELBASE-0.2`-loaded MySQL) | **160/160 passing, 2173 assertions** |
 | Unit + Integration | `--testsuite unit,integration` | **237/237 passing, 2290 assertions** |
-| E2E | `php vendor/bin/phpunit --testsuite e2e` (needs the app + Selenium running) | **8/8 passing, 46 assertions** |
+| E2E | `php vendor/bin/phpunit --testsuite e2e` (needs the app + Selenium running) | **9/9 passing, 59 assertions** |
 
 | `TEST-*` | Implementing file(s) |
 |---|---|
@@ -729,8 +761,9 @@ re-verified while writing this section, not carried over from memory:
 | `TEST-RC-01` | `Integration/ReferenceResponseTest.php` — reads the 143-row `RCBASE-0.3` candidate oracle directly (§6.3's Deviations note below applies) |
 | `TEST-E2E-01` | `E2E/LearnerWorkflowTest.php` |
 | `TEST-E2E-02` | `E2E/VerificationOnlyQuestionVisibilityTest.php` (renamed from `VerificationOnlyCaseVisibilityTest.php`) |
-| *(none — frontend-only)* | `E2E/ProgressBadgeTest.php`: the `sessionStorage` per-patient completion badge (§5.5) has no backend equivalent, so it has no upstream `TEST-*` identifier |
-| *(none — frontend-only)* | `E2E/TutorialTest.php`: first-visit auto-show, four-step Back/Next flow, dismissal persistence across reload, manual reopening, Escape close, and focus restoration (§5.4) |
+| *(none — frontend-only)* | `E2E/ProgressBadgeTest.php`: the `sessionStorage` per-patient completion badge (§5.6) has no backend equivalent, so it has no upstream `TEST-*` identifier |
+| *(none — frontend-only)* | `E2E/TutorialTest.php`: first-visit auto-show, four-step Back/Next flow, dismissal persistence across reload, manual reopening, Escape/backdrop close, and focus restoration (§5.5) |
+| *(none — frontend-only)* | `E2E/ThemeTest.php`: deterministic light start, dark-mode application across the roster/tutorial, browser-storage persistence across reload, and switching back to light (§5.4) |
 
 **Provenance carried by `TEST-RC-01` specifically:** all 143 rows are now
 human-oracle-audited (implementation-order step 9, `docs/CHANGELOG.md`'s
@@ -755,7 +788,7 @@ for the exact distinction.
 | Node (build stage only) | 22-alpine | `Dockerfile` (repo root) |
 | React | 19.2.8 | `app/frontend/package.json` |
 | Vite | 8.2.x | `app/frontend/package.json` |
-| Frontend app version | 0.9.9 | `app/frontend/package.json`, rendered in the footer (§5.7) |
+| Frontend app version | 0.9.9 | `app/frontend/package.json`, rendered in the footer (§5.8) |
 | PHPUnit | 11.5.x | `app/composer.lock` |
 | php-webdriver/webdriver | 1.16.0 | `app/composer.lock` |
 | Selenium/browser (ad hoc verification only, not the app) | `seleniarm/standalone-chromium:latest` (arm64) | `app/tests/E2E/docker-compose.yml` |
@@ -764,7 +797,7 @@ for the exact distinction.
 
 No authentication/user model anywhere in `src/`; no table or column for
 learner attempt history (session-local completion marks live in the
-browser's `sessionStorage`, never in `app/src/` or the schema — §5.5); no
+browser's `sessionStorage`, never in `app/src/` or the schema — §5.6); no
 route accepting more than one response per request; no extramural-specific
 rule class; no LKF pricing/reimbursement logic; no client-side router in
 the frontend (three plain conditional views in `App.jsx`); no points,

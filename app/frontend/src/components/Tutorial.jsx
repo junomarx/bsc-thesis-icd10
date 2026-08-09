@@ -78,8 +78,12 @@ export default function Tutorial({ onClose }) {
   const SuboptimalIcon = STATUS_ICONS.suboptimal
   const IncorrectIcon = STATUS_ICONS.incorrect
 
+  function handleBackdropClick(event) {
+    if (event.target === event.currentTarget) onClose()
+  }
+
   return (
-    <div className="tutorial-backdrop">
+    <div className="tutorial-backdrop" onClick={handleBackdropClick}>
       <div
         ref={dialogRef}
         className="tutorial-dialog"

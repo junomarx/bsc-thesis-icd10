@@ -6,11 +6,15 @@ running application stack; nothing here is mocked.
 
 The suite contains the formal `TEST-E2E-01` learner workflow and
 `TEST-E2E-02` verification-only boundary plus frontend-only regressions for
-patient completion and the first-visit tutorial. A fresh WebDriver profile
+patient completion, the first-visit tutorial, and the persisted light/dark
+appearance setting. A fresh WebDriver profile
 has no tutorial-seen flag, so ordinary workflow helpers dismiss the real
 modal before continuing; `TutorialTest` separately verifies the complete
-first-visit/manual-replay lifecycle. There is no test-only switch that
-suppresses production onboarding behavior.
+first-visit/manual-replay lifecycle, including Escape and outside-backdrop
+dismissal. `ThemeTest` fixes a deterministic light
+starting point, switches to dark, verifies the live roster/tutorial palette
+and reload persistence, then switches back. There is no test-only switch that
+suppresses production behavior.
 
 ## 1. Start the application stack
 

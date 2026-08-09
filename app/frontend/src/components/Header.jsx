@@ -1,4 +1,5 @@
 import LanguageSwitch from './LanguageSwitch.jsx'
+import ThemeSwitch from './ThemeSwitch.jsx'
 import { useLocale } from '../lib/i18n.jsx'
 import { IconHelp } from './icons.jsx'
 
@@ -20,6 +21,7 @@ export default function Header({ onOpenTutorial, tutorialOpen }) {
             <IconHelp />
             {t('tutorial.open')}
           </button>
+          <ThemeSwitch />
           <LanguageSwitch />
         </div>
       </div>

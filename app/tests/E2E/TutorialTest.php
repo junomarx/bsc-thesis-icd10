@@ -11,9 +11,10 @@ use Facebook\WebDriver\WebDriverKeys;
 /**
  * Frontend-only coverage for REQ-UI-01's guided orientation: the tutorial
  * appears automatically once per browser, advances as a four-step flow,
- * stays dismissed after reload, and remains manually reopenable from the
- * persistent header. This guards the localStorage and Selenium interaction
- * contract that the former always-expanded orientation panel did not have.
+ * stays dismissed after reload, remains manually reopenable from the
+ * persistent header, and closes through either keyboard or outside-pointer
+ * dismissal. This guards the localStorage and Selenium interaction contract
+ * that the former always-expanded orientation panel did not have.
  */
 final class TutorialTest extends SeleniumTestCase
 {
@@ -74,6 +75,21 @@ final class TutorialTest extends SeleniumTestCase
         // Escape closes a manually opened tour and focus returns to the
         // persistent trigger that opened it.
         $dialog->sendKeys(WebDriverKeys::ESCAPE);
+        $this->wait()->until(WebDriverExpectedCondition::invisibilityOfElementLocated(
+            WebDriverBy::className('tutorial-dialog'),
+        ));
+        self::assertTrue((bool) static::$driver->executeScript(
+            'return document.activeElement === document.querySelector(".tutorial-trigger");',
+        ));
+
+        // Clicking the dimmed area outside the dialog is the pointer/touch
+        // equivalent of Escape. A dialog click still bubbles to the backdrop,
+        // so production code must distinguish target from currentTarget.
+        $trigger->click();
+        $this->wait()->until(WebDriverExpectedCondition::presenceOfElementLocated(
+            WebDriverBy::className('tutorial-dialog'),
+        ));
+        static::$driver->executeScript('document.elementFromPoint(1, 1).click();');
         $this->wait()->until(WebDriverExpectedCondition::invisibilityOfElementLocated(
             WebDriverBy::className('tutorial-dialog'),
         ));
