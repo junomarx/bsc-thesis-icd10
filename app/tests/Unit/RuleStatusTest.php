@@ -13,36 +13,36 @@ final class RuleStatusTest extends TestCase
 {
     public function testStatusAInpatientMainMarkedMatches(): void
     {
-        $case = Fixtures::statusCase('STATUS-A', 'inpatient', null, ['Z01.6' => false]);
+        $question = Fixtures::statusQuestion('STATUS-A', 'inpatient', null, ['Z01.6' => false]);
 
-        self::assertTrue(RuleStatus::matches($case, Fixtures::record('Z01.6', '!')));
+        self::assertTrue(RuleStatus::matches($question, Fixtures::record('Z01.6', '!')));
     }
 
     public function testStatusBHospitalOutpatientLkfScoredMatches(): void
     {
-        $case = Fixtures::statusCase('STATUS-B', 'hospital_outpatient', true, ['Z01.6' => false]);
+        $question = Fixtures::statusQuestion('STATUS-B', 'hospital_outpatient', true, ['Z01.6' => false]);
 
-        self::assertTrue(RuleStatus::matches($case, Fixtures::record('Z01.6', '!')));
+        self::assertTrue(RuleStatus::matches($question, Fixtures::record('Z01.6', '!')));
     }
 
     public function testStatusCHospitalOutpatientNotLkfScoredDoesNotMatch(): void
     {
-        $case = Fixtures::statusCase('STATUS-C', 'hospital_outpatient', false, ['Z01.6' => true]);
+        $question = Fixtures::statusQuestion('STATUS-C', 'hospital_outpatient', false, ['Z01.6' => true]);
 
-        self::assertFalse(RuleStatus::matches($case, Fixtures::record('Z01.6', '!')));
+        self::assertFalse(RuleStatus::matches($question, Fixtures::record('Z01.6', '!')));
     }
 
     public function testStatusDAdditionalDiagnosisInpatientDoesNotMatch(): void
     {
-        $case = Fixtures::statusCase('STATUS-D', 'inpatient', null, ['Z01.6' => false], diagnosisRole: 'additional');
+        $question = Fixtures::statusQuestion('STATUS-D', 'inpatient', null, ['Z01.6' => false], diagnosisRole: 'additional');
 
-        self::assertFalse(RuleStatus::matches($case, Fixtures::record('Z01.6', '!')));
+        self::assertFalse(RuleStatus::matches($question, Fixtures::record('Z01.6', '!')));
     }
 
     public function testStatusENoMarkerInpatientDoesNotMatch(): void
     {
-        $case = Fixtures::statusCase('STATUS-E', 'inpatient', null, ['Z00.0' => false]);
+        $question = Fixtures::statusQuestion('STATUS-E', 'inpatient', null, ['Z00.0' => false]);
 
-        self::assertFalse(RuleStatus::matches($case, Fixtures::record('Z00.0', null)));
+        self::assertFalse(RuleStatus::matches($question, Fixtures::record('Z00.0', null)));
     }
 }

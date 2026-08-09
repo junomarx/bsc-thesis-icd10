@@ -95,20 +95,19 @@ docker compose --profile test run --rm test
 ```
 
 Browser-driven tests use [Selenium](https://www.selenium.dev/) via
-`php-webdriver/webdriver`, not Playwright — a deliberate project decision
-(see `CLAUDE.md`). **Currently broken:** the committed PHPUnit suite still
-targets a previous, single-question-per-case data model and has not yet
-been rewritten for the current patient/question model; see
-[HANDOFF.md](HANDOFF.md) for the tracked status of that work.
+`php-webdriver/webdriver`. The suite targets the current patient/question
+model (77 unit / 160 integration / 7 e2e tests, all passing as of the last
+verified run); see [HANDOFF.md](HANDOFF.md) for exact counts and how they
+were verified.
 
 ## Status
 
 Not frozen. Currently mid-way through a structural forward redesign (see
 [HANDOFF.md](HANDOFF.md) §0 for the full 10-step implementation order and
-exactly where it stands) — the learner-facing application is functional
-and polished, the automated test suite and the pre-freeze verification
-oracle audit are the two pieces of work remaining before a `1.0` baseline
-can be considered.
+exactly where it stands) — the learner-facing application is functional,
+polished, and covered by a genuinely passing automated test suite; a
+pre-freeze human audit of the verification oracle is the remaining piece
+of work before a `1.0` baseline can be considered.
 
 ## License
 

@@ -5,23 +5,37 @@ declare(strict_types=1);
 namespace Icd10Prototype\Tests\Integration;
 
 /**
- * TEST-API-01: one-code interaction and validation contract, exercised
- * through the real repository/evaluator stack against the live baseline.
+ * TEST-API-01: tagged-response interaction and validation contract
+ * (`APIBASE-0.1`), exercised through the real repository/evaluator stack
+ * against the live baseline.
  */
 final class EvaluationApiTest extends DatabaseTestCase
 {
-    public function testSingleNonEmptyCodeEntersNormalEvaluation(): void
+    public function testCodeResponseEntersNormalEvaluation(): void
     {
-        $result = static::$app->evaluationController->evaluate('CASE-001', ['submitted_code' => 'J44.02']);
+        $result = static::$app->evaluationController->evaluate('Q-001-01', [
+            'response' => ['type' => 'code', 'code' => 'J44.02'],
+        ]);
 
         self::assertSame(200, $result->status);
         self::assertSame('classified', $result->body['evaluation_status']);
         self::assertSame('correct', $result->body['classification']);
     }
 
-    public function testMissingSubmissionIsRejectedBeforeClassification(): void
+    public function testNoneOfAboveResponseEntersNormalEvaluation(): void
     {
-        $result = static::$app->evaluationController->evaluate('CASE-001', []);
+        $result = static::$app->evaluationController->evaluate('Q-002-01', [
+            'response' => ['type' => 'none_of_above'],
+        ]);
+
+        self::assertSame(200, $result->status);
+        self::assertSame('classified', $result->body['evaluation_status']);
+        self::assertSame('RULE-NOA-01', $result->body['determining_rule']);
+    }
+
+    public function testMissingResponseIsRejectedBeforeClassification(): void
+    {
+        $result = static::$app->evaluationController->evaluate('Q-001-01', []);
 
         self::assertSame(400, $result->status);
         self::assertSame('not_evaluated', $result->body['evaluation_status']);
@@ -29,9 +43,11 @@ final class EvaluationApiTest extends DatabaseTestCase
         self::assertSame('malformed_input', $result->body['reason']);
     }
 
-    public function testEmptyWhitespaceOnlySubmissionIsMalformed(): void
+    public function testEmptyWhitespaceOnlyCodeIsMalformed(): void
     {
-        $result = static::$app->evaluationController->evaluate('CASE-001', ['submitted_code' => '   ']);
+        $result = static::$app->evaluationController->evaluate('Q-001-01', [
+            'response' => ['type' => 'code', 'code' => '   '],
+        ]);
 
         self::assertSame(400, $result->status);
         self::assertSame('malformed_input', $result->body['reason']);
@@ -39,15 +55,30 @@ final class EvaluationApiTest extends DatabaseTestCase
 
     public function testArrayOfCodesIsRejectedNotAggregated(): void
     {
-        $result = static::$app->evaluationController->evaluate('CASE-001', ['submitted_code' => ['J44.02', 'J44.09']]);
+        $result = static::$app->evaluationController->evaluate('Q-001-01', [
+            'response' => ['type' => 'code', 'code' => ['J44.02', 'J44.09']],
+        ]);
 
         self::assertSame(400, $result->status);
         self::assertSame('malformed_input', $result->body['reason']);
     }
 
+    public function testUnsupportedResponseTypeIsRejectedAtTheHttpBoundary(): void
+    {
+        $result = static::$app->evaluationController->evaluate('Q-001-01', [
+            'response' => ['type' => 'free_text', 'text' => 'J44.02'],
+        ]);
+
+        self::assertSame(400, $result->status);
+        self::assertSame('not_evaluated', $result->body['evaluation_status']);
+        self::assertSame('unsupported_response_kind', $result->body['reason']);
+    }
+
     public function testGateFailureReturnsNonClassifiedScopeResult(): void
     {
-        $result = static::$app->evaluationController->evaluate('CASE-001', ['submitted_code' => 'Z01.8']);
+        $result = static::$app->evaluationController->evaluate('Q-001-01', [
+            'response' => ['type' => 'code', 'code' => 'A00.0'],
+        ]);
 
         self::assertSame(200, $result->status);
         self::assertSame('not_evaluated', $result->body['evaluation_status']);
@@ -55,10 +86,26 @@ final class EvaluationApiTest extends DatabaseTestCase
         self::assertSame('outside_active_subset', $result->body['reason']);
     }
 
-    public function testUnknownCaseIdIsNotFound(): void
+    public function testUnknownQuestionIdIsNotFound(): void
     {
-        $result = static::$app->evaluationController->evaluate('CASE-999', ['submitted_code' => 'J44.02']);
+        $result = static::$app->evaluationController->evaluate('Q-999-99', [
+            'response' => ['type' => 'code', 'code' => 'J44.02'],
+        ]);
 
         self::assertSame(404, $result->status);
+    }
+
+    public function testVerificationOnlyQuestionIsStillEvaluableById(): void
+    {
+        // REQ-VER-09: the 8 hidden legacy fixtures must remain reachable
+        // through the evaluate endpoint even though they 404 on the
+        // learner-facing detail read (QuestionController::show()).
+        $result = static::$app->evaluationController->evaluate('VQ-001', [
+            'response' => ['type' => 'code', 'code' => 'J44.02'],
+        ]);
+
+        self::assertSame(200, $result->status);
+        self::assertSame('classified', $result->body['evaluation_status']);
+        self::assertSame('correct', $result->body['classification']);
     }
 }

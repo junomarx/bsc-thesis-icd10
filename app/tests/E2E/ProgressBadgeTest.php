@@ -8,36 +8,59 @@ use Facebook\WebDriver\WebDriverBy;
 use Facebook\WebDriver\WebDriverExpectedCondition;
 
 /**
- * Frontend-only supplementary coverage for the localStorage-backed progress
- * badges (docs/UX_UI_SPECIFICATION.md §3.7). No upstream TEST-* identifier -
- * this is presentation-layer state with no backend equivalent, so it is not
- * part of chapter3_test_catalogue.md's upstream-controlled catalogue.
+ * Frontend-only supplementary coverage for the `sessionStorage`-backed
+ * per-patient completion badge (`REQ-UI-02`, `App.jsx`'s
+ * `completedPatientIds`). No upstream TEST-* identifier - this is
+ * presentation-layer state with no backend equivalent, so it is not part
+ * of `chapter3_test_catalogue.md`'s upstream-controlled catalogue.
+ * Replaces the case-centric per-case `localStorage` attempt/classification
+ * badge this once drove (`lib/progress.js`), which no longer exists:
+ * completion is now patient-level (every question answered), not a
+ * per-question last-classification record.
  */
 final class ProgressBadgeTest extends SeleniumTestCase
 {
-    public function testCaseCardReflectsLastClassificationAfterSubmission(): void
+    public function testPatientCardShowsCompletedBadgeOnlyAfterEveryQuestionIsAnswered(): void
     {
-        $this->openCaseList();
-        self::assertSame('not_attempted', $this->progressStatusFor('CASE-001'));
+        $this->openRoster();
+        self::assertFalse($this->patientCardHasCompletedBadge('PATIENT-001'), 'must not be marked completed before any attempt');
 
-        $this->openCase('CASE-001');
-        $this->searchAndSubmitCode('J44.02');
-        self::assertSame('Correct', $this->waitForResultHeading());
+        $this->openPatient('PATIENT-001');
 
-        static::$driver->findElement(WebDriverBy::xpath("//button[text()='Back to cases']"))->click();
+        for ($i = 0; $i < 3; $i++) {
+            $radios = static::$driver->findElements(WebDriverBy::cssSelector('.code-list input[type="radio"]'));
+            $radios[0]->click();
+            static::$driver->findElement(WebDriverBy::cssSelector('.submit-bar button'))->click();
+            $this->wait()->until(WebDriverExpectedCondition::presenceOfElementLocated(
+                WebDriverBy::className('question-feedback'),
+            ));
+            static::$driver->findElement(WebDriverBy::cssSelector('.question-feedback button'))->click();
+
+            if ($i < 2) {
+                $this->wait()->until(WebDriverExpectedCondition::presenceOfElementLocated(
+                    WebDriverBy::className('question-view'),
+                ));
+            } else {
+                $this->wait()->until(WebDriverExpectedCondition::presenceOfElementLocated(
+                    WebDriverBy::className('review-list'),
+                ));
+            }
+        }
+
+        static::$driver->findElement(WebDriverBy::cssSelector('.result-actions .link-button'))->click();
         $this->wait()->until(WebDriverExpectedCondition::presenceOfElementLocated(
-            WebDriverBy::className('case-list'),
+            WebDriverBy::className('patient-list'),
         ));
 
-        self::assertSame('correct', $this->progressStatusFor('CASE-001'));
+        self::assertTrue($this->patientCardHasCompletedBadge('PATIENT-001'), 'must be marked completed once every question is answered');
     }
 
-    private function progressStatusFor(string $caseId): string
+    private function patientCardHasCompletedBadge(string $patientId): bool
     {
-        $badge = static::$driver->findElement(
-            WebDriverBy::cssSelector("[data-case-id='$caseId'] [data-progress-status]"),
+        $badges = static::$driver->findElements(
+            WebDriverBy::cssSelector("[data-patient-id='$patientId'] .badge-completed"),
         );
 
-        return $badge->getAttribute('data-progress-status');
+        return $badges !== [];
     }
 }

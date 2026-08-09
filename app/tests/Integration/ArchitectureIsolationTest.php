@@ -20,7 +20,17 @@ final class ArchitectureIsolationTest extends DatabaseTestCase
         )->fetchAll(\PDO::FETCH_COLUMN);
 
         self::assertEqualsCanonicalizing(
-            ['prototype_baseline', 'catalogue_code', 'case_definition', 'case_code_domain'],
+            [
+                'prototype_baseline',
+                'catalogue_code',
+                'patient_definition',
+                'patient_context_item',
+                'coding_question',
+                'question_fact',
+                'question_code_domain',
+                'question_relation_fact',
+                'question_option',
+            ],
             $tableNames,
         );
 
@@ -54,7 +64,9 @@ final class ArchitectureIsolationTest extends DatabaseTestCase
         // The application never opens verification/ at all (asserted above);
         // this exercises the same evaluation path end to end as positive
         // confirmation that classification does not depend on that fixture.
-        $result = static::$app->evaluationController->evaluate('CASE-001', ['submitted_code' => 'J44.02']);
+        $result = static::$app->evaluationController->evaluate('Q-001-01', [
+            'response' => ['type' => 'code', 'code' => 'J44.02'],
+        ]);
 
         self::assertSame('classified', $result->body['evaluation_status']);
         self::assertSame('correct', $result->body['classification']);

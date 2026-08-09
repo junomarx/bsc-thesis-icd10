@@ -11,8 +11,9 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * Base class for tests that exercise the real PHP repository/evaluator/API
- * stack against the live PROTOBASE-0.1 MySQL baseline loaded by
- * prototype_baseline_0_1/scripts/load_mysql.py. Requires ICD_DB_* env vars.
+ * stack against the live PROTOBASE-0.3 (MODELBASE-0.2) MySQL baseline
+ * loaded by prototype_baseline_0_2_design/persistence_candidate/load_mysql_0_2.py.
+ * Requires ICD_DB_* env vars.
  */
 abstract class DatabaseTestCase extends TestCase
 {

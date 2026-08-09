@@ -13,22 +13,22 @@ final class RuleDepthTest extends TestCase
 {
     public function testDepthAInpatientFourCharacterMatches(): void
     {
-        $case = Fixtures::copdCase('DEPTH-A', 'J44.0', 55.0, ['J44.0' => false]);
+        $question = Fixtures::copdQuestion('DEPTH-A', 'J44.0', 55.0, ['J44.0' => false]);
 
-        self::assertTrue(RuleDepth::matches($case, 'J44.0'));
+        self::assertTrue(RuleDepth::matches($question, 'J44.0'));
     }
 
     public function testDepthBInpatientFiveCharacterDoesNotMatch(): void
     {
-        $case = Fixtures::copdCase('DEPTH-B', 'J44.0', 55.0, ['J44.02' => true]);
+        $question = Fixtures::copdQuestion('DEPTH-B', 'J44.0', 55.0, ['J44.02' => true]);
 
-        self::assertFalse(RuleDepth::matches($case, 'J44.02'));
+        self::assertFalse(RuleDepth::matches($question, 'J44.02'));
     }
 
     public function testDepthCHospitalOutpatientFourCharacterDoesNotMatchUnderInpatientOnlyRule(): void
     {
-        $case = Fixtures::copdCase('DEPTH-C', 'J44.0', 55.0, ['J44.0' => false], encounterSetting: 'hospital_outpatient');
+        $question = Fixtures::copdQuestion('DEPTH-C', 'J44.0', 55.0, ['J44.0' => false], encounterSetting: 'hospital_outpatient');
 
-        self::assertFalse(RuleDepth::matches($case, 'J44.0'));
+        self::assertFalse(RuleDepth::matches($question, 'J44.0'));
     }
 }

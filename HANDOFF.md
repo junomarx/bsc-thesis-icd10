@@ -3,7 +3,7 @@
 **Snapshot date:** 9 August 2026 (revised same day — steps 1-7 of the forward implementation order are now complete; see the revision note directly below)
 **Audience:** a developer, contractor, or coding agent with no access to the conversation that produced this state — read this first, before touching anything.
 **Supersedes:** everything below §0 in this document's own prior form (dated 8 August 2026, describing the case-centric `CASEBASE-0.2` implementation), and the status/progress sections of `development_handoff/handoff/ICD_PROTOTYPE_DEVELOPMENT_BRIEF.md` and `CODEX_VSCODE_CONTINUATION_INSTRUCTION.md` (dated 7 August 2026, in `development_handoff/`, an intentionally-preserved historical archive, not the live project state).
-**Same-day revision note:** the version of this file written earlier 9 August 2026 (preserved in git history, not here) covered steps 1-6 plus the persistence/deployment-path fix in §0.1. Since then: step 7 (`UXBASE-0.1` visual/gameful polish) landed and was verified; three project-owner-reported issues found by actually using the running app were fixed (an option-list CSS truncation bug, the raw `none_of_above` token leaking into feedback text, and English text appearing in German mode); a footer with version/build-date/author was added; and — the point of this specific revision — `docs/IMPLEMENTATION_SPECIFICATION.md`, `docs/REQUIREMENTS_TRACEABILITY.md`, `docs/DEVELOPMENT_DOCUMENTATION.md`, and `docs/USER_GUIDE.tex`/`.pdf` were all brought current for the forward model, closing the "stale by construction" flags the earlier version of this file pointed readers past. Read §0 anyway — most of it still applies.
+**Same-day revision note (third pass):** earlier versions of this file (preserved in git history) covered, in order: steps 1-6 plus the persistence/deployment-path fix (§0.1); then step 7 (`UXBASE-0.1` polish) plus the documentation-consolidation pass; **now: step 8, the full test-suite migration, is done** (§0.4) - `app/tests/*` was rewritten wholesale against the patient/question model and genuinely passes (77 unit / 160 integration / 7 e2e, all green against real infrastructure), closing what was, until this revision, the single largest gap between this document's claims and reality. Read §0 anyway — most of it still applies.
 
 ## 0. The forward redesign (read this section first — it invalidates most of what a stale copy of this file, or of `chapter3_*.md` at repo root, would tell you)
 
@@ -19,8 +19,8 @@ Mid-implementation, the project owner and a separate agent identified a real ped
 | 5 | Replace case-centric API with patient/question endpoints | Done |
 | 6 | Functional React lifecycle (roster → dossier → question → submit → feedback → review → replay) | Done |
 | 7 | `UXBASE-0.1` visual/gameful polish, as a separate iteration | Done — scoped to `Must`-priority mechanics + accessibility, per the concept document's own §10 fallback guidance; see §0.3 |
-| 8 | Extend test coverage, rerun all 18 historical regressions | **Not started — the committed suite is currently broken, see §0.1 (still true; step 7 did not touch `app/tests/`)** |
-| 9 | Oracle/source audit reconciliation (125 new expectations + 4 provisional `VQ-005..008`) | Not started |
+| 8 | Extend test coverage, rerun all 18 historical regressions | Done — full rewrite, 77 unit + 160 integration + 7 e2e all passing against real infrastructure; see §0.4 |
+| 9 | Oracle/source audit reconciliation (125 new expectations + 4 provisional `VQ-005..008`) | Not started — now automatically *exercised* on every test run (`ReferenceResponseTest`), still not *human-audited* |
 | 10 | Freeze + principal verification run | Not started |
 
 ### 0.1 A real gap this snapshot exists to record: "verified" ≠ "deployed"
@@ -62,6 +62,14 @@ Two real defects surfaced this same day by the project owner actually using the 
 
 Full detail, and the honest record of what step 7 deliberately did *not* implement (code-option display-order permutation, a separate literal "Home" screen — both explicit `Should`/optional items, not `Must`): `docs/CHANGELOG.md`'s five 2026-08-09 entries after the persistence fix, and `docs/DEVELOPMENT_DOCUMENTATION.md` §13-14.
 
+### 0.4 Step 8: the test suite is rewritten and genuinely passes
+
+Triggered by the project owner running CI manually (push triggers are deliberately disabled, `CLAUDE.md`), pasting the real failure log, then - after a scoped CI-infrastructure fix alone didn't resolve it - pasting the same log again as confirmation to proceed with the full rewrite. `app/tests/Support/Fixtures.php` and every file under `Unit`/`Integration`/`E2E` were rewritten against `CodingQuestion`/`ResponseInput`/the tagged-response contract; three brand-new unit test files cover `RULE-REL-HARD-01`/`RULE-REL-SPEC-01`/`RULE-NOA-01`, which had zero coverage of their own before this. `ReferenceResponseTest` now reads the full 143-row `RCBASE-0.3` candidate oracle (was the 18-row historical file), with an explicit docblock caveat that the 125 new rows are *exercised*, not yet *human-audited* (step 9).
+
+Three real bugs were found only by actually running the rewritten E2E suite against real Selenium/Chrome - not by writing code that merely compiled - and are worth knowing about if you touch this suite again: a roster race condition (waiting for the `<ul>` container instead of an actual card), a hardcoded assumption that opening a patient always shows its first-listed question first (it doesn't - order is shuffled per `REQ-INT-03`), and a regex that summed age badges into a "total question count" check. Full detail: `docs/CHANGELOG.md`'s "Step 8" entry.
+
+**Verified, this same pass:** `php vendor/bin/phpunit --testsuite unit` 77/77; `--testsuite integration` against a freshly bootstrapped `MODELBASE-0.2` MySQL instance 160/160 (2173 assertions, every one of the 143 reference-response rows included); `--testsuite unit,integration` combined 237/237; `--testsuite e2e` against the actual running `app` container via this project's own Selenium infrastructure 7/7. All throwaway containers (MySQL, Selenium) were torn down afterward.
+
 ## 1. What this project is
 
 A bachelor-thesis Design Science Research artefact: a small web application that evaluates a learner-submitted Austrian ICD-10 BMASGPK 2026 code against a synthetic patient/question and returns one of `correct`/`suboptimal`/`incorrect`/`none_of_above`-aware feedback with an explanation, via explicit, traceable, deterministic rules — not a real diagnostic or clinical tool. Full commission/scope/non-goals: `development_handoff/handoff/ICD_PROTOTYPE_DEVELOPMENT_BRIEF.md` §1-2 (still accurate for *scope*; status sections are superseded, and its case-centric implementation detail is now historical).
@@ -72,8 +80,8 @@ A bachelor-thesis Design Science Research artefact: a small web application that
 2. `CLAUDE.md` (repo root) — operational rules, especially the documentation-upkeep table. Read this before changing anything.
 3. `chapter3_forward_implementation_instruction_0_5.md` and `chapter3_api_and_feedback_contract_0_1.md` at repo root — the forward redesign's own authority on required order and API/feedback shape.
 4. `docs/README.md` — what the live documentation files are each for.
-5. `docs/DEVELOPMENT_DOCUMENTATION.md` and `docs/IMPLEMENTATION_SPECIFICATION.md` — **both fully rewritten 9 August 2026 for the forward model** (the earlier "stale by construction" flag is gone; `IMPLEMENTATION_SPECIFICATION.md` is now current through step 7, including the language switch/footer/bilingual explanations, and honestly documents the still-broken test suite rather than glossing over it).
-6. `docs/REQUIREMENTS_TRACEABILITY.md` — likewise fully re-audited 9 August 2026 against every `REQ-*` in the current catalogue; six rows are marked ⚠ ("verified by inspection, automated test currently broken") rather than a plain ✅, and several `REQ-VER-*` rows are honestly deferred to steps 9/10 — read its §1/§1a before trusting any row at a glance.
+5. `docs/DEVELOPMENT_DOCUMENTATION.md` and `docs/IMPLEMENTATION_SPECIFICATION.md` — **both fully rewritten 9 August 2026 for the forward model**, current through step 8 (test suite genuinely passing - the §7 test-inventory table was rewritten accordingly, so the five ⚠ rows it used to carry no longer appear).
+6. `docs/REQUIREMENTS_TRACEABILITY.md` — likewise fully re-audited 9 August 2026 against every `REQ-*` in the current catalogue; the five rows previously marked ⚠ ("verified by inspection, automated test currently broken") now read ✅ - read its §1/§1a regardless, since `REQ-VER-*` rows remain honestly deferred to step 9/10.
 7. `docs/USER_GUIDE.tex`/`.pdf` — also rewritten 9 August 2026 for the patient/question learner workflow, language switch, and a warning that the published GHCR images still predate this migration (§0.1) — use the native local build until CI republishes.
 8. `docs/CHANGELOG.md` — the full dated history; the most authoritative source for "what actually happened, in what order."
 9. The other `chapter3_*.md` files at repo root — the upstream methodological specification. A few (`chapter3_test_catalogue.md` among them) still read in pre-implementation tense in places from before the *original* PHP app existed; the forward-redesign siblings (`_0_2`/`_0_5`/`_0_6`/`_0_7` suffixes) are the current authority where they overlap with an older file.
@@ -87,15 +95,16 @@ A bachelor-thesis Design Science Research artefact: a small web application that
 
 ## 3. What's NOT done, and why it matters
 
-- **Step 8 (test suite rewrite) — the committed suite is currently broken, not just incomplete.** `php vendor/bin/phpunit --testsuite unit` currently reports **47 of 49 tests erroring** with `Class "Icd10Prototype\Model\CaseFacts" not found` (`app/tests/Support/Fixtures.php` and most of `app/tests/Unit/*` still construct the deleted case-centric fixtures). Integration and E2E suites are in the same state. Don't trust any pre-redesign test count in an older document as still applying. All 18 historical regression expectations still need to be re-proven once the suite is rewritten against the new model. **Immediate next step — see §4.**
-- **Step 9 (oracle/source audit)** — the 125 new `RCBASE-0.3` expectations and the 4 provisional `VQ-005..008` reconstructions are not yet reconciled against source; the oracle's own `provenance_status` column still reads `forward_specification_derived_pending_human_oracle_audit` for every row. Explicitly flagged as pre-freeze work, not a current blocker.
-- **Step 10 (freeze + principal verification run)** — depends on 8-9.
-- CI (`.github/workflows/ci.yml`) has not been re-run since the migration; its `publish-images` job is why the GHCR images are stale (§2).
+- **Step 9 (oracle/source audit)** — the 125 new `RCBASE-0.3` expectations and the 4 provisional `VQ-005..008` reconstructions are not yet reconciled against source; the oracle's own `provenance_status` column still reads `forward_specification_derived_pending_human_oracle_audit` for every row. They are now automatically *exercised* by `ReferenceResponseTest` (step 8) - all 143 currently pass - but a passing automated test is not the same claim as a completed human audit against the original Austrian source pages. Explicitly flagged as pre-freeze work, not a current blocker. **Immediate next step — see §4.**
+- **Step 10 (freeze + principal verification run)** — depends on 9.
+- CI (`.github/workflows/ci.yml`) has not been re-run since the migration; its `publish-images` job is why the GHCR images are stale (§2). It would now plausibly pass if triggered (`workflow_dispatch`) - `backend-integration`'s own bootstrap-wiring bug is also fixed - but this has not been confirmed via an actual GitHub-hosted run since the step 8 rewrite landed.
 - Pre-redesign open items (`OPEN-RQ-01` thesis research-question wording, `OPEN-EVAL-01` whether independent domain-expert review is required) remain the supervisor's to decide and are unaffected by any of the above.
 
 ## 4. Immediate next step
 
-**Step 8**: rewrite `app/tests/Unit`/`Integration`/`E2E` for the patient/question model and re-prove all 18 historical regression expectations. This is not optional busywork — the suite is currently red, not just stale, and every verification performed during steps 4-7 used ad hoc `curl`/Selenium checks against the real running stack instead of a committed, rerunnable suite (`docs/DEVELOPMENT_DOCUMENTATION.md` §13.4 explains why that gap was left for its own dedicated pass rather than patched opportunistically alongside feature work). After step 8, step 9 (oracle audit) is next.
+**Step 9**: reconcile the 125 new reference-response expectations and the 4 provisional `VQ-005`-`VQ-008` reconstructions against the original Austrian source pages (`SRC-AT-DOC-2026`, `QSAUDIT-0.1`). Unlike step 8, this is a source/domain-audit task, not a coding task - it means opening the cited source pages and checking each `expected_class`/`expected_determining_rule`/`expected_improvement_code` against them, not writing more test code. After step 9, step 10 (freeze + principal verification run) is next.
+
+Separately, worth doing but not blocking: actually triggering `.github/workflows/ci.yml` (`workflow_dispatch`) to confirm it passes end-to-end now that both the bootstrap-wiring bug and the test suite itself are fixed, then deciding whether to re-enable its `push` trigger.
 
 ## 5. How to resume the environment
 
@@ -108,4 +117,4 @@ curl http://127.0.0.1:5860/api/patients   # sanity check: expect 6 patients with
 
 The `stack.sh`-managed path (`prototype_stack/`) follows the same three-command sequence documented in `docs/IMPLEMENTATION_SPECIFICATION.md` §6.4/§6.5, with the same `bootstrap` repoint already applied to `prototype_stack/compose.yaml`.
 
-Selenium (project standard — **not Playwright**, see `CLAUDE.md`): `app/tests/E2E/docker-compose.yml`, per `app/tests/E2E/README.md`. The committed PHPUnit e2e suite itself will not run correctly yet (§3) — for ad hoc visual verification against a live stack, write a throwaway script against the same `php-webdriver/webdriver` dependency instead of reaching for anything else.
+Selenium (project standard — **not Playwright**, see `CLAUDE.md`): `app/tests/E2E/docker-compose.yml`, per `app/tests/E2E/README.md`. The committed PHPUnit e2e suite now runs correctly (`--testsuite e2e`, 7/7) against a stack started this way; for one-off ad hoc visual verification beyond what the committed suite covers, write a throwaway script against the same `php-webdriver/webdriver` dependency instead of reaching for anything else.

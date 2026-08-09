@@ -13,6 +13,161 @@ Reference `REQ-*`/`RULE-*`/`TEST-*` identifiers where a change implements or
 affects one. Every entry should let a reader answer "what changed, why, and
 was it actually tested" without opening the diff.
 
+## 2026-08-09 — Step 8 documentation propagation: user guide and handoff brought current
+
+Follow-up to the Step 8 test-suite migration below: the guide and handoff
+still described the test suite as broken/pending after it had actually
+started passing, which this entry closes out.
+
+### Changed
+
+- `docs/USER_GUIDE.tex`/`.pdf` (recompiled, 10 pages, clean) — removed the
+  "Optional: run the automated tests" section's warning box ("Currently
+  broken, pending an in-progress test-suite update") and replaced it with
+  a plain statement of the current, passing counts (77 unit / 160
+  integration / 7 e2e); simplified the following paragraph to state
+  plainly that a successful run ends with no PHPUnit failures, instead of
+  conditioning that on the now-completed update. Guide revision left at
+  0.3 - this is a same-day correction of that revision's own content, not
+  a new milestone.
+- `HANDOFF.md` §1's reading-order notes for `docs/IMPLEMENTATION_SPECIFICATION.md`
+  and `docs/REQUIREMENTS_TRACEABILITY.md` — both previously phrased the
+  ⚠→✅ status-symbol cleanup as something that "should" happen "once
+  refreshed"; both files had already been refreshed, so the wording was
+  stale the moment it was written. Restated as fact.
+
+### Verified
+
+- `latexmk -pdf -interaction=nonstopmode -halt-on-error USER_GUIDE.tex`:
+  clean compile, 10 pages, no undefined references or LaTeX warnings.
+- Repository-wide grep for `"47 of 49"`, `"currently broken"`, and
+  `"step 8...not started"`-shaped phrasing across `docs/`, `HANDOFF.md`,
+  and `README.md`: every remaining hit is a legitimate historical
+  reference (describing what was replaced, or a dated CHANGELOG record of
+  past state), not a live claim.
+
+## 2026-08-09 — Step 8: full test-suite migration to the patient/question model
+
+Implementation-order step 8. `app/tests/Support/Fixtures.php` and every
+`Unit`/`Integration`/`E2E` file were rewritten against `MODELBASE-0.2`/
+`RULEBASE-0.2` - none of it had been touched since the forward migration
+began, so this was a genuine rewrite, not a patch. Triggered directly by
+the project owner pasting a real CI failure log after the previous CI
+infrastructure fix, then pasting it again unchanged as confirmation to
+proceed with the full rewrite rather than stopping at the smaller fix.
+
+### Changed
+
+- `tests/Support/Fixtures.php`: replaced the `CaseFacts`-based builders
+  (`copdCase()`/`statusCase()`) with `CodingQuestion`-based equivalents
+  (`copdQuestion()`/`statusQuestion()`) plus a general-purpose `question()`
+  builder and typed-fact/relation/option helpers
+  (`enumFact`/`decimalFact`/`acceptedReference`/`factConflict`/
+  `lessSpecificSupported`/`codeOption`/`noneOfAboveOption`/...), needed
+  because the net-new rules require relation kinds and linked facts the
+  old boolean `responseDomain` map had no way to express.
+- Every `Unit/Rule*Test.php` and `PrecedenceTest.php`: updated call sites
+  for the new predicate signatures (`CodingQuestion` instead of
+  `CaseFacts`; `RuleGate::evaluate()`'s new `(question, response, record)`
+  order and `ResponseInput` parameter; `Precedence::terminalClass()`'s
+  second argument now a graded-matches array, not a bool).
+- `Integration/ArchitectureIsolationTest.php`: table-name assertion updated
+  to the 9 `MODELBASE-0.2` tables; smoke-test call updated to
+  `Q-001-01`/tagged response.
+- `Integration/DeterminismTest.php`, `EvaluationApiTest.php`: updated to
+  question ids and the tagged-response contract; `EvaluationApiTest`
+  gained cases for `unsupported_response_kind` (HTTP boundary, not a gate
+  reason) and for a `verification_only` question remaining evaluable by ID
+  (`REQ-VER-09`) despite 404ing on the learner-facing detail read.
+- `Integration/ReferenceResponseTest.php`: now reads
+  `prototype_baseline_0_2_design/verification/reference_responses_0_3_candidate.csv`
+  (143 rows: 125 new + the 18 historical `legacy_rc_id` regression
+  obligations, mapped onto the 8 hidden `VQ-*` questions) instead of the
+  historical 18-row file, with tagged-response construction from each
+  row's `response_kind`. Its docblock states the real provenance caveat
+  rather than implying a frozen conformance claim: every row's own
+  `provenance_status` column still reads
+  `forward_specification_derived_pending_human_oracle_audit` (step 9, not
+  done) - running them now is deliberate early signal, not a claim that
+  step 9 is complete.
+- `E2E/SeleniumTestCase.php`: rewritten for the new markup
+  (`.patient-list`/`.patient-card[data-patient-id]`/`.question-view`/
+  `.code-list`/`.question-feedback`/`.improvement`), the tagged-response
+  API contract, and a `navigateToQuestionWithOption()` helper - see
+  *Fixed* below for why that helper exists.
+- `E2E/LearnerWorkflowTest.php`: now drives `PATIENT-001`'s `Q-001-01`
+  through the three feedback classes (was `CASE-001`).
+- `E2E/VerificationOnlyCaseVisibilityTest.php` → renamed
+  `VerificationOnlyQuestionVisibilityTest.php` (`git mv`, matching the
+  project's question-centric vocabulary): the "absent from the one
+  navigation surface" check no longer greps button labels for `CASE-004`/
+  `CASE-008` (no such flat list exists in the new UI) - it instead asserts
+  the roster's total "N questions" badge sum is exactly 25, which cannot
+  hold if any of the 8 hidden `VQ-*` questions were reachable through it.
+  Added a third check that `GET /api/questions/{VQ-*}` 404s, matching
+  `QuestionController::show()`'s explicit boundary.
+- `E2E/ProgressBadgeTest.php`: rewritten against the session-local
+  per-patient completion badge (`REQ-UI-02`, added in step 7) - the
+  per-case `localStorage` attempt/last-classification badge it used to
+  test (`lib/progress.js`) was deleted during the forward migration.
+
+### Fixed
+
+Three real bugs found only by actually running the new E2E tests against
+the real Selenium/Chrome stack, not by writing code that merely compiled:
+
+- **Roster race condition**: `openRoster()` waited for `.patient-list`
+  (the `<ul>` container), which renders immediately, before
+  `GET /api/patients` resolves - so a test could observe zero patient
+  cards despite the roster "being open." Fixed to wait for an actual
+  `.patient-card`.
+- **Hardcoded first-question assumption**: `LearnerWorkflowTest` assumed
+  opening `PATIENT-001` always shows `Q-001-01` (the COPD question) first.
+  It doesn't - question order is shuffled per playthrough (`REQ-INT-03`),
+  and `PATIENT-001` has three questions. All three data-set submissions
+  timed out waiting for a `J44.*` option that was on a different,
+  not-yet-reached question. Fixed with `navigateToQuestionWithOption()`:
+  submits an arbitrary valid answer to whatever question is on-screen
+  until one containing the target code family appears.
+- **Age-badge false match**: `rosterTotalQuestionCount()`'s regex
+  (`/(\d+)\s+\p{L}+/u`) matched *any* "number followed by a word" badge,
+  including the age badge ("68 yrs") - summed across all 6 patients this
+  added 384 to the real total of 25, asserting 409. Fixed by anchoring on
+  the literal word "questions".
+
+### Verified
+
+- `php vendor/bin/phpunit --testsuite unit`: **77/77 passing** (up from 49
+  - added dedicated coverage for `RULE-REL-HARD-01`/`RULE-REL-SPEC-01`/
+  `RULE-NOA-01`, which had zero unit tests of their own before this).
+- `php vendor/bin/phpunit --testsuite integration` against a freshly
+  bootstrapped `MODELBASE-0.2` MySQL instance (throwaway `docker run`
+  container, torn down after): **160/160 passing, 2173 assertions** -
+  every one of the 143 reference-response rows included.
+- `php vendor/bin/phpunit --testsuite unit,integration` combined: **237/237
+  passing, 2290 assertions**.
+- `php vendor/bin/phpunit --testsuite e2e`, real Selenium against the
+  actual running `app` container (not a substitute): **7/7 passing**,
+  after the three fixes above were found and corrected by this exact run.
+- The self-contained bundle's `docker compose --profile test run --rm
+  test` path was not separately re-run in container form this pass (the
+  three suites above were each verified directly against equivalent
+  live infrastructure); it now points at a suite that passes, where
+  before it didn't, but a container-form confirmation is worth doing
+  before relying on it for a real CI publish.
+
+### Deviations
+
+- `docs/DEVELOPMENT_DOCUMENTATION.md` §13.4 (written earlier this session)
+  said test-suite migration was deliberately deferred to "its own
+  dedicated pass, reviewed... not scattered across a dozen unrelated
+  diffs." This entry *is* that dedicated pass - not a contradiction, the
+  thing being deferred has now arrived.
+- Step 9 (oracle/source audit reconciliation) remains explicitly
+  unstarted: this entry makes the 125 new reference-response rows
+  *exercised*, not *human-audited*. See `ReferenceResponseTest.php`'s own
+  docblock and `REQUIREMENTS_TRACEABILITY.md` for the exact distinction.
+
 ## 2026-08-09 — CI's `backend-integration` job fixed a second instance of the bootstrap-wiring bug
 
 The project owner ran the CI workflow manually (`workflow_dispatch` — push

@@ -708,7 +708,7 @@ both fully rewritten for the forward model on the same date.
 | `app/frontend/src/App.jsx` + `components/*.jsx` | `REQ-INT-01`-`05`, `REQ-FBK-01`-`03`, `REQ-SCP-02`, `REQ-UI-01`-`03`, `REQ-GAM-01` |
 | `app/frontend/src/lib/i18n.jsx`/`contentTranslations.js`/`catalogueTranslations.js` | §14.2 — no upstream `REQ-*`/`TEST-*`, presentation-layer only |
 | `prototype_baseline_0_2_design/Dockerfile.bootstrap` + `persistence_candidate/*` | `MODELBASE-0.2`, `DATAMIG-0.2`, `PROTOBASE-0.3` — §13.3 |
-| `app/tests/Unit`/`Integration`/`E2E` | **Not yet migrated** — implementation-order step 8, see §13.4 |
+| `app/tests/Unit`/`Integration`/`E2E` | Migrated, step 8 — 77/160/7 tests passing, see §13.4 |
 
 ## 13. Forward redesign: patient/question model (8-9 August 2026)
 
@@ -793,6 +793,11 @@ opportunistically alongside feature work — rather than as its own
 dedicated pass — was rejected: a rule-engine migration this size deserves
 a test rewrite that is reviewed as its own unit of work, not scattered
 across a dozen unrelated diffs and harder to audit as a result.
+
+**Update, same day:** that dedicated pass happened - see §15. This section
+is kept as written (describing why the gap existed and was deferred, not
+edited to pretend it wasn't there) rather than rewritten to only describe
+the resolved end state.
 
 ## 14. Forward redesign step 7: `UXBASE-0.1` visual/gameful polish
 
@@ -894,3 +899,76 @@ baseline, a pure value correction), with the runtime manifest's SHA-256
 pin and the persistence candidate's own pinned canonical-digest test
 updated to match — both are designed to fail-closed on exactly this kind
 of change when it's *not* deliberate, and did, correctly, until updated.
+
+## 15. Forward redesign step 8: the test-suite migration §13.4 deferred
+
+Triggered directly: the project owner ran CI manually (`workflow_dispatch`
+- push triggers are deliberately disabled, §10.4-adjacent decision) and
+pasted the real failure log twice - the second time, unchanged, after a
+narrower CI-infrastructure fix alone didn't resolve it. Read as
+confirmation to do the full rewrite rather than stop at the smaller fix,
+consistent with this project's general bias toward proceeding once a
+signal is reasonably clear rather than re-asking.
+
+### 15.1 Why fixtures needed a general-purpose builder, not just a renamed one
+
+The old `Fixtures::copdCase()`/`statusCase()` took a flat
+`array<string, bool>` "response domain" (accepted or not). `RULEBASE-0.2`
+replaced that boolean with a five-value `relation_kind` enum, and two of
+those values (`fact_conflict`/`temporal_context_conflict` for
+`RULE-REL-HARD-01`, `less_specific_supported` for `RULE-REL-SPEC-01`)
+carry additional required fields (`reason_key`, `improvement_code`) the
+old boolean had no way to express at all. `Fixtures::question()` - a
+general builder taking facts/domain/relation-facts/options directly -
+was added alongside kept-shape `copdQuestion()`/`statusQuestion()`
+convenience wrappers, so the existing `Rule{Status,Depth,Evid,Spec,Correct,
+Gate}Test.php` files needed only mechanical call-site updates (class
+names, argument order) while the three genuinely new rules
+(`RuleRelHardTest`/`RuleRelSpecTest`/`RuleNoaTest` - zero prior coverage)
+could construct exactly the relation shapes they need.
+
+### 15.2 The reference-response oracle is wired in now, with its provenance stated honestly
+
+`ReferenceResponseTest` was pointed at the full 143-row `RCBASE-0.3`
+candidate file rather than waiting for step 9's human audit to finish
+first. This was a real design choice, not the only reasonable one: an
+alternative would have been to keep exercising only the 18 historical rows
+(the ones `REQ-VER-09` unconditionally requires) and leave the 125 new
+ones for step 9 to wire in once audited. Rejected because a failing
+implementation/oracle mismatch is valuable signal *now*, and because the
+oracle's own `provenance_status` column already carries the honest caveat
+("derived from the specification, not yet human-audited") wherever this
+test's result is read - nothing about running it early overclaims step 9
+as done. `docs/REQUIREMENTS_TRACEABILITY.md`'s `REQ-VER-08`/`09` rows
+state the exact resulting distinction (exercised vs. audited).
+
+### 15.3 Three bugs the rewrite only found because it was actually run
+
+Writing PHP that type-checks and reading it carefully is not the same
+verification as running it. All three of the following compiled cleanly
+and looked correct on inspection; each was found only by running the
+rewritten E2E suite against real Selenium/Chrome and reading what
+actually failed:
+
+- A roster helper waited for the `<ul class="patient-list">` container,
+  which renders before `GET /api/patients` resolves, instead of an actual
+  card - a timing bug that would have made any future E2E test relying on
+  "the roster is open" flaky in exactly the way a fixed short `sleep()`
+  is usually reached for to paper over, and wasn't.
+- `LearnerWorkflowTest` assumed opening a patient always shows a specific
+  question first. It doesn't, by design (`REQ-INT-03` shuffles order every
+  playthrough) - the test itself was violating the same randomization
+  invariant `REQ-INT-03` exists to guarantee stays true. Fixed with a
+  helper that clicks through whatever question is on-screen until the
+  target appears, treating the shuffle as a fact of the interface rather
+  than working around it.
+- A regex meant to sum "N questions" roster badges also matched the age
+  badge ("68 yrs") on every card, inflating a real total of 25 to 409.
+  Caught immediately because the assertion failed with that exact number
+  printed, not silently.
+
+None of the three would have been caught by a stricter type system or a
+more careful read-through beforehand; they are the specific class of bug
+that only running against real infrastructure surfaces. This is the same
+lesson §13.3 recorded for the persistence-integration gap, recurring one
+layer up the stack.

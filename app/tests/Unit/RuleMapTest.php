@@ -15,8 +15,8 @@ final class RuleMapTest extends TestCase
     #[DataProvider('boundaryVectors')]
     public function testBoundaryVectors(float $fev1, int $expectedSuffix, string $expectedTarget): void
     {
-        $case = Fixtures::copdCase('MAP-TEST', 'J44.0', $fev1, ['J44.0' => false]);
-        $result = RuleMap::evaluate($case);
+        $question = Fixtures::copdQuestion('MAP-TEST', 'J44.0', $fev1, ['J44.0' => false]);
+        $result = RuleMap::evaluate($question);
 
         self::assertTrue($result->applicable);
         self::assertSame($expectedSuffix, $result->expectedSuffix);
@@ -32,14 +32,14 @@ final class RuleMapTest extends TestCase
             'MAP-D 50.00' => [50.00, 2, 'J44.02'],
             'MAP-E 69.99' => [69.99, 2, 'J44.02'],
             'MAP-F 70.00' => [70.00, 3, 'J44.03'],
-            'CASE-001 55.00' => [55.00, 2, 'J44.02'],
+            'Q-001-01 55.00' => [55.00, 2, 'J44.02'],
         ];
     }
 
-    public function testCase002UsesItsOwnBase(): void
+    public function testUsesItsOwnBase(): void
     {
-        $case = Fixtures::copdCase('CASE-002', 'J44.1', 50.00, ['J44.1' => false]);
-        $result = RuleMap::evaluate($case);
+        $question = Fixtures::copdQuestion('MAP-OWN-BASE', 'J44.1', 50.00, ['J44.1' => false]);
+        $result = RuleMap::evaluate($question);
 
         self::assertSame(2, $result->expectedSuffix);
         self::assertSame('J44.12', $result->expectedSpecificCode);
@@ -47,15 +47,15 @@ final class RuleMapTest extends TestCase
 
     public function testAbsentFev1ProducesNoDerivedSuffix(): void
     {
-        $case = Fixtures::copdCase('MAP-TEST', 'J44.0', null, ['J44.0' => false]);
+        $question = Fixtures::copdQuestion('MAP-TEST', 'J44.0', null, ['J44.0' => false]);
 
-        self::assertFalse(RuleMap::evaluate($case)->applicable);
+        self::assertFalse(RuleMap::evaluate($question)->applicable);
     }
 
     public function testHospitalOutpatientContextDoesNotActivateThisRule(): void
     {
-        $case = Fixtures::copdCase('MAP-TEST', 'J44.0', 55.0, ['J44.0' => false], encounterSetting: 'hospital_outpatient');
+        $question = Fixtures::copdQuestion('MAP-TEST', 'J44.0', 55.0, ['J44.0' => false], encounterSetting: 'hospital_outpatient');
 
-        self::assertFalse(RuleMap::evaluate($case)->applicable);
+        self::assertFalse(RuleMap::evaluate($question)->applicable);
     }
 }

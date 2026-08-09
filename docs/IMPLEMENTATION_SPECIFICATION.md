@@ -36,12 +36,14 @@ docker-compose.yml               self-contained publishable bundle (db+bootstrap
                                  prototype_baseline_0_2_design/ (§6.3)
 .github/workflows/ci.yml         5 jobs: python-checks, php-unit, backend-integration, e2e,
                                  publish-images (builds+pushes 3 images to GHCR, main only,
-                                 gated on the other 4 passing) — NOT YET updated for the forward
-                                 model's broken test suite (§7); still targets the old suite
+                                 gated on the other 4 passing) — bootstrap-wiring fixed and the
+                                 suite it runs now passes (§7); not yet re-run on GitHub itself
+                                 since the step 8 rewrite, so GHCR's published images are still
+                                 stale (§6.5)
 app/
   composer.json / composer.lock PHP dependencies (runtime: none beyond ext-pdo/ext-json; dev:
                                  phpunit/phpunit, php-webdriver/webdriver)
-  phpunit.xml                   three suites: unit, integration, e2e (currently broken, §7)
+  phpunit.xml                   three suites: unit, integration, e2e (all passing, §7)
   router.php                    dev-only front controller for `php -S`; NOT copied into the image
   docker/apache-vhost.conf       DocumentRoot=public, AllowOverride All, DirectoryIndex index.html index.php
   public/
@@ -94,7 +96,7 @@ app/
       PatientController.php          GET /api/patients, GET /api/patients/{id} — replaces CaseController
       QuestionController.php         GET /api/questions/{id}
       EvaluationController.php       POST /api/questions/{id}/evaluate
-  tests/                          NOT YET migrated to the forward model — §7
+  tests/                          migrated to the forward model, step 8 — §7
   frontend/
     package.json, vite.config.js    React 19 + Vite 8; version/build-date baked in via `define`
                                      (§5.6); build output → ../public (emptyOutDir: false)
@@ -635,7 +637,7 @@ not a workaround.
 
 | Task | Command |
 |---|---|
-| Run PHP tests | **currently broken for `unit`/`integration`/`e2e` — §7. Do not rely on `php vendor/bin/phpunit` passing until step 8 lands.** |
+| Run PHP tests | `php vendor/bin/phpunit --testsuite unit` (no DB); `--testsuite integration` needs `ICD_DB_*` against a `MODELBASE-0.2`-loaded MySQL; `--testsuite e2e` needs the app + Selenium running — §7 |
 | Serve the API + built frontend without Docker | `ICD_DB_*=... php -S 127.0.0.1:PORT -t public router.php` (from `app/`) |
 | Rebuild the frontend into `app/public/` | `cd app/frontend && npm run build` |
 | Frontend dev server with API proxy | `cd app/frontend && npm run dev` (proxies `/api` to `http://127.0.0.1:8080` per `vite.config.js`) |
@@ -649,40 +651,61 @@ not a workaround.
 `docker compose up -d --wait app` brings up `db → bootstrap → app`,
 correctly ordered. `docker compose --profile test up -d --wait selenium &&
 docker compose --profile test run --rm test` runs the full suite fully
-containerized — **but see §7: the suite it runs is currently the broken,
-unmigrated one.** Published image tags (`.github/workflows/ci.yml`'s
-`publish-images` job, `main` only, gated on the other four jobs passing)
-have **not** been rebuilt against the forward model as of this rewrite —
-the last real CI run predates the migration. Anyone pulling
-`ghcr.io/junomarx/bsc-thesis-icd10:latest` today gets the pre-migration
-case-centric image; `docker compose build bootstrap app` (native source
-build) is the only way to run the current forward model, until CI is
-re-run and republishes.
+containerized — the suite it runs now passes (§7), though this container
+form has not itself been separately re-run since the step 8 rewrite (each
+suite was verified directly against equivalent live infrastructure
+instead; see `docs/CHANGELOG.md`'s "Step 8" entry). Published image tags
+(`.github/workflows/ci.yml`'s `publish-images` job, `main` only, gated on
+the other four jobs passing) have **not** been rebuilt against the forward
+model as of this rewrite — CI's `push` trigger is deliberately disabled
+(`workflow_dispatch` only), and no manual run has completed since the
+migration. Anyone pulling `ghcr.io/junomarx/bsc-thesis-icd10:latest` today
+gets the pre-migration case-centric image; `docker compose build bootstrap
+app` (native source build) is the only way to run the current forward
+model, until CI is manually triggered and republishes.
 
-## 7. Test inventory — currently broken, honestly stated
+## 7. Test inventory (file → coverage), rewritten for the forward model (step 8)
 
-**`app/tests/Unit`, `Integration`, and `E2E` were not migrated during
-steps 1–7 of the forward implementation order; this is implementation-order
-step 8, not started.** `php vendor/bin/phpunit --testsuite unit` reports
-**47 of 49 tests erroring** with `Class "Icd10Prototype\Model\CaseFacts"
-not found` — `app/tests/Support/Fixtures.php` and most of
-`app/tests/Unit/*` still construct the deleted case-centric fixtures.
-Integration and E2E are in the same state (they depend on the same
-fixtures and/or the deleted `CaseController`/`/api/cases*` routes). The old
-`TEST-*` → file mapping this section used to carry is not reproduced here
-because it would misrepresent current reality — every row would need a
-"currently non-functional" caveat, which is better stated once, above,
-than 15 times below.
+`app/tests/Support/Fixtures.php` and every file under `Unit`/`Integration`/
+`E2E` were rewritten against `CodingQuestion`/`ResponseInput`/the
+tagged-response contract. Current status, each figure independently
+re-verified while writing this section, not carried over from memory:
 
-**What this rewrite's own verification actually used instead**, pending
-step 8: direct `curl` against the real running container for API-shape
-checks, and ad hoc Selenium scripts (this project's own
-`php-webdriver/webdriver` infrastructure, run against the real running
-`app` container, never Playwright) for browser-level checks — both
-documented per-change in `docs/CHANGELOG.md`, neither a committed,
-rerunnable regression suite. `docs/REQUIREMENTS_TRACEABILITY.md` §1a/§2
-records exactly which requirements this leaves with inspection-only
-(⚠) evidence instead of an automated test.
+| Suite | Command | Result |
+|---|---|---|
+| Unit | `php vendor/bin/phpunit --testsuite unit` (no DB) | **77/77 passing** |
+| Integration | `ICD_DB_*=... php vendor/bin/phpunit --testsuite integration` (needs a `MODELBASE-0.2`-loaded MySQL) | **160/160 passing, 2173 assertions** |
+| Unit + Integration | `--testsuite unit,integration` | **237/237 passing, 2290 assertions** |
+| E2E | `php vendor/bin/phpunit --testsuite e2e` (needs the app + Selenium running) | **7/7 passing** |
+
+| `TEST-*` | Implementing file(s) |
+|---|---|
+| `TEST-GATE-01` | `Unit/RuleGateTest.php` |
+| `TEST-MAP-01` | `Unit/RuleMapTest.php` |
+| `TEST-STATUS-01` | `Unit/RuleStatusTest.php` |
+| `TEST-DEPTH-01` | `Unit/RuleDepthTest.php` |
+| `TEST-EVID-01` | `Unit/RuleEvidTest.php` |
+| `TEST-SPEC-01` | `Unit/RuleSpecTest.php` |
+| `TEST-CORRECT-01` | `Unit/RuleCorrectTest.php` |
+| `TEST-PREC-01` | `Unit/PrecedenceTest.php` |
+| *(no upstream ID yet — net new)* | `Unit/RuleRelHardTest.php`, `Unit/RuleRelSpecTest.php`, `Unit/RuleNoaTest.php` — zero coverage existed for `RULE-REL-HARD-01`/`REL-SPEC-01`/`NOA-01` before this rewrite |
+| `TEST-ARC-01` | `Integration/ArchitectureIsolationTest.php` |
+| `TEST-DET-01` | `Integration/DeterminismTest.php` |
+| `TEST-API-01` | `Integration/EvaluationApiTest.php` |
+| `TEST-RC-01` | `Integration/ReferenceResponseTest.php` — reads the 143-row `RCBASE-0.3` candidate oracle directly (§6.3's Deviations note below applies) |
+| `TEST-E2E-01` | `E2E/LearnerWorkflowTest.php` |
+| `TEST-E2E-02` | `E2E/VerificationOnlyQuestionVisibilityTest.php` (renamed from `VerificationOnlyCaseVisibilityTest.php`) |
+| *(none — frontend-only)* | `E2E/ProgressBadgeTest.php`: the `sessionStorage` per-patient completion badge (§5.4) has no backend equivalent, so it has no upstream `TEST-*` identifier |
+
+**Provenance caveat carried by `TEST-RC-01` specifically:** 125 of its 143
+rows are *exercised*, not yet *human-audited* against the original
+Austrian source pages — every row's `provenance_status` column says so
+explicitly (`forward_specification_derived_pending_human_oracle_audit`).
+A passing `TEST-RC-01` run is evidence the implementation matches the
+specification as currently understood; it is not yet step 9's frozen
+conformance claim. See `ReferenceResponseTest.php`'s own docblock and
+`docs/REQUIREMENTS_TRACEABILITY.md` (`REQ-VER-08`/`09`) for the exact
+distinction.
 
 ## 8. Exact tool/version pins observed in this implementation
 
@@ -694,7 +717,7 @@ records exactly which requirements this leaves with inspection-only
 | React | 19.2.8 | `app/frontend/package.json` |
 | Vite | 8.2.x | `app/frontend/package.json` |
 | Frontend app version | 0.7.0 | `app/frontend/package.json`, rendered in the footer (§5.6) |
-| PHPUnit | 11.5.x | `app/composer.lock` (suite currently broken regardless of version, §7) |
+| PHPUnit | 11.5.x | `app/composer.lock` |
 | php-webdriver/webdriver | 1.16.0 | `app/composer.lock` |
 | Selenium/browser (ad hoc verification only, not the app) | `seleniarm/standalone-chromium:latest` (arm64) | `app/tests/E2E/docker-compose.yml` |
 

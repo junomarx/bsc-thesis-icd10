@@ -1,7 +1,7 @@
 {
   "name": "frontend",
   "private": true,
-  "version": "0.7.0",
+  "version": "0.9.9",
   "author": "Juno Anna Marx",
   "type": "module",
   "scripts": {

@@ -462,16 +462,12 @@ when you need a clean copy of the baseline.
 
 \section{Optional: run the automated tests}
 
-\warningbox{Currently broken, pending an in-progress test-suite update}{
-  The committed PHPUnit suite (\texttt{app/tests/}) still targets the
-  prototype's previous, single-question-per-case data model and has not
-  yet been rewritten for the current six-patient/25-question model
-  described in this guide. Running the commands below currently reports
-  most unit tests erroring, not passing. This is a known, tracked gap
-  (see \path{docs/CHANGELOG.md}), not a sign that something in your local
-  setup is broken. The application itself is unaffected --- it does not
-  depend on this test suite to run.
-}
+The committed PHPUnit suite (\texttt{app/tests/}) targets the current
+six-patient/25-question model described in this guide: 77 unit tests, 160
+integration tests (against a live MySQL baseline), and 7 browser-driven
+end-to-end tests, all passing as of the last verified run (see
+\path{docs/CHANGELOG.md}'s "Step 8" entry for exact counts and how they
+were verified).
 
 The application does not start test tooling during normal use. To run the
 containerized unit, integration, and browser-driven test suite:
@@ -488,10 +484,9 @@ before the commands above:
 docker compose --profile test build test
 \end{lstlisting}
 
-Once the test-suite update above lands, a successful run will end with
-PHPUnit reporting no failures or errors; until then, expect errors as
-described in the warning above. The browser tests use a separate Selenium
-container and may take longer on the first run.
+A successful run ends with PHPUnit reporting no failures or errors. The
+browser tests use a separate Selenium container and may take longer on
+the first run.
 
 Stop the application and test services when finished:
 

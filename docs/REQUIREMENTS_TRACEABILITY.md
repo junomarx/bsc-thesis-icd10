@@ -35,38 +35,28 @@ precise as-built reference this audit's evidence column points into.
 
 - **✅ Verified** — the property demonstrably holds against the current
   implementation, with a concrete, checkable pointer (file, live-system
-  check, or doc section). Where the *originally planned* verification
-  technique is a PHPUnit test that is currently non-functional (see §1a),
-  this is stated explicitly rather than left implied.
-- **⚠ Verified by inspection only; automated regression currently broken** —
-  the property holds and was checked directly (code/schema/live
-  request/browser), but the PHPUnit test that is supposed to assert it
-  automatically does not currently run — see §1a. Distinct from ✅ so a
-  reader doesn't assume `php vendor/bin/phpunit` currently passes for this
-  row.
+  check, passing automated test, or doc section).
 - **🕓 Deferred** — correctly *not yet done*, either because it is
   specifically about the principal verification/freeze procedure (which has
-  not started) or because it depends on implementation-order steps 8–10
-  (test-suite rewrite, oracle audit, freeze — see
-  `chapter3_forward_implementation_instruction_0_5.md`), which are
-  explicitly sequenced after the current implementation phase.
+  not started) or because it depends on implementation-order steps 9–10
+  (oracle audit, freeze — see `chapter3_forward_implementation_instruction_0_5.md`),
+  which are explicitly sequenced after the current implementation phase.
 - **📄 Thesis-text scope** — the acceptance criterion is about how the
   thesis document itself is written, not about anything in this repository.
 
-### 1a. Why several rows say "test currently broken" instead of pointing at a passing suite
+### 1a. Historical note: this audit briefly carried a fourth status symbol
 
-The forward migration (steps 1–7 of the implementation order) rewrote
-`app/src/` end to end but did **not** rewrite `app/tests/Unit`,
-`Integration`, or `E2E` — that is step 8, not yet started. Concretely,
-`php vendor/bin/phpunit --testsuite unit` currently reports **47 of 49
-tests erroring** with `Class "Icd10Prototype\Model\CaseFacts" not found`
-(`app/tests/Support/Fixtures.php` and most of `app/tests/Unit/*` still
-construct the deleted case-centric fixtures). Integration and E2E are in
-the same state. This audit does not pretend otherwise: rows whose planned
-evidence was one of these files are marked ⚠ and re-verified some other
-way (direct `curl`/Selenium against the real running stack, or code/schema
-inspection) wherever the underlying property could still be checked without
-the broken suite.
+An earlier version of this same-day audit (before implementation-order
+step 8 landed) marked five rows (`REQ-RUL-04`/`05`, `REQ-ARC-01`/`02`,
+`REQ-VER-04`) with a ⚠ symbol: the property held by direct code/schema
+inspection, but `app/tests/Unit`/`Integration`/`E2E` still targeted the
+deleted case-centric classes, so the automated regression that was
+*supposed* to prove it mechanically did not run. Step 8 (full test-suite
+rewrite, `docs/CHANGELOG.md`'s "Step 8" entry) closed that gap the same
+day — `php vendor/bin/phpunit --testsuite unit,integration` now passes
+237/237, `--testsuite e2e` passes 7/7 — so all five rows below now read
+plain ✅, citing the passing test as their evidence. This paragraph is kept
+as a record that the distinction existed and why, not as a live caveat.
 
 ## 2. Full audit
 
@@ -105,8 +95,8 @@ the broken suite.
 | `REQ-RUL-01` | ✅ Verified | Every `RULE-*` class carries a docblock citing its rule ID and `chapter3_rule_catalogue_0_2.md` section; `IMPLEMENTATION_SPECIFICATION.md` §3 is the consolidated trace. |
 | `REQ-RUL-02` (revised 0.6) | ✅ Verified | `RuleSpec` (source-specific) and `RuleRelSpec` (generic, `less_specific_supported` relation) are the only two `suboptimal`-producing paths; both require an explicit `improvement_code` (`QuestionRepository::assertImprovementCodesResolve()` enforces at hydration time that it resolves to an `accepted_reference` on the same question — throws `RuntimeException` otherwise, a real hydration-time guard, not just a comment). No rule keys off code length, a `.9` suffix, or designation text. |
 | `REQ-RUL-03` | ✅ Verified (by documented absence) | No frozen question currently declares more than one `accepted_reference`; this is a data-authoring invariant, not separately re-derived here. |
-| `REQ-RUL-04` | ⚠ Verified by inspection; automated test currently broken | `Rules/Precedence.php`'s `HARD_PRIORITY`/`GRADED_PRIORITY` constants implement `STATUS > DEPTH > EVID > REL-HARD` and `SPEC > REL-SPEC` deterministically regardless of input array order (`firstByPriority()` scans the fixed list, not the input). `app/tests/Unit/PrecedenceTest.php` is the planned test but has not been updated for the two new rule slots (step 8). |
-| `REQ-RUL-05` | ⚠ Verified by inspection; automated test currently broken | `RuleGate::evaluate()` returns one of exactly 4 non-classified reasons before any rule runs; confirmed live via `curl` (a `none_of_above` submission against a question with no such option returns `none_option_not_defined`, never `incorrect`). `app/tests/Unit/RuleGateTest.php`/`Integration/EvaluationApiTest.php` are the planned tests, not yet rewritten. |
+| `REQ-RUL-04` | ✅ Verified | `Rules/Precedence.php`'s `HARD_PRIORITY`/`GRADED_PRIORITY` constants implement `STATUS > DEPTH > EVID > REL-HARD` and `SPEC > REL-SPEC` deterministically regardless of input array order (`firstByPriority()` scans the fixed list, not the input). `app/tests/Unit/PrecedenceTest.php` (rewritten step 8, including new vectors for the `REL-HARD-01`/`REL-SPEC-01` slots) passes as part of the 77/77 unit run. |
+| `REQ-RUL-05` | ✅ Verified | `RuleGate::evaluate()` returns one of exactly 4 non-classified reasons before any rule runs; confirmed both live via `curl` and by `app/tests/Unit/RuleGateTest.php`/`Integration/EvaluationApiTest.php` (rewritten step 8), passing. |
 | `REQ-RUL-06` | ✅ Verified | `RuleNoa::isCorrect()` implements the D(q)∩A(q) set logic exactly; confirmed live via `curl` against `Q-002-01` (`none_of_above` → `incorrect`, correctly, since `I48.0` is both accepted and displayed) and via Selenium for `Q-004-05`/`Q-005-05`-style negative controls during step 6/7 verification. |
 | `REQ-RUL-07` | ✅ Verified | `RuleGate` rejects any code without a defined `question_code_domain` row (`undefined_case_relation`) before any rule runs; `RuleRelHard`/`RuleRelSpec` only match an explicit `relation_kind`, never a code-shape heuristic (confirmed by direct code reading, 2026-08-09). |
 | `REQ-FBK-01` (revised 0.6) | ✅ Verified | Confirmed end-to-end via Selenium (multiple passes, 2026-08-09): submit → classification + criterion + explanation render immediately, before `Next question`/`Review patient` becomes reachable; `EvaluationResult` always carries `determiningRule`/`criterion` even when the "Technical details" `<details>` is collapsed. |
@@ -122,8 +112,8 @@ the broken suite.
 | `REQ-INT-03` | ✅ Verified | `lib/playthrough.js`'s `shuffledOrder()` is a Fisher–Yates permutation of question **ids** only — it never adds/removes an id; `App.jsx`'s `replay()` calls it again over the same `activePatient.questions` array. |
 | `REQ-INT-04` | ✅ Verified | `runtime_manifest_0_2.json`'s `expected_counts`: exactly 25 `none_of_above_options` for 25 learner questions (one each), enforced by `test_runtime_contract_0_2.py`'s `test_learner_options_and_none_of_above_controls`. |
 | `REQ-INT-05` | ✅ Verified | `results[questionId]` is only ever added to, never mutated, once set (`App.jsx::submitAnswer`); `replay()` clears `results`/resets `currentIndex` but never touches `orderedQuestionIds`' underlying membership. Session-local completion marks (`sessionStorage`, added 2026-08-09) are the only persistence anywhere in the frontend — no server-side attempt history exists in the schema (§2.2 above). |
-| `REQ-ARC-01` | ⚠ Verified by inspection; automated test currently broken | `mysql_schema_0_2.sql` (read directly, 2026-08-09) has no table for expected classification/rule/criterion — the schema comment says so explicitly ("Deliberately absent: reference_response, expected_class, expected_rule..."). `app/tests/Integration/ArchitectureIsolationTest.php` is the planned automated check but has not been updated for the new schema (step 8). |
-| `REQ-ARC-02` | ⚠ Verified by inspection; automated test currently broken | `Evaluator::evaluate()` is a pure function of its three arguments plus the PDO-loaded, immutable-per-request `CodingQuestion`; no rule reads wall-clock time, randomness, or session state. `app/tests/Integration/DeterminismTest.php` is the planned automated check, not yet rewritten. |
+| `REQ-ARC-01` | ✅ Verified | `mysql_schema_0_2.sql` has no table for expected classification/rule/criterion — the schema comment says so explicitly ("Deliberately absent: reference_response, expected_class, expected_rule..."). `app/tests/Integration/ArchitectureIsolationTest.php` (rewritten step 8, table-name assertion updated to the 9 `MODELBASE-0.2` tables) passes. |
+| `REQ-ARC-02` | ✅ Verified | `Evaluator::evaluate()` is a pure function of its three arguments plus the PDO-loaded, immutable-per-request `CodingQuestion`; no rule reads wall-clock time, randomness, or session state. `app/tests/Integration/DeterminismTest.php` (rewritten step 8, covers correct/suboptimal/incorrect/`none_of_above`/gate-failure) passes. |
 | `REQ-IMP-01` | ✅ Verified | Stack matches (React 19/Vite 8, PHP 8.4, MySQL, Python); the forward redesign itself is the one large documented departure from the original scope, and it is recorded with full rationale across `docs/CHANGELOG.md`'s 2026-08-08/09 entries, not silently. |
 | `REQ-DOC-01` | ✅ Verified | This document, `IMPLEMENTATION_SPECIFICATION.md`, and `DEVELOPMENT_DOCUMENTATION.md` together trace architecture, schema, API, rule responsibility, and one full response end to end. |
 
@@ -150,30 +140,33 @@ the broken suite.
 | `REQ-VER-01` | ✅ Verified | `chapter3_patient_and_question_design_plan.md`/`chapter3_reference_case_coverage_plan_forward_0_3.md` state the selection criteria; the six-patient/25-question count is a stated content decision (`REQ-DAT-09`), not a percentage-of-catalogue quota. |
 | `REQ-VER-02` | ✅ Verified | `chapter3_reference_case_coverage_plan_forward_0_3.md`'s coverage matrix spans all three feedback classes across the new `RULE-REL-HARD-01`/`REL-SPEC-01`/`NOA-01` rules plus the four retained source-specific rules; no unexplained gap. |
 | `REQ-VER-03` | ✅ Verified | `verification/reference_responses_0_3_candidate.csv`'s 143 rows each carry `expected_class`/`expected_determining_rule`/`expected_criterion` derived from `QSAUDIT-0.1`/the rule catalogue — authored before being checked against the implementation, per the file's own `provenance_status` column. `mysql_schema_0_2.sql` has no table this oracle could leak into at runtime (§2.4 `REQ-ARC-01` above). |
-| `REQ-VER-04` | ⚠ Partially deferred | Rule/data-level testing exists for the *previous* case-centric model but has not been rewritten for the forward model (step 8, see §1a); the end-to-end learner path has instead been exercised repeatedly via ad hoc Selenium scripts against the real running stack (not a committed, rerunnable suite) during steps 6/7. This is a genuine, named gap, not glossed over. |
+| `REQ-VER-04` | ✅ Verified | Rule/data unit tests (`Unit/*`, 77 tests), persistence/API/evaluation integration (`Integration/*`, 160 tests, live MySQL), an end-to-end learner path (`E2E/*`, 7 tests, real Selenium against the real running stack), and negative/boundary coverage (`malformed_input`/`unsupported_response_kind`/gate failures) all exist and pass for the forward model (step 8, `docs/CHANGELOG.md`). Regression rerun after a material correction is demonstrated by this same audit's own history (§1a). |
 | `REQ-VER-05` | 🕓 Deferred to freeze | The conformance categories exist in `chapter3_test_catalogue.md` §3.2.2; the final report applying them is the step-10 principal verification run. |
 | `REQ-VER-06` | ✅ Verified as ongoing practice; final log is a freeze-phase artefact | Every deviation this session (the bootstrap/deployment-path gap, the `none_of_above` raw-token leak, the patient-rename hash-pin update, etc.) is logged in `docs/CHANGELOG.md` with cause, fix, and re-verification — the mechanism is demonstrably in use. |
 | `REQ-VER-07` | 🕓 Deferred (data exists; not yet placed) | `verification/reference_responses_0_3_candidate.csv` already carries every mandatory field this requirement lists; whether/which cases become main-text worked examples versus appendix-only is a step-9/thesis-writing decision, not yet made. |
-| `REQ-VER-08` | 🕓 Deferred to step 9 (oracle audit) | The oracle exists with the right shape — `verification/reference_responses_0_3_candidate.csv` has 143 rows (125 new forward + 18 historical, confirmed by direct count) covering every learner code-domain relation and all 25 `none_of_above` cases — but every row's own `provenance_status` column reads `forward_specification_derived_pending_human_oracle_audit`. The requirement asks for an *independently predefined* expectation; "derived from the specification, not yet human-audited" is not yet that, by the file's own honest labelling. |
-| `REQ-VER-09` | 🕓 Deferred to step 9 (oracle audit) | The 18 historical rows are present in the same candidate file (`legacy_rc_id`/`legacy_case_id` columns populated) and the 8 `verification_only` legacy questions remain in the runtime data specifically to keep them regression-checkable — but no rerun against the live evaluator has happened yet to confirm all 18 still hold under `RULEBASE-0.2`. |
+| `REQ-VER-08` | 🕓 Deferred to step 9 (oracle audit) | The oracle exists with the right shape and is now automatically *exercised*: `Integration/ReferenceResponseTest.php` (step 8) runs all 143 rows (125 new forward + 18 historical) against the live evaluator and all currently pass. Every row's own `provenance_status` column still reads `forward_specification_derived_pending_human_oracle_audit`, though - the requirement asks for an *independently predefined* expectation, and "derived from the specification, exercised, not yet human-audited" is a materially stronger state than before step 8 but is not yet that, by the file's own honest labelling. |
+| `REQ-VER-09` | 🕓 Deferred to step 9 (oracle audit) | The 18 historical rows are present in the same candidate file (`legacy_rc_id`/`legacy_case_id` columns populated), mapped onto the 8 hidden `VQ-*` questions, and — unlike before step 8 — are now actually rerun against the live `RULEBASE-0.2` evaluator on every `ReferenceResponseTest` run; all 18 currently hold. What remains is the source-audit half of this requirement (confirming they *should* still hold, not just that they *do*), not the mechanical rerun. |
 
 ## 3. What this audit found
 
-**No undeclared gaps, but real, named ones.** Every `Accepted`/`Scope
-constraint` requirement has verified evidence, a reasoned freeze-phase
-deferral, or — for five rows (`REQ-RUL-04`/`05`, `REQ-ARC-01`/`02`,
-`REQ-VER-04`) — an honestly marked ⚠: the property holds by direct
-inspection, but the automated PHPUnit regression that is supposed to prove
-it mechanically does not currently run, because `app/tests/*` still targets
-the deleted case-centric classes. That is implementation-order step 8, not
-started. `REQ-VER-07`/`08`/`09` are step 9 (oracle audit), also not
-started. Neither step was in scope for the phase this audit covers.
+**No undeclared gaps.** Every `Accepted`/`Scope constraint` requirement has
+verified evidence or a reasoned freeze-phase deferral. The five rows that
+briefly carried an honest ⚠ (§1a) - the property held by direct
+inspection, but the automated regression meant to prove it didn't run
+because `app/tests/*` still targeted deleted case-centric classes - are
+resolved: implementation-order step 8 (full test-suite rewrite,
+`docs/CHANGELOG.md`) landed the same day, and all five now read plain ✅
+against a passing test. `REQ-VER-07`/`08`/`09` remain deferred to step 9
+(oracle/source audit) - now with the 143-row candidate oracle actually
+*exercised* on every test run rather than merely present, which is real
+progress, but the human audit against original source pages itself has
+not started.
 
 **What remains before `REQBASE-1.0`/`PROTOBASE-1.0` can be frozen**
-(catalogue §12): implementation-order steps 8 (test-suite rewrite), 9
-(oracle audit), and 10 (freeze + principal verification run), plus the two
-supervisor-level decisions unchanged since the original brief —
-`OPEN-RQ-01` (final research-question wording) and `OPEN-EVAL-01` (whether
-independent domain-expert review is required). None of these are
-implementation gaps in the sense this audit checks for; they are the
-project's own stated next steps.
+(catalogue §12): implementation-order steps 9 (oracle audit) and 10
+(freeze + principal verification run), plus the two supervisor-level
+decisions unchanged since the original brief — `OPEN-RQ-01` (final
+research-question wording) and `OPEN-EVAL-01` (whether independent
+domain-expert review is required). None of these are implementation gaps
+in the sense this audit checks for; they are the project's own stated
+next steps.
