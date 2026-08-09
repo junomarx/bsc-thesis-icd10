@@ -132,7 +132,7 @@ as a record that the distinction existed and why, not as a live caveat.
 | ID | Status | Evidence |
 |---|---|---|
 | `REQ-TRC-01` | ✅ Verified | This document *is* the traceability-matrix audit; every row has a destination or a declared, reasoned deferral. |
-| `REQ-CFG-01` | 🕓 Deferred to freeze | No git commit has been pinned and no baseline has been promoted past `working_forward_implementation_candidate_not_frozen` (`runtime_manifest_0_2.json`'s own `status` field); freeze is implementation-order step 10, not requested. |
+| `REQ-CFG-01` | 🕓 Deferred to freeze | No git commit has been pinned and no baseline has been promoted past `working_forward_implementation_candidate_not_frozen` (`runtime_manifest_0_2.json`'s own `status` field); freeze is implementation-order step 10, not requested. Execution-environment identification evidence (one of the seven things this requirement asks the eventual frozen baseline to identify) is prepared ahead of that step: `docs/environment_manifest_0_1_candidate.json` records the exact resolved version and manifest-list digest, observed directly against the live registry, for every floating container tag in use (`mysql:latest`, `php:8.4-apache`, `node:22-alpine`, `composer:2`, both Selenium images) - the compose/Dockerfile/CI files themselves deliberately stay on the floating tags until step 10 actually decides whether to pin them (`docs/DEVELOPMENT_DOCUMENTATION.md` §10.9). This closes none of the requirement by itself - source set, catalogue subset, rule model, reference-case suite, test specification, and software revision (a pinned commit) are still open - but it is real, checkable prep for the one piece it covers. |
 
 ### 2.6 Reference-suite and verification requirements (catalogue §9)
 

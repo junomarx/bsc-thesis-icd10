@@ -13,6 +13,71 @@ Reference `REQ-*`/`RULE-*`/`TEST-*` identifiers where a change implements or
 affects one. Every entry should let a reader answer "what changed, why, and
 was it actually tested" without opening the diff.
 
+## 2026-08-09 — Execution-environment versions recorded ahead of freeze (REQ-CFG-01 prep)
+
+Project-owner instruction, explicitly framed as pre-freeze preparation:
+the container environment uses moving tags (`mysql:latest`,
+`php:8.4-apache`, `node:22-alpine`, `composer:2`, and two Selenium
+images) that should resolve to exact versions/digests in a verification
+manifest, even though the development compose/Dockerfile/CI files
+correctly remain on the convenient floating tags (`docs/DEVELOPMENT_DOCUMENTATION.md`
+§10.1's MySQL decision record already established why, for the same
+reason `REQ-CFG-01` gives: pinning an exact resolved execution
+environment happens once, at the eventual evaluation freeze, not twice).
+Full rationale for the approach taken: `docs/DEVELOPMENT_DOCUMENTATION.md`
+§10.9.
+
+### Added
+
+- `docs/environment_manifest_0_1_candidate.json`: records, for each of
+  the six floating tags in use across `docker-compose.yml`,
+  `prototype_stack/compose.yaml`, the root `Dockerfile`,
+  `.github/workflows/ci.yml`, and `app/tests/E2E/docker-compose.yml`, the
+  exact resolved version string and the manifest-list digest, both
+  observed directly against the live registry/resolved image rather than
+  assumed from the tag name or a release page.
+
+### Verified
+
+- `mysql:latest` → MySQL `26.7.0` (confirmed by running `mysqld
+  --version` in the resolved image) - matches this file's own earlier
+  "MySQL version pin relaxed" entry's account of where the tag had
+  already drifted to, independently corroborating that entry rather than
+  contradicting it.
+- `php:8.4-apache` → PHP `8.4.24` (`php --version`) - matches
+  `docs/IMPLEMENTATION_SPECIFICATION.md` §8's existing figure from a
+  separate, earlier observation.
+- `node:22-alpine` → Node `22.23.2` (`node --version`).
+- `composer:2` → Composer `2.10.2` (`composer --version`) - this image
+  had no prior version recorded anywhere in the documentation; §8's table
+  gained a row for it.
+- All six manifest-list digests obtained via `docker buildx imagetools
+  inspect <tag>` against the live registry (the same multi-platform-aware
+  digest form `publish-images`'s own post-publish check already uses,
+  `docs/DEVELOPMENT_DOCUMENTATION.md` §10.7) - deliberately not a
+  single-platform image digest, which would have silently pinned the
+  project to one architecture.
+
+### Changed
+
+- `docs/IMPLEMENTATION_SPECIFICATION.md` §8: added the missing Composer
+  row, added the missing amd64 Selenium variant, and pointed every
+  floating-tag row at the new manifest for its exact resolved value.
+- `docs/REQUIREMENTS_TRACEABILITY.md` (`REQ-CFG-01`): noted that
+  execution-environment identification evidence - one of the seven things
+  the eventual frozen baseline must identify - is now prepared, without
+  claiming the requirement itself is any less deferred; the git-commit
+  pin and the other six items remain open until step 10.
+- `HANDOFF.md`: new §0.10.
+
+### Deviations
+
+- No compose file, Dockerfile, or CI workflow tag was changed. This is
+  evidence gathered about the current environment for `REQ-CFG-01`, not a
+  pin applied to it - whether to actually pin these files to the recorded
+  digests is a step-10 decision, made against whatever commit is actually
+  being frozen at that time, not this one.
+
 ## 2026-08-09 — Legacy-fixture reconciliation: the raw RCBASE-0.2 file was archived, not lost
 
 Project-owner instruction: several current-state materials still called
@@ -47,6 +112,11 @@ strongest evidence available for these four rows. Full rationale:
   were each missing their original boundary-clause parenthetical (e.g.
   "(below the 35% suffix boundary)"); `VQ-008` had been substantively
   reworded, not merely trimmed.
+- Grepped for the obsolete provenance string beyond the one file already
+  in scope and found a second: `verification_question_code_domain_legacy_0_1.csv`'s
+  `source_audit_ref` column carried the identical `reconstructed_from_implementation_documentation`
+  text for the same four rows - fixed for the same reason, not a separate
+  decision.
 - `validate_forward_verification.py` (before this pass's fix): confirmed
   failing with `AssertionError` on its hardcoded provenance check - it had
   been silently broken since step 9 (which changed the provenance string
@@ -56,11 +126,16 @@ strongest evidence available for these four rows. Full rationale:
 - `validate_materialized_design.py`: PASS, unaffected (checks different
   invariants, no provenance assertions).
 - `python -m unittest test_runtime_contract_0_2`/`test_mysql_persistence_0_2`
-  against a fresh throwaway MySQL: both green, after regenerating the
-  `runtime_manifest_0_2.json` digest for `verification_questions_legacy_0_1.csv`
-  (its `prompt` text changed).
-- `php vendor/bin/phpunit --testsuite integration`: 160/160, including all
-  143 reference-response rows read from the edited oracle CSV.
+  against a fresh throwaway MySQL: both green, after regenerating
+  `runtime_manifest_0_2.json`'s digests for both edited data files and the
+  pinned `canonical_digest()` value in `test_runtime_contract_0_2.py`
+  itself - three times in sequence as each of the two content edits and
+  then the second file's discovery each shifted it in turn; the final
+  value was re-verified against the bootstrap/loader's own printed digest,
+  not just asserted.
+- `php vendor/bin/phpunit --testsuite unit,integration`: 237/237, 2290
+  assertions, including all 143 reference-response rows read from the
+  edited oracle CSV.
 
 ### Changed
 
@@ -71,8 +146,13 @@ strongest evidence available for these four rows. Full rationale:
   four `prompt` fields replaced with the exact historical wording (see
   Verified above); `source_audit_ref` updated to match the new
   provenance string.
+- `prototype_baseline/data/verification_question_code_domain_legacy_0_1.csv`:
+  `source_audit_ref` for the same four rows updated to match.
 - `prototype_baseline/persistence_candidate/runtime_manifest_0_2.json`:
-  regenerated SHA-256 for `data/verification_questions_legacy_0_1.csv`.
+  regenerated SHA-256 for both edited data files.
+- `prototype_baseline/persistence_candidate/test_runtime_contract_0_2.py`:
+  regenerated the pinned `canonical_digest()` value (three times in
+  sequence, see Verified above).
 - `prototype_baseline/verification/oracle_manifest_0_3_candidate.json`:
   `raw_rcbase_0_2_diff_required_before_freeze` → `false`;
   `legacy_provenance`'s `reconstructed_from_implementation_documentation`
@@ -87,7 +167,8 @@ strongest evidence available for these four rows. Full rationale:
   `provisional_documentation_reconstruction_rows` key renamed to
   `exact_semantic_carry_forward_confirmed_against_rcbase_0_2_rows`.
 - `prototype_baseline/forward_verification_digests.json`: regenerated
-  digests for both changed files; `generated_on` bumped.
+  digests for all three changed files (the oracle CSV and both legacy
+  data files); `generated_on` bumped.
 - `prototype_baseline/validate_forward_verification.py`: fixed the
   hardcoded provenance assertion and its `legacy_rc_id` set-comparison to
   match current values; updated its summary print line.

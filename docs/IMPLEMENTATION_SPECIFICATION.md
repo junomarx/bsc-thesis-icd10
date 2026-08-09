@@ -791,15 +791,23 @@ distinction.
 
 | Component | Version | Where pinned |
 |---|---|---|
-| PHP (runtime image) | 8.4.24 | `php:8.4-apache` base image |
-| MySQL | deliberately unpinned below major version | `mysql:latest` in both Compose files — §6.3 |
-| Node (build stage only) | 22-alpine | `Dockerfile` (repo root) |
+| PHP (runtime image) | 8.4.24 | `php:8.4-apache` base image - floating tag; exact resolved version + manifest-list digest recorded in `docs/environment_manifest_0_1_candidate.json` |
+| MySQL | 26.7.0 as currently resolved | deliberately unpinned below the major version, `mysql:latest` in both Compose files and CI — §6.3; exact resolved version + digest in `docs/environment_manifest_0_1_candidate.json`, not in the compose/CI files themselves |
+| Node (build stage only) | 22.23.2 as currently resolved | `node:22-alpine`, `Dockerfile` (repo root) - floating tag; exact resolved version + digest in `docs/environment_manifest_0_1_candidate.json` |
+| Composer (build stage only) | 2.10.2 as currently resolved | `composer:2`, `Dockerfile` (repo root) - floating tag; exact resolved version + digest in `docs/environment_manifest_0_1_candidate.json` |
 | React | 19.2.8 | `app/frontend/package.json` |
 | Vite | 8.2.x | `app/frontend/package.json` |
 | Frontend app version | 0.9.9 | `app/frontend/package.json`, rendered in the footer (§5.8) |
 | PHPUnit | 11.5.x | `app/composer.lock` |
 | php-webdriver/webdriver | 1.16.0 | `app/composer.lock` |
-| Selenium/browser (ad hoc verification only, not the app) | `seleniarm/standalone-chromium:latest` (arm64) | `app/tests/E2E/docker-compose.yml` |
+| Selenium/browser (ad hoc verification only, not the app) | `seleniarm/standalone-chromium:latest` (arm64, local dev default) and `selenium/standalone-chrome:latest` (amd64, CI and E2E override) | `app/tests/E2E/docker-compose.yml`, `.github/workflows/ci.yml` - both floating; exact resolved digests in `docs/environment_manifest_0_1_candidate.json` |
+
+**`docs/environment_manifest_0_1_candidate.json`** records the exact
+resolved version and manifest-list digest observed for every floating tag
+above, as `REQ-CFG-01` execution-environment evidence gathered ahead of
+step 10 - see `docs/DEVELOPMENT_DOCUMENTATION.md` §10.9 for the full
+rationale and why the compose/Dockerfile/CI files themselves stay on
+floating tags rather than being pinned now.
 
 ## 9. Explicit non-implementations
 

@@ -746,6 +746,65 @@ about 21 of those seconds, confirming the frontend build specifically was
 the hang, not emulation in general. Full detail: `docs/CHANGELOG.md`'s
 same-dated entry.
 
+### 10.9 Recording execution-environment versions ahead of freeze, without pinning them yet
+
+Project-owner instruction, framed explicitly as pre-freeze preparation:
+the container environment uses several moving tags (`mysql:latest`,
+`php:8.4-apache`, `node:22-alpine`, `composer:2`, and two Selenium images)
+- §10.1 already records the deliberate decision to keep these floating
+during development, since `REQ-CFG-01` only requires pinning an exact
+resolved "execution environment" once, at the eventual evaluation
+freeze, not twice. The instruction's own framing accepted that decision
+as still correct - "even if the development Compose file remains
+convenient" - and asked only that the *currently resolved* versions and
+digests be recorded somewhere, ahead of the freeze itself.
+
+**Decision: a new, separate manifest, not a change to any compose/Dockerfile/CI
+tag.** `docs/environment_manifest_0_1_candidate.json` records, for each
+floating tag, the exact version string (read by actually running the
+resolved image, not assumed from the tag name) and the manifest-list
+digest (via `docker buildx imagetools inspect` against the live registry
+- the same multi-platform-aware digest form `publish-images`' own
+post-publish check already uses, §10.7, so this project has exactly one
+concept of "the digest that identifies a multi-arch image," not two).
+`_candidate` in the filename and an explicit `status` field mirror this
+project's existing convention for pre-freeze artefacts
+(`oracle_manifest_0_3_candidate.json`) rather than inventing a new one.
+The floating tags in `docker-compose.yml`, `prototype_stack/compose.yaml`,
+the root `Dockerfile`, and `.github/workflows/ci.yml` are **untouched** -
+this manifest is evidence gathered *about* the current environment, not a
+pin *applied to* it. Whether to actually pin these files to the recorded
+digests happens at step 10, when the project owner freezes the software
+revision itself; pinning the environment now, ahead of a commit that
+hasn't been chosen yet, would just mean re-doing this exercise again
+later against a different set of files.
+
+**Why manifest-list digests, not per-platform image digests.** Each of
+these tags resolves to a multi-platform manifest list (an OCI image
+index), not a single-platform image; `docker buildx imagetools inspect`
+returns the index's own digest, which is what a bare `image@sha256:...`
+reference in a Dockerfile or compose file would actually pin - Docker
+resolves the correct per-platform image from that index automatically at
+pull time. Recording a single platform's underlying image digest instead
+would have silently pinned this project to one architecture, undoing
+§10.7's native-arm64-and-amd64 decision the moment anyone adopted it.
+
+**Verified by resolving each value directly, not by looking up a
+changelog or release page:** `mysql:latest` → MySQL `26.7.0` (matches
+`docs/CHANGELOG.md`'s "MySQL version pin relaxed" entry's own account of
+where `mysql:latest` had already drifted to); `php:8.4-apache` → PHP
+`8.4.24`, matching this document's own §8 table, which already recorded
+that exact patch from a prior, separate observation - the two agree,
+which is itself a small piece of evidence that floating-tag drift between
+observations, while real (the MySQL major-line jump proved that), isn't
+constant; `node:22-alpine` → Node `22.23.2`; `composer:2` → Composer
+`2.10.2`. The two Selenium images are identified by digest only - `selenium/standalone-chrome`
+carries a `24.04` release-line label (the selenium-docker project's own
+versioning, not Chrome's), and `seleniarm/standalone-chromium` (a
+community-maintained image) carries no version label at all, so its
+digest is the only exact identifier available for it regardless of what
+this project does.
+
 ## 11. Current status and known gaps
 
 **Superseded by §13/§14 below (9 August 2026).** Everything in this
@@ -1209,7 +1268,11 @@ from this section's own claim:
   `short_description` text (`archived/prototype_baseline_0_1/data/cases_0_2.csv`)
   - missing boundary-clause parentheticals for `VQ-005..007`, and `VQ-008`
   was substantively reworded, not merely trimmed. Replaced with the exact
-  historical wording.
+  historical wording; its `source_audit_ref` updated to match.
+- `prototype_baseline/data/verification_question_code_domain_legacy_0_1.csv`:
+  same obsolete provenance string in `source_audit_ref` for the same four
+  rows, found by grepping beyond the one file already in scope rather than
+  assuming it was the only one - fixed the same way.
 - `prototype_baseline/verification/oracle_manifest_0_3_candidate.json`:
   `raw_rcbase_0_2_diff_required_before_freeze` → `false`;
   `legacy_provenance`'s `reconstructed_from_implementation_documentation`
@@ -1234,10 +1297,15 @@ from this section's own claim:
   (`REQ-VER-09`), `docs/IMPLEMENTATION_SPECIFICATION.md` §7,
   `ReferenceResponseTest.php`'s own docblock: updated to match.
 
-**Verified, this same pass:** `validate_forward_verification.py` PASS;
-`test_runtime_contract_0_2.py` and `test_mysql_persistence_0_2.py` against
-a fresh throwaway MySQL, both green; `phpunit --testsuite integration`
-160/160 including all 143 reference-response rows from the edited CSV.
+**Verified, this same pass:** `validate_forward_verification.py` PASS
+(after fixing its own silently-broken assertion, above); `test_runtime_contract_0_2.py`
+and `test_mysql_persistence_0_2.py` against a fresh throwaway MySQL, both
+green, after the pinned `canonical_digest()` value was regenerated three
+times in sequence (once per content edit: the oracle CSV's
+`provenance_status`, the questions CSV's `prompt` text, then the
+second-file discovery's `source_audit_ref`); `phpunit --testsuite
+unit,integration` 237/237 including all 143 reference-response rows from
+the edited CSV.
 
 **The lesson, stated plainly because it's the second time this exact
 shape of mistake happened this project (§13.3's persistence-integration
