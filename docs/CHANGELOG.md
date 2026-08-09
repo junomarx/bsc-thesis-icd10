@@ -13,6 +13,46 @@ Reference `REQ-*`/`RULE-*`/`TEST-*` identifiers where a change implements or
 affects one. Every entry should let a reader answer "what changed, why, and
 was it actually tested" without opening the diff.
 
+## 2026-08-09 — `publish-images` had the same stale-branch bug, in its own `if:` condition
+
+The push-trigger fix (previous entry) restored CI runs, but the run it
+produced (`31322974452`, commit `3010b5d`) showed `publish-images` as
+`skipped` rather than `success` — a second, independent instance of the
+same class of bug: the job's own `if: github.event_name == 'push' &&
+github.ref == 'refs/heads/main'` still checked for the renamed-away
+`main`, so it evaluated false even though the top-level trigger now fired
+correctly. Consequence: `publish-images` has not actually run since
+whichever push renamed the branch, meaning GHCR's three published tags
+(`ghcr.io/junomarx/bsc-thesis-icd10:latest`/`:dev`,
+`bsc-thesis-icd10-bootstrap:latest`) have been stale since then, not
+being overwritten on every push as `docs/environment_manifest_0_1.json`'s
+`deliberately_not_recorded` note (written earlier today) describes them
+as behaving. Found by reading the job-level breakdown of the run the
+previous fix produced, not assumed fixed just because the run itself
+completed.
+
+### Fixed
+
+- `.github/workflows/ci.yml`: `publish-images`'s `if:` condition -
+  `refs/heads/main` → `refs/heads/master`. Also fixed the same file's
+  header comment ("only on main" → "only on master") and
+  `docs/IMPLEMENTATION_SPECIFICATION.md` §1's matching repository-layout
+  description, which had recorded the *original* successful publish run
+  (`31314862118`, when the branch really was `main`) without yet knowing
+  it had since gone stale. `CLAUDE.md` §"CI and the self-contained
+  bundle" had the same stale branch name and was corrected too, since it
+  is a factual claim about CI mechanics, not project-instruction
+  intent.
+
+### Deviations
+
+- GHCR's published tags remain stale until the next successful
+  `publish-images` run after this fix. Anyone who ran `docker compose
+  pull` against this repository's default tags between the branch
+  rename and this fix received an outdated build, not a broken one - the
+  application behaviour published under those tags simply predates
+  several since-landed fixes documented elsewhere in this file.
+
 ## 2026-08-09 — CI's `push` trigger silently stopped firing after a branch rename
 
 Project owner noticed no Actions run appeared for the freeze-correction

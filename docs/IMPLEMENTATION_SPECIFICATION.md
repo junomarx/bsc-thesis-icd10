@@ -35,13 +35,20 @@ docker-compose.yml               self-contained publishable bundle (db+bootstrap
                                  deployment scaffold) — both point their `bootstrap` service at
                                  prototype_baseline/ (§6.3)
 .github/workflows/ci.yml         5 jobs: python-checks, php-unit, backend-integration, e2e,
-                                 publish-images (builds+pushes 3 images to GHCR, main only,
+                                 publish-images (builds+pushes 3 images to GHCR, master only,
                                  gated on the other 4 passing) — bootstrap-wiring fixed, the
                                  suite it runs now passes (§7), and a housekeeping pass fixed
                                  three latent bugs `publish-images`/`python-checks` had (§6.5);
-                                 confirmed live: a real GitHub-hosted run completed all 5 jobs
-                                 successfully (run 31314862118, 2026-08-09 13:04-13:09 UTC),
-                                 so GHCR's three published tags are current, not stale (§6.5)
+                                 confirmed live at the time: a real GitHub-hosted run completed
+                                 all 5 jobs successfully (run 31314862118, 2026-08-09 13:04-13:09
+                                 UTC, when the branch was still named `main`). After a later
+                                 branch rename to `master`, both the top-level `push` trigger and
+                                 `publish-images`'s own `if:` condition were left pointing at the
+                                 nonexistent `main`, so every push since silently stopped
+                                 triggering CI/publishing at all - found and fixed the same day
+                                 (`docs/CHANGELOG.md`'s "CI's push trigger silently stopped
+                                 firing" and "publish-images" entries); GHCR's three tags were
+                                 stale until the next successful run after that fix
 app/
   composer.json / composer.lock PHP dependencies (runtime: none beyond ext-pdo/ext-json; dev:
                                  phpunit/phpunit, php-webdriver/webdriver)

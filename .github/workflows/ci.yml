@@ -9,7 +9,7 @@ name: CI
 #   e2e                   TEST-E2E-01, TEST-E2E-02 (real browser, real deployed stack)
 #   publish-images        builds docker-compose.yml's three images and pushes
 #                         them to GHCR, only after all four test jobs pass,
-#                         only on main - see docs/DEVELOPMENT_DOCUMENTATION.md
+#                         only on master - see docs/DEVELOPMENT_DOCUMENTATION.md
 #                         §10.6 for why this exists (self-contained pull-and-
 #                         run bundle, project owner's request).
 #
@@ -217,7 +217,7 @@ jobs:
     name: Build and publish images (GHCR)
     runs-on: ubuntu-latest
     needs: [python-checks, php-unit, backend-integration, e2e]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
     permissions:
       contents: read
       packages: write
