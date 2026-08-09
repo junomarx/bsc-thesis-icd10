@@ -27,6 +27,11 @@ state on the slower CI browser, leading to `click() on null` at line 212.
 - `navigateToQuestionWithExactOption()` now waits for the next question's
   radio list before checking its code options. Application behavior and
   localization output are unchanged; this is Selenium synchronization only.
+- Replacement run `31329068713` confirmed that localization traversal no
+  longer fails, then exposed the same pre-existing timing assumption in
+  `ProgressBadgeTest.php:32`. That loop now also waits for the next radio list
+  rather than treating the persistent `.question-view` wrapper as proof that
+  the next question has rendered.
 
 ### Verified
 

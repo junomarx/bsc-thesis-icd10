@@ -28,6 +28,9 @@ final class ProgressBadgeTest extends SeleniumTestCase
         $this->openPatient('PATIENT-001');
 
         for ($i = 0; $i < 3; $i++) {
+            $this->wait()->until(WebDriverExpectedCondition::presenceOfElementLocated(
+                WebDriverBy::cssSelector('.code-list input[type="radio"]'),
+            ));
             $radios = static::$driver->findElements(WebDriverBy::cssSelector('.code-list input[type="radio"]'));
             $radios[0]->click();
             static::$driver->findElement(WebDriverBy::cssSelector('.submit-bar button'))->click();
