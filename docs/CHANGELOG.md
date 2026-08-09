@@ -68,10 +68,17 @@ found no deviations; it did not establish complete bilingual-string coverage.
 - Targeted pre-freeze runs passed: 83 unit tests / 130 assertions, 4 frontend
   localization tests, 3 localization integration tests / 2,247 assertions,
   and 3 localization Selenium tests / 1,070 assertions.
+- The fresh volume-free container battery passed 258/258 application tests /
+  5,682 assertions (83 unit, 163 live-MySQL integration, 12 Selenium), plus
+  8/8 runtime-contract and 6/6 persistence tests. The production build also
+  reran the four frontend localization checks. Five bilingual/theme
+  screenshots were captured and inspected through Selenium.
 - `RCBASE-0.3` remains byte-identical at SHA-256
   `21c3f02697fe9b20028ec1121d28fce3389c027705372ae08c43f894b3342540`;
   its 143 expected semantic results remain exact. The fresh full battery and
   environment evidence are recorded in the separate 1.1 conformance report.
+- Corrective freeze: commit `8bb74b31596c3380c45b74643af63d744082be4e`,
+  annotated tag `dev-freeze-5`; previous freeze tags were not moved.
 
 ### Deviations
 

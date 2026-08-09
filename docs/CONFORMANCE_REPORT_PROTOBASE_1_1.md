@@ -5,8 +5,8 @@
 **Scope:** complete Austrian-German (`de-AT`) / British-English (`en-GB`)
 learner-surface correction and regression verification  
 **Parent revision:** `912e9923924b3958bd2dd1a7948d0d7be4a71869`  
-**Corrective freeze commit/tag:** recorded in §8 after the verified local
-commit is created  
+**Corrective freeze commit:** `8bb74b31596c3380c45b74643af63d744082be4e`<br>
+**Corrective freeze tag:** annotated `dev-freeze-5`<br>
 **Evidence:** [evidence/PROTOBASE-1.1/](evidence/PROTOBASE-1.1/)
 
 ## 1. Verdict
@@ -194,13 +194,15 @@ fail visibly until a new displayed code receives an English presentation.
 
 ## 8. Freeze identity
 
-The verified implementation/evidence commit and new annotated tag are filled
-in after the local commit is created. Earlier tags (`dev-freeze` through
-`dev-freeze-4`) are immutable and are neither moved nor overwritten.
+The verified implementation and complete evidence package were committed as
+`8bb74b31596c3380c45b74643af63d744082be4e` and frozen with the new annotated
+tag `dev-freeze-5`. Earlier tags (`dev-freeze` through `dev-freeze-4`) remain
+immutable and were neither moved nor overwritten. This exact-identity record
+is a documentation-only follow-up to the tagged commit.
 
-- implementation/evidence commit: `PENDING_LOCAL_COMMIT`
-- annotated tag: `dev-freeze-5` (to be created on that commit)
-- documentation-record commit: `PENDING_LOCAL_COMMIT`
+- implementation/evidence commit: `8bb74b31596c3380c45b74643af63d744082be4e`
+- annotated tag: `dev-freeze-5`
+- tag target: `8bb74b31596c3380c45b74643af63d744082be4e`
 - remote/CI status: local only; not pushed; no 1.1 CI result claimed
 
 ## 9. Evidence integrity
