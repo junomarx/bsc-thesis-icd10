@@ -13,6 +13,37 @@ Reference `REQ-*`/`RULE-*`/`TEST-*` identifiers where a change implements or
 affects one. Every entry should let a reader answer "what changed, why, and
 was it actually tested" without opening the diff.
 
+## 2026-08-09 — CI's `push` trigger silently stopped firing after a branch rename
+
+Project owner noticed no Actions run appeared for the freeze-correction
+commit just pushed, checked the Actions tab directly, and found the
+cause: `.github/workflows/ci.yml`'s `on.push.branches` still read `[main]`
+from whenever this repository's default branch was renamed to `master`.
+Every push since that rename succeeded silently without triggering CI —
+no error, just no matching trigger — including every commit in today's
+freeze work up to and including the previous entry below. Found by
+inspecting the Actions tab directly rather than trusting the earlier
+per-commit API lookups in this same session, which only ever queried
+whichever runs already existed and had no way to surface a trigger that
+never fired at all.
+
+### Fixed
+
+- `.github/workflows/ci.yml`: `on.push.branches: [main]` → `[master]`.
+
+### Deviations
+
+- The `dev-freeze-2` tag (created for the previous entry's freeze
+  correction, commit `0586034aeb2d7f81ecfc9512733a5efe55f59255`) predates
+  this fix and therefore has no push-triggered CI run of its own — CI
+  never fired for that exact commit. The fix itself is a one-line
+  CI-configuration change with no effect on pinned images, tests, or
+  application behaviour, so `dev-freeze-2` was not moved or replaced over
+  it (same reasoning as `dev-freeze` earlier: don't rewrite an
+  already-pushed, already-cited tag). Genuine CI evidence going forward
+  attaches to this commit and later ones; see the freeze evidence
+  package's CI-run log for whichever commit actually got a run.
+
 ## 2026-08-09 — Freeze correction: a seventh base image the pinning pass missed
 
 Project-owner review of the just-tagged `dev-freeze` found a real gap:
