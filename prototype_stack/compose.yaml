@@ -52,7 +52,7 @@ services:
       db:
         condition: service_healthy
     ports:
-      - "${APP_HTTP_PORT:-8080}:80"
+      - "${APP_HTTP_PORT:-5860}:80"
     restart: unless-stopped
 
 volumes:

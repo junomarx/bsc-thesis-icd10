@@ -222,12 +222,12 @@ Docker selects the matching variant automatically.
   on the registry containing the current multi-platform release.
 }
 
-Open \url{http://localhost:8080} in a browser.
+Open \url{http://localhost:5860} in a browser.
 
 Optionally verify the HTTP endpoint from a terminal:
 
 \begin{lstlisting}[style=terminal]
-curl http://127.0.0.1:8080/api/health
+curl http://127.0.0.1:5860/api/health
 \end{lstlisting}
 
 The expected response is:
@@ -245,7 +245,7 @@ The expected response is:
 \subsection{Use a different local port}
 \label{sec:port-fallback}
 
-Port 8080 is the default. If it is already in use, stop the stack and choose
+Port 5860 is the default. If it is already in use, stop the stack and choose
 another port. On macOS or Linux:
 
 \begin{lstlisting}[style=terminal]
@@ -263,7 +263,7 @@ docker compose up -d --wait app
 
 Then open \url{http://localhost:8081}. The selected environment value remains
 in the current terminal session; clear or change it before a later start if
-you want to return to port 8080.
+you want to return to port 5860.
 
 \subsection{Build locally instead of pulling images}
 \label{sec:local-build}
@@ -508,7 +508,7 @@ The database volume is retained unless \texttt{-v} is added.
 If a command reports that the Docker daemon is unavailable, start Docker
 Desktop or the Linux Docker service and retry \texttt{docker compose ps}.
 
-\subsection{Port 8080 is already allocated}
+\subsection{Port 5860 is already allocated}
 
 Use the different-port procedure in Section~\ref{sec:port-fallback}. If a
 previous copy of this project is still running, \texttt{docker compose down}
@@ -533,12 +533,12 @@ Check the service state and health endpoint:
 
 \begin{lstlisting}[style=terminal]
 docker compose ps
-curl http://127.0.0.1:8080/api/health
+curl http://127.0.0.1:5860/api/health
 docker compose logs app
 docker compose logs bootstrap
 \end{lstlisting}
 
-If you selected a different port, replace 8080. A failed bootstrap prevents
+If you selected a different port, replace 5860. A failed bootstrap prevents
 the application from starting because the baseline is a required dependency;
 the bootstrap log contains the cause.
 

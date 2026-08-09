@@ -33,7 +33,7 @@ Steps 2-3 and 6 were each verified against **throwaway infrastructure** — a sc
 - `docker-compose.yml` and `prototype_stack/compose.yaml`: `bootstrap` service `build.context` repointed at `prototype_baseline_0_2_design/`.
 - Rebuilt `bootstrap`+`app` locally from current source, `docker compose down -v` (dropped the stale dev-only volume) + `up`. Bootstrap log confirms `MODELBASE-0.2 MySQL schema application: PASS` and the exact expected component counts. `GET /api/patients` on the real running container returns all 6 patients. A real (Selenium, not Playwright) browser check against the actual running `app` container — not a dev server — confirms the roster, a non-COPD question prompt, and the patient dossier panel all render correctly.
 
-**If you're reading this and about to `docker compose up`: it now works correctly** as of this snapshot. But this class of gap (isolated verification vs. the actual deployment path) is exactly the kind of thing worth re-checking with your own eyes — `curl http://127.0.0.1:8080/api/patients` and confirm you get 6 patients with `display_name`s, not `CASE-*` IDs — before trusting any further "verified" claim in this document or `docs/CHANGELOG.md` without spot-checking it.
+**If you're reading this and about to `docker compose up`: it now works correctly** as of this snapshot. But this class of gap (isolated verification vs. the actual deployment path) is exactly the kind of thing worth re-checking with your own eyes — `curl http://127.0.0.1:5860/api/patients` and confirm you get 6 patients with `display_name`s, not `CASE-*` IDs — before trusting any further "verified" claim in this document or `docs/CHANGELOG.md` without spot-checking it.
 
 ### 0.2 New baseline identifiers (forward model)
 
@@ -103,7 +103,7 @@ A bachelor-thesis Design Science Research artefact: a small web application that
 docker compose build bootstrap app   # local source — do this before `up` until a fresh GHCR tag is published for the forward model
 docker compose down -v               # drops any stale pre-forward-redesign volume; safe, nothing but versioned baseline data lives in it
 docker compose up -d --wait app
-curl http://127.0.0.1:8080/api/patients   # sanity check: expect 6 patients with display_name, not CASE-* ids
+curl http://127.0.0.1:5860/api/patients   # sanity check: expect 6 patients with display_name, not CASE-* ids
 ```
 
 The `stack.sh`-managed path (`prototype_stack/`) follows the same three-command sequence documented in `docs/IMPLEMENTATION_SPECIFICATION.md` §6.4/§6.5, with the same `bootstrap` repoint already applied to `prototype_stack/compose.yaml`.

@@ -13,6 +13,45 @@ Reference `REQ-*`/`RULE-*`/`TEST-*` identifiers where a change implements or
 affects one. Every entry should let a reader answer "what changed, why, and
 was it actually tested" without opening the diff.
 
+## 2026-08-09 — Default learner-facing port changed 8080 → 5860
+
+Project-owner request, to avoid conflicting with other applications on a
+shared deployment host. The self-contained bundle's `docker-compose.yml`
+(`APP_HTTP_PORT` default) was changed directly by the project owner; this
+entry covers bringing the rest of the port's own references into line with
+it, found via a repository-wide search rather than guessed at.
+
+### Changed
+
+- `prototype_stack/compose.yaml`'s `APP_HTTP_PORT` default and
+  `prototype_stack/README.md`'s architecture diagram — the separate
+  `stack.sh`-managed deployment path, kept consistent with the bundle's new
+  default even though it has its own independent env var.
+- `app/tests/E2E/{docker-compose.yml,README.md,SeleniumTestCase.php}`'s
+  documented/hardcoded `8080` fallbacks (`ICD_E2E_BROWSER_BASE_URL`/
+  `ICD_E2E_BASE_URL` defaults and the usage-comment example) — these exist
+  specifically to match the Compose bundle's default so an E2E run against
+  a freshly `docker compose up`'d stack works without extra env vars.
+- `README.md`, `HANDOFF.md`, `docs/IMPLEMENTATION_SPECIFICATION.md`,
+  `docs/USER_GUIDE.tex`/`.pdf` (recompiled, 10 pages, clean) — every
+  example `curl`/browser URL and the two troubleshooting section titles
+  naming the port explicitly.
+
+### Deviations (intentional, not overlooked)
+
+- `.github/workflows/ci.yml` explicitly sets its own `APP_HTTP_PORT=8080`
+  for its Compose invocation and curls/configures E2E base URLs against
+  that same explicit value — self-consistent regardless of the Compose
+  file's *default*, so there is no functional need to change it, and CI
+  automation was left alone rather than touched without a concrete reason.
+- `app/frontend/vite.config.js`'s dev-server proxy target (`8080`) is an
+  unrelated, host-native local-dev convention (pointing at a `php -S
+  127.0.0.1:8080` you'd start yourself per the user guide's dev workflow
+  section), not the Docker-published port this change is about.
+- `docs/CHANGELOG.md`'s own prior dated entries were not rewritten — they
+  are a historical record of commands actually run at the time, not a
+  living reference.
+
 ## 2026-08-09 — Documentation consolidation: all five living documents brought current for the forward model
 
 Project-owner request: "update/put all the documentation about the

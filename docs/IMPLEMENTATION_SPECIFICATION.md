@@ -606,7 +606,7 @@ longer referenced by either Compose file.
 |---|---|---|
 | `db` | `mysql:latest`, named volume `mysql_data` | long-running; healthcheck via `mysqladmin ping`; deliberately unpinned below the major version (`docs/DEVELOPMENT_DOCUMENTATION.md` §10.1) |
 | `bootstrap` | built from `prototype_baseline_0_2_design/Dockerfile.bootstrap` | one-shot (`restart: "no"`); applies schema on an empty DB, then runs the idempotent loader; reports `inserted` on first run, `no_op` on every identical re-run |
-| `app` | built from `Dockerfile` (repo root) | long-running; published on `${APP_HTTP_PORT:-8080}` |
+| `app` | built from `Dockerfile` (repo root) | long-running; published on `${APP_HTTP_PORT:-5860}` |
 
 **A real gap this rewrite exists partly to close on paper:** every
 "verified" claim for steps 2–3 up to 8 August 2026 was checked against a
@@ -641,7 +641,7 @@ not a workaround.
 | Frontend dev server with API proxy | `cd app/frontend && npm run dev` (proxies `/api` to `http://127.0.0.1:8080` per `vite.config.js`) |
 | Full stack via the self-contained bundle | `docker compose build bootstrap app && docker compose up -d --wait app` |
 | Full stack via `prototype_stack` (local, no git-sync) | `cd prototype_stack && APP_SOURCE_DIR=.. docker compose --env-file .env -f compose.yaml up -d --wait db && docker compose ... run --rm --no-deps bootstrap && docker compose ... up -d --wait app` |
-| Sanity-check the real running stack | `curl http://127.0.0.1:8080/api/patients` — expect 6 patients with `display_name`, not `CASE-*` ids |
+| Sanity-check the real running stack | `curl http://127.0.0.1:5860/api/patients` — expect 6 patients with `display_name`, not `CASE-*` ids |
 | Ad hoc browser verification | This project's own Selenium infrastructure (`app/tests/E2E/docker-compose.yml`, `php-webdriver/webdriver`) — **not Playwright**, an explicit, repeated project rule |
 
 ### 6.5 Self-contained bundle (`docker-compose.yml`, repo root) and CI

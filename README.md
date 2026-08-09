@@ -31,11 +31,11 @@ docker compose build bootstrap app   # see the note below on why "build", not "p
 docker compose up -d --wait app
 ```
 
-Open <http://localhost:8080>, or check the API directly:
+Open <http://localhost:5860>, or check the API directly:
 
 ```bash
-curl http://127.0.0.1:8080/api/health     # {"status":"ok"}
-curl http://127.0.0.1:8080/api/patients   # the 6 synthetic patients
+curl http://127.0.0.1:5860/api/health     # {"status":"ok"}
+curl http://127.0.0.1:5860/api/patients   # the 6 synthetic patients
 ```
 
 > **Use `docker compose build`, not `docker compose pull`, for now.** The

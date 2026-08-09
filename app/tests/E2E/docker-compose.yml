@@ -7,7 +7,7 @@
 # prototype_stack/stack.sh or docker compose (see app/tests/E2E/README.md):
 #
 #   docker compose up -d
-#   cd ../../.. && ICD_E2E_BASE_URL=http://127.0.0.1:8080 \
+#   cd ../../.. && ICD_E2E_BASE_URL=http://127.0.0.1:5860 \
 #     php app/vendor/bin/phpunit -c app/phpunit.xml --testsuite e2e
 #   docker compose down
 
@@ -28,7 +28,7 @@ services:
       - "7900:7900" # noVNC, for watching the browser live if useful
     extra_hosts:
       # Lets the browser reach the app's published host port as
-      # host.docker.internal:8080 regardless of how the app was started
+      # host.docker.internal:5860 regardless of how the app was started
       # (prototype_stack Compose or a bare `php -S`) or which OS this runs
       # on (Docker Desktop provides this automatically; host-gateway makes
       # it work on Linux too, Docker Engine >= 20.10).

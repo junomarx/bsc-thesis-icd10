@@ -29,8 +29,8 @@ abstract class SeleniumTestCase extends TestCase
         // What the browser (running inside the Selenium container) navigates
         // to; may differ from the host-reachable URL used for direct HTTP
         // checks below.
-        static::$baseUrl = getenv('ICD_E2E_BROWSER_BASE_URL') ?: 'http://host.docker.internal:8080';
-        self::$apiBaseUrl = getenv('ICD_E2E_BASE_URL') ?: 'http://127.0.0.1:8080';
+        static::$baseUrl = getenv('ICD_E2E_BROWSER_BASE_URL') ?: 'http://host.docker.internal:5860';
+        self::$apiBaseUrl = getenv('ICD_E2E_BASE_URL') ?: 'http://127.0.0.1:5860';
 
         static::$driver = RemoteWebDriver::create($seleniumUrl, DesiredCapabilities::chrome(), 10000, 10000);
     }

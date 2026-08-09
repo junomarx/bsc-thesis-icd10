@@ -19,7 +19,7 @@ host checkout (.runtime/app)
        app build ---------------------+
                                       |
 db: MySQL (latest) <--- bootstrap      |  app: PHP/React image
-  persistent volume     one-shot       +----> http://localhost:8080
+  persistent volume     one-shot       +----> http://localhost:5860
 ```
 
 `db` and `app` are the long-running services. `bootstrap` is a one-shot Python
