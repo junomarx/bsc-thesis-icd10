@@ -13,6 +13,28 @@ Reference `REQ-*`/`RULE-*`/`TEST-*` identifiers where a change implements or
 affects one. Every entry should let a reader answer "what changed, why, and
 was it actually tested" without opening the diff.
 
+## 2026-08-09 — Stabilize the bilingual Selenium traversal after `dev-freeze-5`
+
+GitHub Actions run `31328632402` passed the Python data/persistence, PHP unit,
+PHP integration and image-build jobs, but the Selenium job failed in
+`LocalizationWorkflowTest::testAllLearnerReachableRuleBranchesAndBothNoaBranchesRenderBilingually`.
+After advancing, the helper waited only for the previous feedback panel to
+disappear and could inspect the option list during React's transient empty
+state on the slower CI browser, leading to `click() on null` at line 212.
+
+### Fixed
+
+- `navigateToQuestionWithExactOption()` now waits for the next question's
+  radio list before checking its code options. Application behavior and
+  localization output are unchanged; this is Selenium synchronization only.
+
+### Verified
+
+- Previously failing test: 1/1, 28 assertions.
+- Full Selenium suite: 12/12, 1,130 assertions.
+- `dev-freeze-5` remains immutable and is not moved; its failed CI run remains
+  part of the freeze history.
+
 ## 2026-08-09 — Comprehensive `de-AT` / `en-GB` localization correction (`PROTOBASE-1.1`)
 
 The post-freeze learner-surface audit found localization defects that the

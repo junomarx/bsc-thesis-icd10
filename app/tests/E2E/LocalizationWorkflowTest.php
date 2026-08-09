@@ -205,6 +205,13 @@ final class LocalizationWorkflowTest extends SeleniumTestCase
     private function navigateToQuestionWithExactOption(string $code, int $maxQuestions = 6): void
     {
         for ($attempt = 0; $attempt < $maxQuestions; $attempt++) {
+            // Advancing removes the feedback before React has necessarily
+            // committed the next question. Wait for its option list before
+            // inspecting it; otherwise a slower CI browser can expose a
+            // transient empty radio collection.
+            $this->wait()->until(WebDriverExpectedCondition::presenceOfElementLocated(
+                WebDriverBy::cssSelector('.code-list input[type="radio"]'),
+            ));
             if (static::$driver->findElements(WebDriverBy::xpath("//label[.//strong[normalize-space()='$code']]")) !== []) {
                 return;
             }
