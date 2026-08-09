@@ -92,19 +92,24 @@ docker compose --profile test run --rm test
 
 Browser-driven tests use [Selenium](https://www.selenium.dev/) via
 `php-webdriver/webdriver`. The suite targets the current patient/question
-model (77 unit / 160 integration / 7 e2e tests, all passing as of the last
+model (77 unit / 160 integration / 9 e2e tests, all passing as of the last
 verified run); see [HANDOFF.md](HANDOFF.md) for exact counts and how they
 were verified.
 
 ## Status
 
-Not frozen. Currently mid-way through a structural forward redesign (see
-[HANDOFF.md](HANDOFF.md) §0 for the full 10-step implementation order and
-exactly where it stands) — the learner-facing application is functional,
-polished, covered by a genuinely passing automated test suite, and its
-verification oracle is human-oracle-audited against source with zero
-discrepancies. A formal freeze + principal verification run (step 10) is
-the remaining piece of work before a `1.0` baseline can be considered.
+**Frozen at `PROTOBASE-1.0`.** The 10-step forward-redesign implementation
+order (see [HANDOFF.md](HANDOFF.md) §0) is complete: the learner-facing
+application is functional, polished, covered by a genuinely passing
+automated test suite, and its verification oracle is human-oracle-audited
+against source with zero discrepancies. The formal development freeze and
+clean-environment principal verification run (step 10) found zero defects
+across 258 checks — see [docs/CONFORMANCE_REPORT.md](docs/CONFORMANCE_REPORT.md)
+for the full account and [HANDOFF.md](HANDOFF.md) §0.11 for the summary.
+`master` carries the pinned, frozen container images and code; a `develop`
+branch retains floating tags for ongoing work. `REQBASE-1.0`/`TESTBASE-1.0`
+and the two supervisor-level open items (`OPEN-RQ-01`, `OPEN-EVAL-01`)
+remain outside this freeze's scope.
 
 ## License
 

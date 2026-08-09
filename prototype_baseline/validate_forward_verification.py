@@ -33,7 +33,7 @@ legacy_facts = rows(DATA / "verification_question_facts_legacy_0_1.csv")
 legacy_domains = rows(DATA / "verification_question_code_domain_legacy_0_1.csv")
 legacy_links = rows(DATA / "verification_question_relation_facts_legacy_0_1.csv")
 
-oracle = rows(VER / "reference_responses_0_3_candidate.csv")
+oracle = rows(VER / "reference_responses_0_3.csv")
 reconstructed_additions = rows(MIG / "rcbase_0_2_additions_provisional.csv")
 
 assert len(learner_questions) == 25

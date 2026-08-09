@@ -1,12 +1,12 @@
 {
   "reference_response_baseline_id": "RCBASE-0.3",
-  "status": "candidate_predefined_expectations_not_execution_results",
+  "status": "frozen_predefined_expectations_at_protobase_1_0",
   "date": "2026-08-09",
   "question_baseline_id": "QUESTIONBASE-0.1",
   "rule_baseline_id": "RULEBASE-0.2",
   "model_baseline_id": "MODELBASE-0.2",
   "subset_baseline_id": "SUBSET-0.2",
-  "oracle_file": "reference_responses_0_3_candidate.csv",
+  "oracle_file": "reference_responses_0_3.csv",
   "oracle_sha256": "21c3f02697fe9b20028ec1121d28fce3389c027705372ae08c43f894b3342540",
   "counts": {
     "learner_code_responses": 100,
@@ -26,5 +26,5 @@
   "learner_expectation_status": "forward_specification_derived_human_oracle_audit_confirmed_against_qsaudit_0_1",
   "runtime_access_allowed": false,
   "implementation_output_used_to_author_expectations": false,
-  "application_verification_claim": "none"
+  "application_verification_claim": "principal verification run executed against this exact oracle at PROTOBASE-1.0 - all 143 rows conformant, zero defects; see docs/CONFORMANCE_REPORT.md. This field records that the run happened, not a claim of clinical/external validity - see that report's own scope boundary."
 }

@@ -1,6 +1,6 @@
 {
-  "prototype_baseline_id": "PROTOBASE-0.3",
-  "status": "working_forward_implementation_candidate_not_frozen",
+  "prototype_baseline_id": "PROTOBASE-1.0",
+  "status": "frozen_evaluation_baseline",
   "model_baseline_id": "MODELBASE-0.2",
   "requirements_catalogue_version": "forward-0.7",
   "source_register_version": "0.4",

@@ -6,7 +6,7 @@ namespace Icd10Prototype;
 
 /**
  * Reads the ICD_DB_* environment contract used by prototype_stack/compose.yaml
- * and the candidate PROTOBASE-0.1 Python tooling.
+ * and the PROTOBASE-1.0 Python tooling (prototype_baseline/persistence_candidate/).
  */
 final class Config
 {

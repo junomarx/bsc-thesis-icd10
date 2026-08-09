@@ -1,6 +1,6 @@
 {
-  "status": "observed_pre_freeze_not_yet_bound_to_a_frozen_baseline",
-  "purpose": "REQ-CFG-01 execution-environment identification evidence, gathered ahead of implementation-order step 10 (freeze + principal verification run). Recording these values does not itself constitute a freeze: docker-compose.yml, prototype_stack/compose.yaml, the root Dockerfile, and .github/workflows/ci.yml deliberately keep floating tags (mysql:latest, php:8.4-apache, node:22-alpine, composer:2, and the two Selenium images) for development convenience, per docs/DEVELOPMENT_DOCUMENTATION.md §10.1's MySQL decision record and the parallel rationale for the others. At freeze (step 10), the project owner decides whether to pin these floating tags in the compose/Dockerfile/CI files themselves to the exact versions/digests recorded here, or to re-resolve and re-record fresh values at that time - this manifest is evidence for that decision, not the decision itself.",
+  "status": "frozen_at_protobase_1_0",
+  "purpose": "REQ-CFG-01 execution-environment identification evidence for the PROTOBASE-1.0 development freeze (docs/CONFORMANCE_REPORT.md). docker-compose.yml, prototype_stack/compose.yaml, the root Dockerfile, and .github/workflows/ci.yml on the `main` branch are now pinned to exactly these manifest-list digests, not floating tags - the pin recorded here is the pin actually applied, not a candidate awaiting a decision. Before this freeze these were deliberately floating for development convenience (docs/DEVELOPMENT_DOCUMENTATION.md §10.1/§10.9); ongoing development against floating tags continues on the `develop` branch, whose copies of the same files were deliberately left unpinned.",
   "observed_on": "2026-08-09",
   "observed_from": "docker buildx imagetools inspect <tag> against the live registry for each manifest-list digest, plus running the resolved image to read its own version string directly (not assumed from the tag name)",
   "images": {
@@ -8,37 +8,37 @@
       "role": "db service - docker-compose.yml, prototype_stack/compose.yaml, .github/workflows/ci.yml (backend-integration job's services.mysql)",
       "resolved_version": "26.7.0",
       "manifest_list_digest": "sha256:66aec17cd21a956029b83f083b813073859e8355dc1a00e55df6ba02f0e32345",
-      "pinned_reference_if_adopted": "mysql@sha256:66aec17cd21a956029b83f083b813073859e8355dc1a00e55df6ba02f0e32345"
+      "pinned_reference": "mysql@sha256:66aec17cd21a956029b83f083b813073859e8355dc1a00e55df6ba02f0e32345"
     },
     "php:8.4-apache": {
       "role": "Dockerfile `base` stage - the actual base of both the `dev` and `runtime` published images",
       "resolved_version": "8.4.24",
       "manifest_list_digest": "sha256:5f8050825b2f3de4efb0d81149c86643a9ee9c0a74ed4595ca2ad69ebfeb35fb",
-      "pinned_reference_if_adopted": "php@sha256:5f8050825b2f3de4efb0d81149c86643a9ee9c0a74ed4595ca2ad69ebfeb35fb"
+      "pinned_reference": "php@sha256:5f8050825b2f3de4efb0d81149c86643a9ee9c0a74ed4595ca2ad69ebfeb35fb"
     },
     "node:22-alpine": {
       "role": "Dockerfile `frontend-build` stage - build-time only, not present in any published image (§10.8's --platform=$BUILDPLATFORM pin applies to this stage)",
       "resolved_version": "22.23.2",
       "manifest_list_digest": "sha256:c610fcdfb1d5b4740dd70c284ed3cb16bb857e0f7166196e36a5501df7a3aa32",
-      "pinned_reference_if_adopted": "node@sha256:c610fcdfb1d5b4740dd70c284ed3cb16bb857e0f7166196e36a5501df7a3aa32"
+      "pinned_reference": "node@sha256:c610fcdfb1d5b4740dd70c284ed3cb16bb857e0f7166196e36a5501df7a3aa32"
     },
     "composer:2": {
       "role": "Dockerfile `vendor`/`vendor-dev` stages - build-time only, not present in any published image (also --platform=$BUILDPLATFORM pinned, §10.8)",
       "resolved_version": "2.10.2",
       "manifest_list_digest": "sha256:4d71c3c2109c61d5415544264b59ad4087e4c5b7244481723664138fd36d5040",
-      "pinned_reference_if_adopted": "composer@sha256:4d71c3c2109c61d5415544264b59ad4087e4c5b7244481723664138fd36d5040"
+      "pinned_reference": "composer@sha256:4d71c3c2109c61d5415544264b59ad4087e4c5b7244481723664138fd36d5040"
     },
     "selenium/standalone-chrome:latest": {
       "role": "test tooling only, never part of the deployed application (IMPLEMENTATION_SPECIFICATION.md §8's own framing). Used by .github/workflows/ci.yml's e2e job (amd64 GitHub-hosted runners) and as app/tests/E2E/docker-compose.yml's SELENIUM_IMAGE override on amd64 hosts",
       "resolved_version": "24.04 (selenium-docker project's own release tag; the bundled Chrome build floats within it by that project's design, not this one's)",
       "manifest_list_digest": "sha256:9569014786466376d3e5cf8a7758562368cd9637f783dcd3abdb2eaf3a0d5cd7",
-      "pinned_reference_if_adopted": "selenium/standalone-chrome@sha256:9569014786466376d3e5cf8a7758562368cd9637f783dcd3abdb2eaf3a0d5cd7"
+      "pinned_reference": "selenium/standalone-chrome@sha256:9569014786466376d3e5cf8a7758562368cd9637f783dcd3abdb2eaf3a0d5cd7"
     },
     "seleniarm/standalone-chromium:latest": {
       "role": "test tooling only, never part of the deployed application. docker-compose.yml's and app/tests/E2E/docker-compose.yml's default SELENIUM_IMAGE, for local Apple Silicon/arm64 development (§10.5's arm64 rationale)",
       "resolved_version": "not labeled by the image itself; identified only by the digest below",
       "manifest_list_digest": "sha256:d644a5f679e83e63344cee11c08fc2c7bf4acf43217434a8621a2bc85f7473a5",
-      "pinned_reference_if_adopted": "seleniarm/standalone-chromium@sha256:d644a5f679e83e63344cee11c08fc2c7bf4acf43217434a8621a2bc85f7473a5"
+      "pinned_reference": "seleniarm/standalone-chromium@sha256:d644a5f679e83e63344cee11c08fc2c7bf4acf43217434a8621a2bc85f7473a5"
     }
   },
   "deliberately_not_recorded": {

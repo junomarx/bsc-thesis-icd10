@@ -1431,3 +1431,103 @@ full-stack check above already exercises the application these tests
 would drive - but a real GitHub-hosted CI run is still the first true
 confirmation of the `ci.yml` fixes specifically, since `workflow_dispatch`
 and `push` are the only ways to actually execute that file.
+
+## 19. Step 10: the formal development freeze — pinning approach, `master`/`develop` split, and promotion methodology
+
+Project-owner's five-point instruction (quoted in full in
+`docs/CONFORMANCE_REPORT.md`'s opening) was to pin the repository commit,
+container image digests, source catalogue checksum, and baseline
+identifiers; run the full check battery in a clean environment; record it
+in a conformance report; promote `_candidate` designations only after that
+run succeeded; and freeze the resulting evidence package. The mechanics of
+*how* that was done, and two corrections the project owner caught along
+the way, are recorded here since they are genuine design decisions, not
+just a status change.
+
+### 19.1 First correction: recording digests is not the same as pinning them
+
+§10.9 (`environment_manifest_0_1_candidate.json`) had already recorded the
+exact resolved version and digest for every floating tag, deliberately
+*without* touching the Dockerfile/compose/CI files themselves - correct
+for that pre-freeze evidence-gathering step, but it was initially carried
+forward unchanged into step 10 itself. The project owner caught this:
+"previously declared floating tags... have to really be frozen for the
+development freeze, that was my mistake for not catching it." A
+development freeze that leaves the shipped build files resolving to
+`mysql:latest`/`node:22-alpine`/etc. isn't frozen - the next `docker pull`
+could silently change what "frozen" behaviour actually means. Corrected by
+editing the six actual reference sites (`Dockerfile`'s three `FROM` lines;
+`docker-compose.yml`, `prototype_stack/compose.yaml`, and `app/tests/E2E/docker-compose.yml`'s
+`mysql`/Selenium `image:` lines; `.github/workflows/ci.yml`'s
+`backend-integration` and `e2e` jobs' service images) to reference each
+image by digest, not tag.
+
+**Manifest-list digest, not single-platform digest:** each pin uses the
+digest `docker buildx imagetools inspect` reports for the image *index*
+(the OCI manifest list covering both `linux/amd64` and `linux/arm64`), not
+the digest of either platform-specific manifest underneath it. A bare
+`image@sha256:...` reference resolves through the index the same way a
+tag would, so this is the only digest form that keeps working identically
+on both an Apple Silicon dev machine and an `amd64` CI runner - consistent
+with the project's existing native-multi-arch decision (§10.7) and how
+`publish-images`' own post-publish check already identifies a
+multi-platform image.
+
+### 19.2 Second correction: pinning `master` directly would freeze ongoing development too
+
+Pinning digests directly on the branch in active use would mean every
+future development session on that branch inherits stale, non-floating
+base images - not the intent of a *development* freeze, which is meant to
+fix an evaluation baseline, not stop development. The project owner
+proposed the fix directly: "we can branch out a dockerfile for a develop
+branch with floating tags but the master needs to be frozen." Implemented
+literally - a `develop` branch was created at the commit immediately
+before the pin was applied, so its copies of all six files above keep
+their original floating tags; `master` carries the pinned versions forward
+from that point on. `develop` exists both locally and at `origin/develop`.
+Ongoing work should branch from and land on `develop`; `master` represents
+the frozen `PROTOBASE-1.0` evaluation baseline plus whatever is
+deliberately promoted onto it later (e.g. a future, equally deliberate
+re-freeze), not a branch for routine commits.
+
+No third branch (e.g. `release`) was created for the freeze's own
+resulting artefacts (the conformance report, the promoted `_candidate`
+files, the documentation updates in this pass) - they land on `master`
+directly, since `master` *is* now the frozen-baseline branch and a third
+branch would only add a merge step with no corresponding benefit. The
+recommended marker for the exact frozen commit is a git tag
+(`PROTOBASE-1.0`) rather than a branch, once this documentation pass
+lands - a tag names a point in history without implying anywhere to keep
+committing, which is what a third branch would wrongly suggest.
+
+### 19.3 Promotion methodology: mechanical only, gated on a zero-defect verdict
+
+Per the instruction's governing clause - "no further feature development
+shall be introduced unless the freeze run reveals an actual defect" - the
+clean-environment principal verification run (`docs/CONFORMANCE_REPORT.md`)
+was executed *before* any `_candidate` designation was touched, specifically
+so that promotion would either be justified by a clean 258/258 result or
+blocked by a real finding. It came back zero-defect, so the promotions
+that followed were naming/status changes only, not corrective changes:
+`reference_responses_0_3_candidate.csv` → `reference_responses_0_3.csv`,
+`oracle_manifest_0_3_candidate.json` → `oracle_manifest_0_3.json`,
+`rcbase_0_3_candidate_review.xlsx` → `rcbase_0_3_review.xlsx`,
+`docs/environment_manifest_0_1_candidate.json` → `docs/environment_manifest_0_1.json`,
+`prototype_baseline/persistence_candidate/candidate_file_digests.json` →
+`file_digests.json`, and `runtime_manifest_0_2.json`'s
+`prototype_baseline_id` `PROTOBASE-0.3` → `PROTOBASE-1.0` (with its
+`status` field and every PHP/Python docblock or path reference naming the
+old identifiers updated alongside, and the resulting canonical-digest
+cascade re-derived and re-pinned rather than guessed - the same discipline
+already established in §16/§18 for this exact class of change). The full
+application test suite was then re-run in full a second time, after these
+promotions, specifically to confirm the promotions themselves introduced
+no regression: identical 246/246 result both times
+(`docs/CONFORMANCE_REPORT.md` §4.3).
+
+**What remains open on purpose:** `REQBASE-1.0` (gated on `OPEN-EVAL-01`)
+and `TESTBASE-1.0` (the `TESTBASE-0.1` version-number gap noted since
+§10.6/step 8) are both explicitly out of this freeze's scope - the first a
+supervisor decision, the second a documentation gap for the thesis author
+to close, neither a technical finding this run made. `OPEN-RQ-01` and
+`OPEN-EVAL-01` remain exactly as unresolved as before.

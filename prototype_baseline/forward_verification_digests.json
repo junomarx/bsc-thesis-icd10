@@ -9,7 +9,7 @@
     "migration/case_code_domain_0_2_additions_provisional.csv": "0ebd6dbbe447d37a764338a7cb3c7c674af785388fa14ed97b4f7778ac4e021c",
     "migration/casebase_0_2_additions_provisional.csv": "c5d44c87a1eae90cac44cb679f57a6a92c127f91d5ea8d8d2b7f7be9eaf562fb",
     "migration/rcbase_0_2_additions_provisional.csv": "bcaaf10ca88fb9670562b185f3de72727da578817569e110e5d2bafd9e6afb8b",
-    "review/rcbase_0_3_candidate_review.xlsx": "a57fa6d070ffb979aad5ccfcfd73a38e9b0da072e399224402c7261d37b35b76",
-    "verification/reference_responses_0_3_candidate.csv": "21c3f02697fe9b20028ec1121d28fce3389c027705372ae08c43f894b3342540"
+    "review/rcbase_0_3_review.xlsx": "a57fa6d070ffb979aad5ccfcfd73a38e9b0da072e399224402c7261d37b35b76",
+    "verification/reference_responses_0_3.csv": "21c3f02697fe9b20028ec1121d28fce3389c027705372ae08c43f894b3342540"
   }
 }

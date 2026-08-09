@@ -36,11 +36,13 @@ precise as-built reference this audit's evidence column points into.
 - **✅ Verified** — the property demonstrably holds against the current
   implementation, with a concrete, checkable pointer (file, live-system
   check, passing automated test, or doc section).
-- **🕓 Deferred** — correctly *not yet done*, either because it is
-  specifically about the principal verification/freeze procedure (which has
-  not started) or because it depends on implementation-order steps 9–10
-  (oracle audit, freeze — see `chapter3_forward_implementation_instruction_0_5.md`),
-  which are explicitly sequenced after the current implementation phase.
+- **🕓 Deferred** — correctly *not yet done*, either because it depends on
+  a supervisor-level decision still open (`OPEN-RQ-01`/`OPEN-EVAL-01`) or on
+  work explicitly out of the step-10 freeze's scope (`REQBASE-1.0`,
+  `TESTBASE-1.0` — `docs/CONFORMANCE_REPORT.md` §7). Implementation-order
+  steps 9–10 (oracle audit, freeze — see
+  `chapter3_forward_implementation_instruction_0_5.md`) have both since
+  completed; rows that were deferred pending them are no longer marked so.
 - **📄 Thesis-text scope** — the acceptance criterion is about how the
   thesis document itself is written, not about anything in this repository.
 
@@ -132,7 +134,7 @@ as a record that the distinction existed and why, not as a live caveat.
 | ID | Status | Evidence |
 |---|---|---|
 | `REQ-TRC-01` | ✅ Verified | This document *is* the traceability-matrix audit; every row has a destination or a declared, reasoned deferral. |
-| `REQ-CFG-01` | 🕓 Deferred to freeze | No git commit has been pinned and no baseline has been promoted past `working_forward_implementation_candidate_not_frozen` (`runtime_manifest_0_2.json`'s own `status` field); freeze is implementation-order step 10, not requested. Execution-environment identification evidence (one of the seven things this requirement asks the eventual frozen baseline to identify) is prepared ahead of that step: `docs/environment_manifest_0_1_candidate.json` records the exact resolved version and manifest-list digest, observed directly against the live registry, for every floating container tag in use (`mysql:latest`, `php:8.4-apache`, `node:22-alpine`, `composer:2`, both Selenium images) - the compose/Dockerfile/CI files themselves deliberately stay on the floating tags until step 10 actually decides whether to pin them (`docs/DEVELOPMENT_DOCUMENTATION.md` §10.9). This closes none of the requirement by itself - source set, catalogue subset, rule model, reference-case suite, test specification, and software revision (a pinned commit) are still open - but it is real, checkable prep for the one piece it covers. |
+| `REQ-CFG-01` | ✅ Verified | Step 10's formal freeze (`docs/CONFORMANCE_REPORT.md` §1, `HANDOFF.md` §0.11) binds every identifier this requirement asks for: git commit `7147b307caa6282766b2bed5a2d55c019d568937`; source catalogue checksum `diaglist_sha256 = 66713da5d63afcd37b0152ae7058f2188bf34d557bfa06ad4ce008825fb94a4b`; catalogue subset `SUBSET-0.2`; rule model `RULEBASE-0.2`; reference-case suite `RCBASE-0.3` (143 rows, `_candidate` designation dropped); test specification `TESTBASE-0.1` (as-built, §6 deviation note); software revision `PROTOBASE-0.3` → `PROTOBASE-1.0`. Execution-environment identification is bound alongside: `docs/environment_manifest_0_1.json` (frozen status) records the exact resolved version and manifest-list digest for every container image, and those same six digests are now pinned directly in `Dockerfile`/`docker-compose.yml`/`prototype_stack/compose.yaml`/`app/tests/E2E/docker-compose.yml`/`.github/workflows/ci.yml` on `master` (not just recorded in a side manifest) — `docs/DEVELOPMENT_DOCUMENTATION.md` §19.1. `develop` intentionally keeps floating tags for ongoing work (§19.2), which does not weaken this binding since `master` is the evaluated branch. |
 
 ### 2.6 Reference-suite and verification requirements (catalogue §9)
 
@@ -140,36 +142,41 @@ as a record that the distinction existed and why, not as a live caveat.
 |---|---|---|
 | `REQ-VER-01` | ✅ Verified | `chapter3_patient_and_question_design_plan.md`/`chapter3_reference_case_coverage_plan_forward_0_3.md` state the selection criteria; the six-patient/25-question count is a stated content decision (`REQ-DAT-09`), not a percentage-of-catalogue quota. |
 | `REQ-VER-02` | ✅ Verified | `chapter3_reference_case_coverage_plan_forward_0_3.md`'s coverage matrix spans all three feedback classes across the new `RULE-REL-HARD-01`/`REL-SPEC-01`/`NOA-01` rules plus the four retained source-specific rules; no unexplained gap. |
-| `REQ-VER-03` | ✅ Verified | `verification/reference_responses_0_3_candidate.csv`'s 143 rows each carry `expected_class`/`expected_determining_rule`/`expected_criterion` derived from `QSAUDIT-0.1`/the rule catalogue — authored before being checked against the implementation, per the file's own `provenance_status` column. `mysql_schema_0_2.sql` has no table this oracle could leak into at runtime (§2.4 `REQ-ARC-01` above). |
+| `REQ-VER-03` | ✅ Verified | `verification/reference_responses_0_3.csv`'s 143 rows each carry `expected_class`/`expected_determining_rule`/`expected_criterion` derived from `QSAUDIT-0.1`/the rule catalogue — authored before being checked against the implementation, per the file's own `provenance_status` column. `mysql_schema_0_2.sql` has no table this oracle could leak into at runtime (§2.4 `REQ-ARC-01` above). |
 | `REQ-VER-04` | ✅ Verified | Rule/data unit tests (`Unit/*`, 77 tests), persistence/API/evaluation integration (`Integration/*`, 160 tests, live MySQL), an end-to-end learner path plus frontend-only progress/tutorial/theme regressions (`E2E/*`, 9 tests, real Selenium against the real running stack), and negative/boundary coverage (`malformed_input`/`unsupported_response_kind`/gate failures) all exist and pass for the forward model (`docs/CHANGELOG.md`). Regression rerun after a material correction is demonstrated by this same audit's own history (§1a). |
-| `REQ-VER-05` | 🕓 Deferred to freeze | The conformance categories exist in `chapter3_test_catalogue.md` §3.2.2; the final report applying them is the step-10 principal verification run. |
-| `REQ-VER-06` | ✅ Verified as ongoing practice; final log is a freeze-phase artefact | Every deviation this session (the bootstrap/deployment-path gap, the `none_of_above` raw-token leak, the patient-rename hash-pin update, etc.) is logged in `docs/CHANGELOG.md` with cause, fix, and re-verification — the mechanism is demonstrably in use. |
-| `REQ-VER-07` | 🕓 Deferred (data exists; not yet placed) | `verification/reference_responses_0_3_candidate.csv` already carries every mandatory field this requirement lists, and (as of step 9) every row is human-oracle-confirmed, not just present - the remaining work is purely which cases become main-text worked examples versus appendix-only, a thesis-writing decision, not a technical one. |
+| `REQ-VER-05` | ✅ Verified | Step 10's principal verification run applied the `chapter3_test_catalogue.md` §3.2.2 conformance categories in full: `docs/CONFORMANCE_REPORT.md` records 258/258 discrete checks (4 data-contract + 3 persistence + 246 application-suite + 5 container-startup), exact conformance, zero defects, with commands/environment/counts/results recorded per §3.2.2's own template. |
+| `REQ-VER-06` | ✅ Verified | Every deviation this session (the bootstrap/deployment-path gap, the `none_of_above` raw-token leak, the patient-rename hash-pin update, etc.) is logged in `docs/CHANGELOG.md` with cause, fix, and re-verification. The freeze-phase change-and-rerun log (`docs/CONFORMANCE_REPORT.md` §6) is now also in place and empty for the correct reason: the step-10 run found no defect to log. |
+| `REQ-VER-07` | 📄 Thesis-text scope | `verification/reference_responses_0_3.csv` carries every mandatory field this requirement lists, and every row is human-oracle-confirmed (step 9) or freeze-confirmed exact conformance (step 10), not just present. The remaining work is purely which cases become main-text worked examples versus appendix-only — a thesis-writing decision, not a technical one. |
 | `REQ-VER-08` | ✅ Verified | Step 9 (`docs/CHANGELOG.md`'s "Step 9" entry) cross-checked all 125 learner-question-domain/`none_of_above` expectations against `chapter3_question_bank_source_audit.md` (`QSAUDIT-0.1`) §4.1-4.6 - an independently-authored, source-cited design document written before and without reference to the evaluator's output, satisfying "created without copying classifier output" directly. Zero discrepancies found across all 25 questions, including the three deliberate counterexamples (`F03`, `N40`, `R40.2`) and both `none_of_above=correct` control questions. Every row's `provenance_status` now reads `forward_specification_derived_human_oracle_audit_confirmed_against_qsaudit_0_1`. |
 | `REQ-VER-09` | ✅ Verified | All 18 historical expectations accounted for and confirmed against genuine historical data, not reconstruction alone: 14 rows (`VQ-001`-`004`, `provenance_status = exact_semantic_carry_forward_from_rcbase_0_1`) were already an exact carry-forward from `RCBASE-0.1`, unchanged. The remaining 4 (`VQ-005`-`008`) were first re-verified in step 9 by directly evaluating the documented case facts against the live `RuleMap`/`RuleStatus` predicates, then reconciled for real: the archived raw `RCBASE-0.2` file (`archived/prototype_baseline_0_1/verification/reference_responses_0_2.csv` - the genuine pre-redesign oracle, not the `migration/` reconstruction bridge) was located and diffed field by field against all 4 rows; every field matches exactly. `provenance_status` now reads `exact_semantic_carry_forward_confirmed_against_rcbase_0_2`. `Integration/ReferenceResponseTest.php` reruns all 18 against the live evaluator on every run; all 18 hold. |
 
 ## 3. What this audit found
 
 **No undeclared gaps.** Every `Accepted`/`Scope constraint` requirement has
-verified evidence or a reasoned freeze-phase deferral. The five rows that
-briefly carried an honest ⚠ (§1a) - the property held by direct
-inspection, but the automated regression meant to prove it didn't run
-because `app/tests/*` still targeted deleted case-centric classes - are
-resolved: implementation-order step 8 (full test-suite rewrite,
-`docs/CHANGELOG.md`) landed the same day, and all five now read plain ✅
-against a passing test. `REQ-VER-08`/`09` are likewise now ✅: step 9
-(oracle/source audit, same day) cross-checked all 129 previously-unaudited
-oracle rows against `QSAUDIT-0.1`'s source-cited design table and (for the
-4 rows it doesn't cover) direct rule replay against documented case facts,
-finding zero discrepancies. `REQ-VER-07` remains deferred, but for a
-purely editorial reason now - the oracle content itself is audited and
-ready; what's left is a thesis-writing decision about which cases appear
-in the main text.
+verified evidence, a thesis-text-scope note, or a reasoned deferral tied to
+an explicitly open supervisor decision. The five rows that briefly carried
+an honest ⚠ (§1a) - the property held by direct inspection, but the
+automated regression meant to prove it didn't run because `app/tests/*`
+still targeted deleted case-centric classes - are resolved: implementation-
+order step 8 (full test-suite rewrite, `docs/CHANGELOG.md`) landed the same
+day, and all five now read plain ✅ against a passing test. `REQ-VER-08`/`09`
+are likewise ✅: step 9 (oracle/source audit) cross-checked all 129
+previously-unaudited oracle rows against `QSAUDIT-0.1`'s source-cited
+design table and (for the 4 rows it doesn't cover) direct rule replay
+against documented case facts, finding zero discrepancies. `REQ-VER-07` is
+thesis-text scope, not deferred - the oracle content itself is audited and
+frozen; what's left is a thesis-writing decision about which cases appear
+in the main text. `REQ-CFG-01`/`REQ-VER-05`/`06` are now ✅ as well: step 10
+(freeze + principal verification run,
+`docs/CONFORMANCE_REPORT.md`) bound every identifier this audit checks for
+and found zero defects across 258 checks.
 
-**What remains before `REQBASE-1.0`/`PROTOBASE-1.0` can be frozen**
-(catalogue §12): implementation-order step 10 (freeze + principal
-verification run), plus the two supervisor-level decisions unchanged since
-the original brief — `OPEN-RQ-01` (final research-question wording) and
-`OPEN-EVAL-01` (whether independent domain-expert review is required).
-None of these are implementation gaps in the sense this audit checks for;
-they are the project's own stated next steps.
+**`PROTOBASE-1.0` is frozen** (this audit's own re-check, `docs/CONFORMANCE_REPORT.md`
+§7). **What remains before `REQBASE-1.0`/`TESTBASE-1.0`** (catalogue §12):
+the two supervisor-level decisions unchanged since the original brief —
+`OPEN-RQ-01` (final research-question wording) and `OPEN-EVAL-01` (whether
+independent domain-expert review is required) — plus, for `TESTBASE-1.0`
+specifically, a documentation-only version-number increment for the
+step-8 test-suite rewrite (§6 of the conformance report). None of these
+are implementation gaps in the sense this audit checks for; they are the
+project's own stated next steps.

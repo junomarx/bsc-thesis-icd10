@@ -137,15 +137,17 @@ class RuntimeContractTests(unittest.TestCase):
         self.assertEqual(len(legacy_relations), 18)
         self.assertFalse(any(row[1].startswith("VQ-") for row in self.dataset.question_options))
 
-    def test_canonical_runtime_digest_is_stable_for_candidate(self) -> None:
-        # Updated 2026-08-09 (third time, same day) after VQ-005..008's
-        # `prompt` text and `question_code_domain`'s `source_audit_ref` for
-        # the same four rows were corrected during the legacy-fixture
-        # reconciliation (docs/CHANGELOG.md) - a deliberate pre-freeze
-        # content edit, not drift.
+    def test_canonical_runtime_digest_is_frozen_at_protobase_1_0(self) -> None:
+        # Frozen value as of the PROTOBASE-1.0 development freeze
+        # (docs/CONFORMANCE_REPORT.md), reflecting `prototype_baseline_id`
+        # changing from `PROTOBASE-0.3` to `PROTOBASE-1.0` in
+        # runtime_manifest_0_2.json - the fourth and final update to this
+        # value in one day, following the VQ-005..008 `prompt`/
+        # `source_audit_ref` reconciliation immediately before it
+        # (docs/CHANGELOG.md).
         self.assertEqual(
             self.dataset.canonical_digest(),
-            "35ef45096826c7e7b81b3d368b3e9633fcf713ce274aa5cfccd4cd9bcc9a1866",
+            "338cc21b533bfd2162f750c6d9608041962a4d49f4244853a9387e068c414331",
         )
 
     def test_schema_has_nine_runtime_tables_and_no_oracle_columns(self) -> None:

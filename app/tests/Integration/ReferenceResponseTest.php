@@ -8,31 +8,29 @@ use PHPUnit\Framework\Attributes\DataProvider;
 
 /**
  * TEST-RC-01: reference-response conformance against the `RCBASE-0.3`
- * candidate oracle.
+ * oracle, frozen at `PROTOBASE-1.0` (`docs/CONFORMANCE_REPORT.md`).
  *
  * This test harness reads
- * `prototype_baseline/verification/reference_responses_0_3_candidate.csv`
+ * `prototype_baseline/verification/reference_responses_0_3.csv`
  * directly; the running application never does (TEST-ARC-01). 143 rows: 18
  * carry a `legacy_rc_id` (the historical `RCBASE-0.2` regression
  * obligations, `REQ-VER-09` - mapped onto the 8 hidden `verification_only`
  * `VQ-*` questions) and 125 are new forward-model expectations spanning all
  * 25 learner questions plus their `none_of_above` cases.
  *
- * **Provenance (`REQ-VER-08`/`09`):** implementation-order step 9 (the
- * oracle/source audit) is done - every row's `provenance_status` column now
- * reads `..._human_oracle_audit_confirmed_against_qsaudit_0_1` (125 rows,
- * cross-checked against `chapter3_question_bank_source_audit.md` §4.1-4.6)
- * or `exact_semantic_carry_forward_confirmed_against_rcbase_0_2` (4 legacy
- * `VQ-005..008` rows - first confirmed by running their documented case
- * facts through the live `RuleMap`/`RuleStatus` predicates directly, since
- * `QSAUDIT-0.1` doesn't cover the legacy fixtures, then reconciled for
- * real: the archived raw `RCBASE-0.2` file
- * (`archived/prototype_baseline_0_1/verification/reference_responses_0_2.csv`)
- * was located and diffed field by field against all 4 rows - exact match).
- * Zero discrepancies found anywhere. The file keeps its `_candidate` name
- * and `RCBASE-0.3` stays a candidate baseline - freezing that is step 10's
- * job, not step 9's; this test passing is evidence toward, not a
- * substitute for, `REQ-VER-05`'s formal freeze-time conformance report.
+ * **Provenance (`REQ-VER-08`/`09`):** every row's `provenance_status`
+ * column reads `..._human_oracle_audit_confirmed_against_qsaudit_0_1` (125
+ * rows, cross-checked against `chapter3_question_bank_source_audit.md`
+ * §4.1-4.6) or `exact_semantic_carry_forward_confirmed_against_rcbase_0_2`
+ * (4 legacy `VQ-005..008` rows - confirmed both by running their
+ * documented case facts through the live `RuleMap`/`RuleStatus`
+ * predicates directly, and by a field-by-field diff against the archived
+ * raw `RCBASE-0.2` file,
+ * `archived/prototype_baseline_0_1/verification/reference_responses_0_2.csv`).
+ * Zero discrepancies found anywhere. This test's own execution, against
+ * this exact oracle, is part of the principal verification run recorded
+ * in `docs/CONFORMANCE_REPORT.md` - a passing run there is `REQ-VER-05`'s
+ * formal conformance evidence, not merely "toward" it.
  */
 final class ReferenceResponseTest extends DatabaseTestCase
 {
@@ -72,7 +70,7 @@ final class ReferenceResponseTest extends DatabaseTestCase
 
     public static function referenceResponses(): array
     {
-        $path = dirname(__DIR__, 3) . '/prototype_baseline/verification/reference_responses_0_3_candidate.csv';
+        $path = dirname(__DIR__, 3) . '/prototype_baseline/verification/reference_responses_0_3.csv';
         $handle = fopen($path, 'r');
         $header = fgetcsv($handle, escape: '\\');
         $vectors = [];

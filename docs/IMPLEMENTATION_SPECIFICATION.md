@@ -57,7 +57,7 @@ app/
     Db.php                        PDO factory
     Bootstrap.php                 wires repositories + evaluator against one PDO connection
     Model/
-      BaselineIdentity.php        the single `prototype_baseline` row (PROTOBASE-0.3 identity)
+      BaselineIdentity.php        the single `prototype_baseline` row (PROTOBASE-1.0 identity, frozen §6.3)
       CatalogueRecord.php          one catalogue_code (SUBSET-0.2) row
       Patient.php                  one patient_definition row + ordered context items
       PatientContextItem.php       one patient_context_item row
@@ -649,8 +649,14 @@ reads the identical five variables — same names, same defaults.
 | `vendor` | `composer:2` | `/app/vendor` (`--no-dev --optimize-autoloader`) |
 | `runtime` (final) | `php:8.4-apache` | `pdo_mysql` + `rewrite` enabled; `vendor/`, `src/`, `public/index.php`, `public/.htaccess`, and the frontend build output copied into `/var/www/html` |
 
-Unchanged since the case-centric implementation — the migration touched
-`app/src`/`app/frontend/src` contents, not the build stages themselves.
+Build stages themselves are unchanged since the case-centric implementation
+— the migration touched `app/src`/`app/frontend/src` contents, not the
+stage structure. **Base-image references did change at the `PROTOBASE-1.0`
+freeze** (§6.3): on `master`, all three `FROM` lines above resolve by
+manifest-list digest, not floating tag — exact digests in §8. The
+`develop` branch's copy of this `Dockerfile` intentionally keeps the
+floating tags (`node:22-alpine`, `composer:2`, `php:8.4-apache`) for
+ongoing development; see `docs/DEVELOPMENT_DOCUMENTATION.md` §19.
 
 ### 6.3 Bootstrap: wired to `MODELBASE-0.2`, not the historical pipeline
 
@@ -671,7 +677,7 @@ reference, but is no longer referenced by either Compose file or CI's
 
 | Service | Role | Lifecycle |
 |---|---|---|
-| `db` | `mysql:latest`, named volume `mysql_data` | long-running; healthcheck via `mysqladmin ping`; deliberately unpinned below the major version (`docs/DEVELOPMENT_DOCUMENTATION.md` §10.1) |
+| `db` | `mysql` — pinned to a manifest-list digest on `master` as of the `PROTOBASE-1.0` freeze (§8); `develop` keeps `mysql:latest`, named volume `mysql_data` | long-running; healthcheck via `mysqladmin ping`; the underlying policy is still deliberately unpinned below the major version (`docs/DEVELOPMENT_DOCUMENTATION.md` §10.1) — the digest pin freezes *which* version currently satisfies that policy, not the policy itself; re-resolving after an intentional unfreeze would still follow it |
 | `bootstrap` | built from `prototype_baseline/Dockerfile.bootstrap` | one-shot (`restart: "no"`); applies schema on an empty DB, then runs the idempotent loader; reports `inserted` on first run, `no_op` on every identical re-run |
 | `app` | built from `Dockerfile` (repo root) | long-running; published on `${APP_HTTP_PORT:-5860}` |
 
@@ -760,7 +766,7 @@ re-verified while writing this section, not carried over from memory:
 | `TEST-ARC-01` | `Integration/ArchitectureIsolationTest.php` |
 | `TEST-DET-01` | `Integration/DeterminismTest.php` |
 | `TEST-API-01` | `Integration/EvaluationApiTest.php` |
-| `TEST-RC-01` | `Integration/ReferenceResponseTest.php` — reads the 143-row `RCBASE-0.3` candidate oracle directly (§6.3's Deviations note below applies) |
+| `TEST-RC-01` | `Integration/ReferenceResponseTest.php` — reads the 143-row `RCBASE-0.3` oracle (frozen, `reference_responses_0_3.csv`) directly |
 | `TEST-E2E-01` | `E2E/LearnerWorkflowTest.php` |
 | `TEST-E2E-02` | `E2E/VerificationOnlyQuestionVisibilityTest.php` (renamed from `VerificationOnlyCaseVisibilityTest.php`) |
 | *(none — frontend-only)* | `E2E/ProgressBadgeTest.php`: the `sessionStorage` per-patient completion badge (§5.6) has no backend equivalent, so it has no upstream `TEST-*` identifier |
@@ -780,34 +786,38 @@ was located and diffed field by field against all 4 rows - exact match on
 every field, no reconstruction gap remains. `provenance_status` reflects
 this (`..._human_oracle_audit_confirmed_against_qsaudit_0_1` for the 125
 learner rows, `exact_semantic_carry_forward_confirmed_against_rcbase_0_2`
-for the 4 legacy rows). A passing `TEST-RC-01` run is still not step 10's
-frozen conformance claim (`REQ-VER-05`) - the file keeps its `_candidate`
-name until that freeze happens - but no historical-fixture reconciliation
-gap remains open. See `ReferenceResponseTest.php`'s own docblock and
-`docs/REQUIREMENTS_TRACEABILITY.md` (`REQ-VER-08`/`09`) for the exact
-distinction.
+for the 4 legacy rows). Step 10's formal conformance claim (`REQ-VER-05`)
+has since been made: the file dropped its `_candidate` name
+(`reference_responses_0_3.csv`), and the clean-environment principal
+verification run confirmed all 143/143 rows exact conformance, zero
+defects (`docs/CONFORMANCE_REPORT.md`). See `ReferenceResponseTest.php`'s
+own docblock and `docs/REQUIREMENTS_TRACEABILITY.md` (`REQ-VER-08`/`09`)
+for the exact distinction between this audit and that freeze run.
 
 ## 8. Exact tool/version pins observed in this implementation
 
+**On `master`, pinned at the `PROTOBASE-1.0` freeze (step 10) — see
+`docs/CONFORMANCE_REPORT.md` §2 and `docs/DEVELOPMENT_DOCUMENTATION.md`
+§19. The `develop` branch's copies of the same files intentionally keep
+every image below on its floating tag for ongoing development.**
+
 | Component | Version | Where pinned |
 |---|---|---|
-| PHP (runtime image) | 8.4.24 | `php:8.4-apache` base image - floating tag; exact resolved version + manifest-list digest recorded in `docs/environment_manifest_0_1_candidate.json` |
-| MySQL | 26.7.0 as currently resolved | deliberately unpinned below the major version, `mysql:latest` in both Compose files and CI — §6.3; exact resolved version + digest in `docs/environment_manifest_0_1_candidate.json`, not in the compose/CI files themselves |
-| Node (build stage only) | 22.23.2 as currently resolved | `node:22-alpine`, `Dockerfile` (repo root) - floating tag; exact resolved version + digest in `docs/environment_manifest_0_1_candidate.json` |
-| Composer (build stage only) | 2.10.2 as currently resolved | `composer:2`, `Dockerfile` (repo root) - floating tag; exact resolved version + digest in `docs/environment_manifest_0_1_candidate.json` |
+| PHP (runtime image) | 8.4.24 | `php:8.4-apache` base image — pinned by manifest-list digest `sha256:5f8050825b2f3de4efb0d81149c86643a9ee9c0a74ed4595ca2ad69ebfeb35fb` in `Dockerfile` (repo root) |
+| MySQL | 26.7.0 | pinned by manifest-list digest `sha256:66aec17cd21a956029b83f083b813073859e8355dc1a00e55df6ba02f0e32345` in `docker-compose.yml`, `prototype_stack/compose.yaml`, and `.github/workflows/ci.yml`'s `backend-integration` job — §6.3's major-version-unpinning policy still governs *which* version gets pinned at each freeze, it just no longer floats between freezes |
+| Node (build stage only) | 22.23.2 | `node:22-alpine`, pinned by manifest-list digest `sha256:c610fcdfb1d5b4740dd70c284ed3cb16bb857e0f7166196e36a5501df7a3aa32` in `Dockerfile` (repo root) |
+| Composer (build stage only) | 2.10.2 | `composer:2`, pinned by manifest-list digest `sha256:4d71c3c2109c61d5415544264b59ad4087e4c5b7244481723664138fd36d5040` in `Dockerfile` (repo root) |
 | React | 19.2.8 | `app/frontend/package.json` |
 | Vite | 8.2.x | `app/frontend/package.json` |
 | Frontend app version | 0.9.9 | `app/frontend/package.json`, rendered in the footer (§5.8) |
 | PHPUnit | 11.5.x | `app/composer.lock` |
 | php-webdriver/webdriver | 1.16.0 | `app/composer.lock` |
-| Selenium/browser (ad hoc verification only, not the app) | `seleniarm/standalone-chromium:latest` (arm64, local dev default) and `selenium/standalone-chrome:latest` (amd64, CI and E2E override) | `app/tests/E2E/docker-compose.yml`, `.github/workflows/ci.yml` - both floating; exact resolved digests in `docs/environment_manifest_0_1_candidate.json` |
+| Selenium/browser (ad hoc verification only, not the app) | `selenium/standalone-chrome` (amd64, CI/E2E default) pinned by manifest-list digest `sha256:9569014786466376d3e5cf8a7758562368cd9637f783dcd3abdb2eaf3a0d5cd7`; `seleniarm/standalone-chromium` (arm64, local dev default) pinned by `sha256:d644a5f679e83e63344cee11c08fc2c7bf4acf43217434a8621a2bc85f7473a5` | `app/tests/E2E/docker-compose.yml`, `.github/workflows/ci.yml` |
 
-**`docs/environment_manifest_0_1_candidate.json`** records the exact
-resolved version and manifest-list digest observed for every floating tag
-above, as `REQ-CFG-01` execution-environment evidence gathered ahead of
-step 10 - see `docs/DEVELOPMENT_DOCUMENTATION.md` §10.9 for the full
-rationale and why the compose/Dockerfile/CI files themselves stay on
-floating tags rather than being pinned now.
+**`docs/environment_manifest_0_1.json`** records the exact resolved
+version and manifest-list digest for every image above (frozen status),
+the `REQ-CFG-01` execution-environment evidence the `PROTOBASE-1.0` freeze
+run bound in `docs/CONFORMANCE_REPORT.md` §2.
 
 ## 9. Explicit non-implementations
 

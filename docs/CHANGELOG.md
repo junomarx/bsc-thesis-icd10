@@ -13,6 +13,121 @@ Reference `REQ-*`/`RULE-*`/`TEST-*` identifiers where a change implements or
 affects one. Every entry should let a reader answer "what changed, why, and
 was it actually tested" without opening the diff.
 
+## 2026-08-09 — Step 10: the formal development freeze — `PROTOBASE-1.0`, zero defects
+
+Project-owner's five-point freeze instruction, executed in full: pin the
+repository commit, container image digests, source catalogue checksum,
+and baseline identifiers; execute the complete data-contract/persistence/
+unit/integration/reference-response/E2E/container-startup check battery in
+a clean environment; record commands/environment/counts/results in a
+conformance report; replace `_candidate` designations only after that run
+succeeds; freeze the evidence package for Chapter 3 and the final
+evaluation chapter. Full account, exact commands, and figures:
+`docs/CONFORMANCE_REPORT.md`. Design rationale for the two corrections
+below: `docs/DEVELOPMENT_DOCUMENTATION.md` §19.
+
+### Changed
+
+- `Dockerfile` (repo root): all three `FROM` base images
+  (`node:22-alpine`, `composer:2`, `php:8.4-apache`) pinned by
+  manifest-list digest instead of floating tag.
+- `docker-compose.yml`, `prototype_stack/compose.yaml`,
+  `app/tests/E2E/docker-compose.yml`: `mysql`/Selenium `image:` lines
+  pinned by manifest-list digest.
+- `.github/workflows/ci.yml`: `backend-integration`'s `mysql` service and
+  `e2e`'s `SELENIUM_IMAGE` pinned by manifest-list digest.
+- Correction mid-task (project owner caught it): the six digests above had
+  already been *recorded* (previous entry, "Execution-environment versions
+  recorded ahead of freeze") but not yet *applied* to the files that
+  actually get built/run - a development freeze that still resolves
+  `mysql:latest` isn't frozen. Fixed by editing the six reference sites
+  directly, not just the side manifest.
+- Created a `develop` branch (also pushed to `origin/develop`) at the
+  commit immediately before the pin, so its copies of all six files above
+  keep their original floating tags for ongoing development. `master`
+  carries the pinned versions forward. Also a project-owner correction:
+  pinning the branch under active development directly would have frozen
+  future development sessions too, not just the evaluation baseline.
+
+### Added
+
+- `docs/CONFORMANCE_REPORT.md`: the `REQ-VER-05` formal conformance
+  report, following `docs/chapter3/chapter_3_methods_and_practical_work_specification.md`
+  §3.2.2's structure exactly - baseline/version table, execution-environment
+  record, conformance/deviation classification, executed checks (258
+  discrete checks: 4 data-contract + 3 persistence + 246 application-suite
+  + 5 container-startup), results summary, change-and-rerun log (empty -
+  no defect found), and an explicit scope-boundary statement.
+- `docs/DEVELOPMENT_DOCUMENTATION.md` §19: the freeze decision record -
+  pinning approach, manifest-list-digest rationale, the `master`/`develop`
+  split and the two corrections behind it, and the promotion methodology.
+
+### Verified
+
+- Data-contract (4 checks: source-to-subset reproduction, runtime
+  contract, forward-verification-design contract, materialized-design
+  contract) - all **PASS**.
+- Persistence (3 checks against a fresh throwaway MySQL container from the
+  pinned digest: schema application, baseline load, persistence tests) -
+  all **PASS**.
+- Full containerized application suite (`docker compose --profile test
+  run --rm test`): **246/246 tests, 2349 assertions, 0 failures** (77 unit
+  + 160 integration, including all 143/143 `RCBASE-0.3` rows + 9 E2E).
+  Re-run in full a second time after the candidate-promotion changes below
+  to confirm they introduced no regression - identical result both times.
+- Container-startup sequence (build, ordered `db → bootstrap → app`
+  startup, bootstrap log, `/api/health`, `/api/patients`) - all **PASS**.
+- **258/258 discrete checks, exact conformance, zero defects found.**
+
+### Renamed / candidate designations dropped
+
+Per the zero-defect verdict, and only after it:
+
+- `prototype_baseline/verification/reference_responses_0_3_candidate.csv`
+  → `reference_responses_0_3.csv`.
+- `prototype_baseline/verification/oracle_manifest_0_3_candidate.json` →
+  `oracle_manifest_0_3.json` (`status` → `frozen_predefined_expectations_at_protobase_1_0`).
+- `prototype_baseline/review/rcbase_0_3_candidate_review.xlsx` →
+  `rcbase_0_3_review.xlsx`.
+- `docs/environment_manifest_0_1_candidate.json` →
+  `docs/environment_manifest_0_1.json` (`status` → `frozen_at_protobase_1_0`).
+- `prototype_baseline/persistence_candidate/candidate_file_digests.json`
+  → `file_digests.json`.
+- `runtime_manifest_0_2.json`: `prototype_baseline_id` `PROTOBASE-0.3` →
+  `PROTOBASE-1.0`, `status` → `frozen_evaluation_baseline`. This cascaded
+  into the canonical runtime digest, re-derived and re-pinned in
+  `test_runtime_contract_0_2.py` (`338cc21b533bfd2162f750c6d9608041962a4d49f4244853a9387e068c414331`),
+  re-verified rather than guessed.
+- Every PHP/Python docblock or path reference to the old `_candidate`
+  names or `PROTOBASE-0.3` updated alongside: `app/src/Bootstrap.php`,
+  `app/src/Config.php`, `app/tests/Integration/DatabaseTestCase.php`,
+  `app/tests/Integration/ReferenceResponseTest.php`,
+  `prototype_baseline/persistence_candidate/mysql_schema_0_2.sql`,
+  `prototype_baseline/validate_forward_verification.py`.
+- `HANDOFF.md`, `README.md`, `docs/IMPLEMENTATION_SPECIFICATION.md`,
+  `docs/REQUIREMENTS_TRACEABILITY.md` updated to reflect the frozen state
+  (new `HANDOFF.md` §0.11; `REQ-CFG-01`/`REQ-VER-05`/`06` moved from
+  deferred to ✅ Verified; `REQ-VER-07` reclassified 📄 thesis-text scope).
+
+### Deviations
+
+- `TEST-CFG-01`'s own text in `chapter3_test_catalogue.md` still prints
+  the pre-forward-redesign identifiers (`SUBSET-0.1`, `RULEBASE-0.1`,
+  `CASEBASE-0.2`, `RCBASE-0.2`, `PROTOBASE-0.2`) rather than the current
+  ones actually bound and verified. Known, pre-existing upstream staleness
+  in a `chapter3_*.md` control document - not edited, per standing
+  practice; the current identifiers in `docs/CONFORMANCE_REPORT.md` §1 are
+  what was actually verified.
+- `TESTBASE-0.1`'s version number was not incremented on paper for the
+  step-8 test-suite rewrite, even though coverage was substantially
+  extended. A documentation gap for the thesis author, not a technical
+  gap this run found.
+- `OPEN-RQ-01` and `OPEN-EVAL-01` remain explicitly unresolved supervisor
+  decisions, unaffected by this freeze.
+- `REQBASE-1.0` and `TESTBASE-1.0` are explicitly out of this freeze's
+  scope (`docs/CONFORMANCE_REPORT.md` §7) - only `PROTOBASE-1.0` and
+  `RCBASE-0.3` (frozen) are claimed here.
+
 ## 2026-08-09 — Execution-environment versions recorded ahead of freeze (REQ-CFG-01 prep)
 
 Project-owner instruction, explicitly framed as pre-freeze preparation:

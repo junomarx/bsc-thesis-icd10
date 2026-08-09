@@ -1,4 +1,4 @@
--- MODELBASE-0.2 / candidate PROTOBASE-0.3
+-- MODELBASE-0.2 / PROTOBASE-1.0 (frozen, docs/CONFORMANCE_REPORT.md)
 -- Runtime schema only. RCBASE-0.3 and all expected verification outcomes are absent.
 
 CREATE TABLE prototype_baseline (

@@ -74,7 +74,7 @@ COPY app/composer.json app/composer.lock* app/phpunit.xml ./
 # the one oracle CSV the test harness actually reads is placed at the
 # equivalent path here (never the Python pipeline itself, which stays out
 # of this image).
-COPY prototype_baseline/verification/reference_responses_0_3_candidate.csv /var/www/prototype_baseline/verification/reference_responses_0_3_candidate.csv
+COPY prototype_baseline/verification/reference_responses_0_3.csv /var/www/prototype_baseline/verification/reference_responses_0_3.csv
 
 # Lean deployment image: no dev dependencies, no test files. Last stage, so
 # a bare `docker build` (no --target) safely defaults to this one — the

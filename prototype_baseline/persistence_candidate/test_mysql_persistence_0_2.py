@@ -111,7 +111,7 @@ class MySQLPersistenceTests(unittest.TestCase):
         self.assertEqual(
             identity,
             (
-                "PROTOBASE-0.3", "MODELBASE-0.2", "SUBSET-0.2", "PATIENTBASE-0.1",
+                "PROTOBASE-1.0", "MODELBASE-0.2", "SUBSET-0.2", "PATIENTBASE-0.1",
                 "QUESTIONBASE-0.1",
                 "66713da5d63afcd37b0152ae7058f2188bf34d557bfa06ad4ce008825fb94a4b",
             ),
