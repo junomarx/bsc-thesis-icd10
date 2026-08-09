@@ -17,10 +17,10 @@ name: CI
 # stack they configure exist only for the lifetime of one job run.
 
 on:
-  # push:
-  #   branches: [main]
+  push:
+    branches: [main]
   # pull_request:
-  workflow_dispatch: # only manual trigger for now, to avoid CI spam on PRs and pushes to main
+  workflow_dispatch: # manual trigger retained alongside push; PRs still opt out to avoid CI spam
 
 jobs:
   python-checks:

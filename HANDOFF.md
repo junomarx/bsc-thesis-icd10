@@ -97,14 +97,14 @@ A bachelor-thesis Design Science Research artefact: a small web application that
 
 - **Step 9 (oracle/source audit)** — the 125 new `RCBASE-0.3` expectations and the 4 provisional `VQ-005..008` reconstructions are not yet reconciled against source; the oracle's own `provenance_status` column still reads `forward_specification_derived_pending_human_oracle_audit` for every row. They are now automatically *exercised* by `ReferenceResponseTest` (step 8) - all 143 currently pass - but a passing automated test is not the same claim as a completed human audit against the original Austrian source pages. Explicitly flagged as pre-freeze work, not a current blocker. **Immediate next step — see §4.**
 - **Step 10 (freeze + principal verification run)** — depends on 9.
-- CI (`.github/workflows/ci.yml`) has not been re-run since the migration; its `publish-images` job is why the GHCR images are stale (§2). It would now plausibly pass if triggered (`workflow_dispatch`) - `backend-integration`'s own bootstrap-wiring bug is also fixed - but this has not been confirmed via an actual GitHub-hosted run since the step 8 rewrite landed.
+- CI (`.github/workflows/ci.yml`) has not completed a run against the step-8-rewritten test suite yet - the last actual GitHub-hosted run (`workflow_dispatch`, 2026-08-09 09:20 UTC) predates both the `backend-integration` bootstrap-wiring fix and the test-suite rewrite, so its failure is stale, not current. `push` (to `main`) is re-enabled as of 2026-08-09 so the next push will confirm this automatically; `publish-images` is why the GHCR images are stale (§2) until that happens.
 - Pre-redesign open items (`OPEN-RQ-01` thesis research-question wording, `OPEN-EVAL-01` whether independent domain-expert review is required) remain the supervisor's to decide and are unaffected by any of the above.
 
 ## 4. Immediate next step
 
 **Step 9**: reconcile the 125 new reference-response expectations and the 4 provisional `VQ-005`-`VQ-008` reconstructions against the original Austrian source pages (`SRC-AT-DOC-2026`, `QSAUDIT-0.1`). Unlike step 8, this is a source/domain-audit task, not a coding task - it means opening the cited source pages and checking each `expected_class`/`expected_determining_rule`/`expected_improvement_code` against them, not writing more test code. After step 9, step 10 (freeze + principal verification run) is next.
 
-Separately, worth doing but not blocking: actually triggering `.github/workflows/ci.yml` (`workflow_dispatch`) to confirm it passes end-to-end now that both the bootstrap-wiring bug and the test suite itself are fixed, then deciding whether to re-enable its `push` trigger.
+Separately, worth doing but not blocking: confirming the next push to `main` actually runs CI end-to-end (push trigger just re-enabled, §0.1) and passes now that both the bootstrap-wiring bug and the test suite itself are fixed - no GitHub-hosted run has completed against the fixed tree yet.
 
 ## 5. How to resume the environment
 
