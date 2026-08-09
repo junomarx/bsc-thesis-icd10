@@ -13,6 +13,57 @@ Reference `REQ-*`/`RULE-*`/`TEST-*` identifiers where a change implements or
 affects one. Every entry should let a reader answer "what changed, why, and
 was it actually tested" without opening the diff.
 
+## 2026-08-09 — CI's `backend-integration` job fixed a second instance of the bootstrap-wiring bug
+
+The project owner ran the CI workflow manually (`workflow_dispatch` — push
+triggers are deliberately disabled) and reported the failure log.
+`php-unit` erroring 47/49 is the already-tracked, not-yet-started step 8
+gap (`HANDOFF.md`) - expected, not new. `backend-integration` erroring
+differently was new and real: `BaselineIdentity::__construct(): Argument
+#8 ($patientBaselineId) must be of type string, null given`. This is the
+exact same bug class as the app-deployment bootstrap gap fixed earlier
+this session (`docs/CHANGELOG.md`'s "steps 2-3 completed for real" entry) -
+just a second, independent occurrence: `backend-integration`'s own steps
+still applied `prototype_baseline_0_1/scripts/apply_mysql_schema.py` and
+`load_mysql.py` (the historical `CASEBASE-0.2` pipeline) directly, never
+routed through `prototype_stack/compose.yaml` at all, so the earlier
+bootstrap-repoint fix never touched it. (The `e2e` job *does* go through
+`prototype_stack/compose.yaml` and was already correct.)
+
+### Fixed
+
+- `.github/workflows/ci.yml`'s `backend-integration` job now applies
+  `prototype_baseline_0_2_design/persistence_candidate/apply_mysql_schema_0_2.py`,
+  loads via `load_mysql_0_2.py`, and runs `test_mysql_persistence_0_2`
+  (working directory set to `persistence_candidate/`, required for that
+  test module's sibling imports to resolve - the same cwd quirk noted
+  earlier this session).
+
+### Verified
+
+- Reproduced the exact CI step sequence locally against a throwaway MySQL
+  container (`docker run`, port 3307, torn down after): schema apply →
+  load → `python -m unittest -v test_mysql_persistence_0_2` — all 6 tests
+  pass, `MySQL baseline load: inserted`, correct `PROTOBASE-0.3` counts.
+- Then ran `vendor/bin/phpunit --testsuite integration` against that same,
+  now-correctly-loaded database to see what CI would hit next: the
+  `TypeError` is gone, replaced by 25 assertion failures in
+  `ReferenceResponseTest` (querying `CASE-001`/`Z01.6`-style fixtures that
+  no longer exist in `MODELBASE-0.2`) plus the same `ArchitectureIsolationTest`/
+  `DeterminismTest` failures already known. Confirms this fix is real and
+  necessary but not sufficient - the remaining redness is entirely the
+  already-tracked step 8 (test-suite rewrite), not a second infrastructure
+  bug.
+
+### Deviations
+
+- Did not proceed to the full step 8 test-suite rewrite in this same
+  pass - that's a substantially larger, separately-scoped task (rewriting
+  `app/tests/Support/Fixtures.php` and every `Unit`/`Integration`/`E2E`
+  file for the patient/question model, then re-proving all 18 historical
+  regression expectations), left for an explicit go/no-go rather than
+  folded silently into an infrastructure bugfix.
+
 ## 2026-08-09 — Default learner-facing port changed 8080 → 5860
 
 Project-owner request, to avoid conflicting with other applications on a
