@@ -13,6 +13,267 @@ Reference `REQ-*`/`RULE-*`/`TEST-*` identifiers where a change implements or
 affects one. Every entry should let a reader answer "what changed, why, and
 was it actually tested" without opening the diff.
 
+## 2026-08-09 — CI's first real GitHub-hosted confirmation, and a multi-arch build hang fixed
+
+The project owner triggered the first real `push`-driven CI run since
+`push` was re-enabled. Reported: `publish-images`'s "Build and push
+runtime image" step running 1.5 hours with no end in sight.
+
+### Verified
+
+- All four test jobs (`python-checks`, `php-unit`, `backend-integration`,
+  `e2e`) passed cleanly against the real GitHub-hosted runner, confirming
+  every fix from today's earlier entries (step 8, the CI bootstrap-wiring
+  fix, the housekeeping-pass path fixes) for the first time outside
+  locally-reproduced equivalents - all four completed within about two
+  minutes total (`10:14:44`-`10:16:35Z`, run `31307856678`).
+
+### Fixed
+
+- **`publish-images`'s multi-arch (`linux/amd64,linux/arm64`) build of the
+  `runtime` image was hanging indefinitely**, not just running slowly.
+  Root cause: `Dockerfile` pinned no `--platform` on `frontend-build`
+  (Node/Vite/esbuild) or the two Composer `vendor`/`vendor-dev` stages, so
+  `docker/build-push-action` built every stage once per target platform -
+  including running `npm run build` a second time under QEMU emulation for
+  `arm64`. Vite's esbuild is a native Go binary; esbuild under QEMU
+  user-mode emulation is a well-known hang/pathological-slowness case.
+  None of these three stages produce architecture-specific output (static
+  JS/CSS/HTML; a pure-PHP vendor tree with no compiled extensions) - only
+  `base`/`dev`/`runtime` need a real per-arch build, since `base` compiles
+  the native `pdo_mysql` extension. Fixed by pinning
+  `--platform=$BUILDPLATFORM` on `frontend-build`, `vendor`, and
+  `vendor-dev`, so they always build natively on the runner regardless of
+  target platform, and their output is `COPY --from=`'d into the
+  per-arch stages as before.
+
+### Verified
+
+- Locally reproduced the exact failure mode and confirmed the fix: a real
+  multi-platform `docker buildx build --platform linux/amd64,linux/arm64
+  --target runtime` (via a `docker-container`-driver builder, matching
+  what `docker/setup-buildx-action` creates in CI) completed in **1m35s**
+  after the fix, against a host where one of the two platforms is
+  necessarily emulated either way - down from a run that had not completed
+  after 1.5+ hours before it. The one stage that legitimately runs under
+  emulation (`base`'s `pdo_mysql` compile) took ~21s, confirming the
+  frontend build was the actual bottleneck, not emulation in general.
+  `docker build --target dev` also re-verified clean after the shared
+  `vendor`/`vendor-dev` stage changes.
+
+### Deviations
+
+- The stuck GitHub-hosted run itself (`31307856678`) was left for the
+  project owner to cancel - this session has no credentials to cancel a
+  run via the API. The fix applies to the *next* run, not that one.
+
+## 2026-08-09 — Repository housekeeping: rename, archive, and three real CI/Docker bugs found by tracing every reference
+
+Project-owner request, right after step 9: audit the repository for stale
+files, rename `prototype_baseline_0_2_design/` to `prototype_baseline/`
+(it's the one live pipeline now), and archive `prototype_baseline_0_1/`
+with every reference cleaned. Method mattered more than mechanics: every
+`git mv` was preceded by a full-repository grep for the old path, and
+every hit was read in context before deciding whether it was a live
+functional reference (must fix), a living-document current-state claim
+(must fix), or a frozen historical record (leave alone - rewriting history
+to match a later rename is worse than the staleness it "fixes"). Full
+rationale and the classification method: `docs/DEVELOPMENT_DOCUMENTATION.md`
+§17.
+
+### Changed
+
+- `prototype_baseline_0_2_design/` → `prototype_baseline/` (`git mv`, 43
+  files, history preserved).
+- `prototype_baseline_0_1/`, `development_handoff/`, `forward_package_0_6/`
+  → `archived/` (`git mv`) - the first two beyond the request's literal
+  scope, but fitting its own stated criterion ("stale files no longer in
+  use"); `development_handoff/` was already described in `README.md`'s
+  own prose as "archived," now actually filed as one, and
+  `forward_package_0_6/`'s useful content was already extracted into the
+  live tree weeks ago (this file's `APIBASE-0.1` entry) - the 9.6MB copy
+  left behind was pure leftover.
+- `.venv/` (198MB, including platform-specific compiled binaries)
+  untracked via `git rm -r --cached` - already `.gitignore`d, just
+  committed before that rule existed; working copy untouched.
+- Empty, untracked `latex/` directory removed outright.
+- Every functional reference to the renamed/archived paths updated:
+  `.github/workflows/ci.yml`, `Dockerfile`, `.dockerignore`,
+  `docker-compose.yml`, `prototype_stack/compose.yaml`,
+  `app/tests/Integration/{DatabaseTestCase.php,ReferenceResponseTest.php}`,
+  `prototype_baseline/persistence_candidate/bootstrap_mysql_0_2.py`
+  (docstring), `HANDOFF.md`, `README.md`, `CLAUDE.md`,
+  `docs/IMPLEMENTATION_SPECIFICATION.md`, `docs/DEVELOPMENT_DOCUMENTATION.md`.
+  `chapter3_*.md` root files deliberately **not** touched - upstream
+  versioned specification lineage, not downstream artefacts (`CLAUDE.md`).
+
+### Fixed
+
+Three real bugs, found only by tracing every reference before touching
+anything - not invented for this exercise:
+
+1. **`.github/workflows/ci.yml`'s `publish-images` job was building the
+   published `bsc-thesis-icd10-bootstrap:latest` GHCR image from the old
+   `prototype_baseline_0_1/Dockerfile.bootstrap`** - the pre-migration,
+   case-centric pipeline - a third independent instance of the exact
+   bootstrap-wiring bug class already fixed twice this session (the
+   original deploy-path gap, and separately in CI's `backend-integration`
+   job). Since `push` was just re-enabled, the next push would have
+   published a bootstrap image reproducing the exact "still shows COPD
+   cases" bug this entire redesign started from - caught before, not
+   after, a real publish.
+2. **`.github/workflows/ci.yml`'s `python-checks` job was still running
+   the superseded `_0_1` pipeline's own scripts against `SUBSET-0.1`** (13
+   records) instead of the active `_0_2` pipeline against `SUBSET-0.2` (99
+   records) - `prepare_subset.py`/`tests.test_runtime_contract` →
+   `prepare_subset_0_2.py`/`test_runtime_contract_0_2`. Had been silently
+   "passing" the whole time by testing the wrong, but internally
+   consistent, thing.
+3. **The root `Dockerfile`'s `dev` target `COPY`ed a CSV
+   `ReferenceResponseTest.php` no longer reads at all**, to a path nothing
+   resolves to - correct when originally written, silently invalidated
+   when step 8 rewired that test to a different oracle file
+   (`reference_responses_0_3_candidate.csv`) without anyone re-checking
+   the containerized path. The container's copy of `TEST-RC-01` had been
+   unable to find its oracle file since step 8 landed. Fixed by copying
+   the file the test actually resolves to, at the path it actually
+   resolves to (`dirname(__DIR__, 3)` from the container's test location).
+- `.dockerignore` had a related, lower-severity gap: excluded
+  `prototype_baseline_0_1/` (with a narrow exception for the one needed
+  CSV) but never excluded `prototype_baseline_0_2_design/` at all -
+  the entire design-stage tree was part of the Docker build context for
+  no reason. Rewritten to exclude `archived/` and `prototype_baseline/`
+  (with the equivalent exception) instead.
+
+### Verified
+
+- Both `Dockerfile` targets (`runtime`, `dev`) and the bootstrap image
+  build clean from their new paths.
+- Full `docker compose build bootstrap app && docker compose up -d --wait
+  app` against the actual renamed/archived tree: `GET /api/patients`
+  returns all 6 patients with correct `display_name`s; bootstrap log
+  confirms the exact expected component counts and canonical digest
+  (`d7236bd653c6754021a551ee1bf92df1f36edb6a56031ab3631dd622b2ea7821`).
+- `php vendor/bin/phpunit --testsuite unit`: 77/77.
+- `php vendor/bin/phpunit --testsuite integration` against a fresh
+  throwaway MySQL: 160/160, 2173 assertions - all 143 reference-response
+  rows read correctly from the renamed CSV path.
+- `python -m unittest test_runtime_contract_0_2`: 8/8.
+- `python -m unittest test_mysql_persistence_0_2`: 6/6.
+- `prepare_subset_0_2.py --check-existing` against the new
+  `archived/development_handoff/` source location: PASS, matches the
+  pinned source/output digests exactly.
+
+### Deviations
+
+- The `e2e` suite was not re-run this pass - no E2E test file references
+  any moved path, and the full-stack check above already exercises the
+  application these tests would drive against - but a real GitHub-hosted
+  CI run (now that `push` is active) is still the first true confirmation
+  of the `ci.yml` fixes specifically.
+
+## 2026-08-09 — Step 9: oracle/source audit reconciliation, zero discrepancies
+
+Implementation-order step 9. Project owner asked to move on to this
+directly after the CI-trigger fix, with a further request queued behind it
+(repository housekeeping - see the next entry once that lands). Neither
+primary source PDF (`SRC-AT-ICD-SYS-2026`, `SRC-AT-DOC-2026`) exists as a
+file in this repository, so the audit used the two strongest checks that
+were actually available rather than fabricating a page-citation check
+against documents not open. Full methodology and rationale:
+`docs/DEVELOPMENT_DOCUMENTATION.md` §16.
+
+### Verified
+
+- **125 new learner-question rows** (`Q-001-01` through `Q-006-06`, every
+  displayed code plus every `none_of_above` row): cross-checked against
+  `chapter3_question_bank_source_audit.md` (`QSAUDIT-0.1`) §4.1-4.6's
+  source-cited table - an audit already conducted directly against the
+  two primary sources, independently of and before the evaluator existed.
+  Zero discrepancies across all 25 questions, including the three
+  deliberate "unspecified ≠ suboptimal" counterexamples (`F03`, `N40`,
+  `R40.2`) and both `none_of_above = correct` control questions
+  (`Q-004-05`, `Q-005-05`).
+- **4 reconstructed legacy rows** (`VQ-005`-`008`, `provenance_status` was
+  `reconstructed_from_implementation_documentation` - not covered by
+  `QSAUDIT-0.1`): confirmed by running each row's documented case facts
+  (`fev1_stable_pct_predicted`, `encounter_setting`, `diagnosis_role`)
+  directly through the live `RuleMap::evaluate()`/`RuleStatus::matches()`
+  predicates. All 4 matched exactly, including two FEV1 values sitting
+  exactly on a documented boundary (`35.00`, `70.00`). `RuleStatus`'s
+  branch was additionally cross-checked against the already-audited
+  `VQ-003`/`VQ-004` pair to confirm the boundary logic itself.
+- `php -l app/tests/Integration/ReferenceResponseTest.php`: syntax check
+  after its docblock update (below) - no functional code changed, full
+  suite re-run not required for a comment-only edit.
+
+### Changed
+
+- `prototype_baseline_0_2_design/verification/reference_responses_0_3_candidate.csv`:
+  `provenance_status` column updated for all 129 previously-unaudited rows
+  - `forward_specification_derived_pending_human_oracle_audit` →
+  `forward_specification_derived_human_oracle_audit_confirmed_against_qsaudit_0_1`
+  (125 rows) and `reconstructed_from_implementation_documentation` →
+  `reconstructed_from_implementation_documentation_human_oracle_audit_confirmed_via_rule_replay`
+  (4 rows). No other column changed; row/field counts confirmed unchanged
+  (144 lines, 143 data rows, before and after).
+- `app/tests/Integration/ReferenceResponseTest.php`'s docblock, `HANDOFF.md`
+  (new §0.6, step table, §3/§4), `docs/IMPLEMENTATION_SPECIFICATION.md` §7,
+  and `docs/REQUIREMENTS_TRACEABILITY.md` (`REQ-VER-07`/`08`/`09` rows, §3
+  summary) updated to match - `REQ-VER-08`/`09` now read ✅.
+
+### Deviations
+
+- The file keeps its `_candidate` name and `RCBASE-0.3` stays a candidate
+  baseline - freezing that naming is step 10's job, not this one's.
+- This audit did not open the two primary source PDFs directly (they
+  aren't in this repository); it verified the oracle against an
+  already-source-audited proxy document (`QSAUDIT-0.1`) plus direct
+  deterministic rule replay for the 4 rows that document doesn't cover.
+  If the primary PDFs are ever added to the repository, a direct
+  page-level re-check would be a strictly additive confirmation, not
+  expected to change this pass's result.
+
+## 2026-08-09 — CI `push` trigger re-enabled after a stale-log false alarm
+
+The project owner pushed the step 8 fixes (`a52eb25`/`e7a076a`) and then
+reported PHPUnit "still failing" on CI, pasting a log identical to one
+seen before those fixes. Diagnosed via the GitHub Actions REST API
+(`GET /repos/junomarx/bsc-thesis-icd10/actions/runs`, unauthenticated, one
+check) rather than assumption: the failing run's `head_sha` was `4b4fe1e`
+("Delete CLAUDE.md", 2026-08-09 09:20 UTC) - the most recent
+`workflow_dispatch` run at the time, but from *before* both `a52eb25` and
+`e7a076a`. Because `push` didn't trigger CI (disabled since `0287228`, 8
+August), neither fix commit had ever actually been run through CI; the
+project owner was looking at a genuinely stale result, not a recurrence.
+Directly confirmed the fix is real on disk regardless: `grep -rn
+"CaseFacts" app/` returns only doc-comment mentions of what it was
+replaced by, and `Precedence::terminalClass()`'s second parameter is
+already `array $gradedMatches` at `app/src/Rules/Precedence.php:52`.
+
+### Changed
+
+- `.github/workflows/ci.yml`: `on:` block's `push: branches: [main]`
+  restored (`pull_request` stays commented out, unchanged) - project
+  owner's explicit request, once step 8 was confirmed stable, specifically
+  to stop this stale-log confusion from recurring. Decision and rationale
+  recorded in `docs/DEVELOPMENT_DOCUMENTATION.md` §10.6.
+- `HANDOFF.md` — new §0.5 records the diagnosis and the trigger change;
+  §3/§4 lines describing CI as "not re-run since the migration, worth
+  triggering manually" updated to reflect that `push` now does this
+  automatically.
+- `docs/IMPLEMENTATION_SPECIFICATION.md` §6.5 — the paragraph stating CI's
+  `push` trigger is "deliberately disabled" updated to reflect the
+  re-enablement and what still hasn't been confirmed (an actual passing
+  GitHub-hosted run against the fixed tree).
+
+### Deviations
+
+- No GitHub-hosted CI run has completed against `e7a076a` (or its
+  successors) as of this entry — re-enabling `push` makes the *next* push
+  the first real confirmation, but that run had not happened yet when this
+  entry was written.
+
 ## 2026-08-09 — Step 8 documentation propagation: user guide and handoff brought current
 
 Follow-up to the Step 8 test-suite migration below: the guide and handoff

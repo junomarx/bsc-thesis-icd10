@@ -12,16 +12,15 @@ __pycache__/
 *.pyc
 .DS_Store
 
-development_handoff/
 docs/
-prototype_baseline_0_1/
+archived/
+prototype_baseline/
 # Exception: the `dev` target's test harness needs the RC-* oracle CSV at a
 # host-checkout-relative path (see Dockerfile) — nothing else in this
 # directory (the Python pipeline itself) is copied into any image.
-!prototype_baseline_0_1/verification/
-!prototype_baseline_0_1/verification/reference_responses_0_2.csv
+!prototype_baseline/verification/
+!prototype_baseline/verification/reference_responses_0_3_candidate.csv
 prototype_stack/
-latex/
 
 app/vendor/
 app/frontend/node_modules/

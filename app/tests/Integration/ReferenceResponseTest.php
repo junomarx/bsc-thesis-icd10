@@ -11,25 +11,25 @@ use PHPUnit\Framework\Attributes\DataProvider;
  * candidate oracle.
  *
  * This test harness reads
- * `prototype_baseline_0_2_design/verification/reference_responses_0_3_candidate.csv`
+ * `prototype_baseline/verification/reference_responses_0_3_candidate.csv`
  * directly; the running application never does (TEST-ARC-01). 143 rows: 18
  * carry a `legacy_rc_id` (the historical `RCBASE-0.2` regression
  * obligations, `REQ-VER-09` - mapped onto the 8 hidden `verification_only`
  * `VQ-*` questions) and 125 are new forward-model expectations spanning all
  * 25 learner questions plus their `none_of_above` cases.
  *
- * **Provenance caveat, stated honestly rather than glossed over
- * (`REQ-VER-08`):** every row's own `provenance_status` column currently
- * reads `forward_specification_derived_pending_human_oracle_audit` - these
- * expectations were derived from the rule/source baseline (`QSAUDIT-0.1`),
- * not copied from this implementation's output, but have not yet been
- * independently checked against the original Austrian source pages
- * (implementation-order step 9). Running them here anyway is deliberate:
- * a failure is useful signal *now* (either an evaluator bug or an
- * oracle-authoring bug), not something to wait on step 9 to discover. A
- * pass is evidence the implementation matches the specification as
- * currently understood; it is not yet the frozen conformance claim step 9
- * produces.
+ * **Provenance (`REQ-VER-08`/`09`):** implementation-order step 9 (the
+ * oracle/source audit) is done - every row's `provenance_status` column now
+ * reads `..._human_oracle_audit_confirmed_against_qsaudit_0_1` (125 rows,
+ * cross-checked against `chapter3_question_bank_source_audit.md` §4.1-4.6)
+ * or `..._human_oracle_audit_confirmed_via_rule_replay` (4 reconstructed
+ * `VQ-005..008` rows, confirmed by running their documented case facts
+ * through the live `RuleMap`/`RuleStatus` predicates directly, since
+ * `QSAUDIT-0.1` doesn't cover the legacy fixtures). Zero discrepancies
+ * found. The file keeps its `_candidate` name and `RCBASE-0.3` stays a
+ * candidate baseline - freezing that is step 10's job, not step 9's; this
+ * test passing is evidence toward, not a substitute for, `REQ-VER-05`'s
+ * formal freeze-time conformance report.
  */
 final class ReferenceResponseTest extends DatabaseTestCase
 {
@@ -69,7 +69,7 @@ final class ReferenceResponseTest extends DatabaseTestCase
 
     public static function referenceResponses(): array
     {
-        $path = dirname(__DIR__, 3) . '/prototype_baseline_0_2_design/verification/reference_responses_0_3_candidate.csv';
+        $path = dirname(__DIR__, 3) . '/prototype_baseline/verification/reference_responses_0_3_candidate.csv';
         $handle = fopen($path, 'r');
         $header = fgetcsv($handle, escape: '\\');
         $vectors = [];

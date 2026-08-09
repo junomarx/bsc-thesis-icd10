@@ -31,11 +31,11 @@ chapter can cite concrete artefacts rather than assert the mapping abstractly.
 
 | DSRM phase (Peffers 2007) | Concrete artefact in this repository |
 |---|---|
-| Problem identification & motivation | `ICD_PROTOTYPE_DEVELOPMENT_BRIEF.md` §1–2; the research question in that brief |
+| Problem identification & motivation | `archived/development_handoff/handoff/ICD_PROTOTYPE_DEVELOPMENT_BRIEF.md` §1–2; the research question in that brief |
 | Objectives of a solution | `chapter3_requirements_catalogue.md` (`REQ-*`) |
 | Design & development | `chapter3_rule_catalogue.md`, `chapter3_data_model_and_interaction_baseline.md` (upstream design) **plus this document and `app/`** (the realized build) |
 | Demonstration | The running Docker Compose stack (`prototype_stack/`) serving the learner workflow described in §7 below; the browser walkthrough recorded in [CHANGELOG.md](CHANGELOG.md) |
-| Evaluation | The technical test suite (`app/tests/`, `prototype_baseline_0_1/tests/`) — see §9 |
+| Evaluation | The technical test suite (`app/tests/`, `prototype_baseline/persistence_candidate/test_*_0_2.py`) — see §9 |
 | Communication | The thesis document itself; this documentation set is written to be liftable into it |
 
 ### 2.2 Evaluation-strategy boundary
@@ -351,7 +351,7 @@ version of their conclusions).
 This is a development-time account of what has actually been run; it is not
 the principal verification record described in `chapter3_test_catalogue.md`
 §11, which requires a frozen baseline this project has not yet reached (see
-`ICD_PROTOTYPE_DEVELOPMENT_BRIEF.md` §23.2). Exact counts and dates for each
+`archived/development_handoff/handoff/ICD_PROTOTYPE_DEVELOPMENT_BRIEF.md` §23.2). Exact counts and dates for each
 run are in [CHANGELOG.md](CHANGELOG.md); this section describes the *shape*
 of the testing approach.
 
@@ -434,7 +434,7 @@ unmodified.
 
 ### 10.3 Pre-freeze coverage review: adopted the brief's suggested expansion
 
-`ICD_PROTOTYPE_DEVELOPMENT_BRIEF.md` §23.2 left open whether the original
+`archived/development_handoff/handoff/ICD_PROTOTYPE_DEVELOPMENT_BRIEF.md` §23.2 left open whether the original
 four-case/fourteen-`RC-*` suite's coverage was sufficient, or whether to add
 verification-focused cases for the FEV1 suffix bands and status branches
 that were, until this point, exercised only by `TEST-MAP-01`/`TEST-STATUS-01`
@@ -572,6 +572,23 @@ natural/official base), the project owner chose the latter. Concretely:
   truth; this job's tags are written to match them, not the other way
   around.
 
+**`push`/`pull_request` triggers: disabled, then `push` re-enabled.**
+Partway through the forward redesign (8 August 2026, commit `0287228`) the
+project owner commented out both triggers, leaving only `workflow_dispatch`
+— "to avoid CI spam on PRs and pushes to main" while the migration was
+still landing in many small commits. This had a real side effect the
+project owner hit directly on 9 August 2026: after pushing the step 8 test
+fixes, they reported CI "still failing," pasting a log that turned out to
+be from the *previous* `workflow_dispatch` run (against a commit before
+the fix) — because pushing no longer triggered a run at all, there was no
+way to tell a stale result from a current one without separately checking
+run metadata (`head_sha`) against `git log`. Once step 8 was confirmed
+stable, the project owner asked to re-enable `push` specifically (not
+`pull_request`, which stays commented out) so this class of confusion
+stops recurring automatically. `on:` now reads `push: branches: [main]`
+plus `workflow_dispatch`, matching the original pre-`0287228` shape minus
+`pull_request`.
+
 One concrete bug this surfaced by actually running the bundle end-to-end
 (not just writing it): `app/tests/Integration/ReferenceResponseTest.php`
 locates the `RC-*` oracle CSV via a path relative to its own file, which
@@ -584,6 +601,12 @@ itself is deliberately still not part of any `app` image; only the single
 file the PHP test harness actually reads travels with it. `.dockerignore`
 needed a narrow `!`-negation to let that one file back into the build
 context despite the blanket `prototype_baseline_0_1/` exclusion above it.
+
+This exact fix was silently invalidated by step 8 rewiring the test to a
+different oracle file (`reference_responses_0_3_candidate.csv`, a
+different directory) without anyone re-checking the container path -
+found and fixed again, correctly this time, by the housekeeping pass in
+§17.
 
 ### 10.7 Native AMD64 and ARM64 image publication
 
@@ -626,6 +649,49 @@ Both verification levels are now executed:
   `docker compose pull`/startup sequence on ARM64 confirmed that the live
   indexes now select native ARM64 images.
 
+### 10.8 Pinning `--platform=$BUILDPLATFORM` on architecture-independent build stages
+
+The first real `push`-triggered run after §0.5's trigger re-enablement
+(`HANDOFF.md`) surfaced a problem §10.7's design didn't anticipate:
+`publish-images`'s multi-arch build of the `runtime` image hung for over
+1.5 hours with no output, rather than merely running slowly. Root cause:
+none of `Dockerfile`'s stages had a `--platform` pin, so
+`docker/build-push-action`'s `linux/amd64,linux/arm64` target caused
+*every* stage to build twice - once native, once under QEMU emulation -
+including `frontend-build`'s `npm run build` (Vite → esbuild, a native Go
+binary). esbuild under QEMU user-mode emulation is a documented
+hang/pathological-slowness case, not a merely-slower one; a 20-second
+native build can simply never finish under emulation.
+
+The fix is Docker's own documented pattern for this exact situation
+(their [multi-platform build guide](https://docs.docker.com/build/building/multi-platform/)
+explicitly calls out pinning build-only stages to `$BUILDPLATFORM`):
+`frontend-build`, `vendor`, and `vendor-dev` produce architecture-
+independent output - static JS/CSS/HTML, and a pure-PHP vendor tree with
+no compiled extensions (`composer.json`'s runtime deps are none beyond
+`ext-pdo`/`ext-json`, already provided by the base image; dev deps are
+`phpunit/phpunit`/`php-webdriver/webdriver`, also pure PHP) - so there was
+never a reason to build them per-target-arch. Pinning
+`FROM --platform=$BUILDPLATFORM ...` on those three stages makes them
+build natively on the runner exactly once, regardless of how many target
+platforms the final image list requests; their output is still
+`COPY --from=`'d into the real per-arch stages (`base`/`dev`/`runtime`)
+exactly as before - `base` genuinely needs a per-arch build, since it
+compiles the native `pdo_mysql` extension via `docker-php-ext-install`.
+
+**Verified by reproducing the failure mode locally, not just reasoning
+about it:** a `docker-container`-driver builder (matching what
+`docker/setup-buildx-action` creates in CI, since the default `docker`
+driver doesn't support multi-platform builds at all) running
+`docker buildx build --platform linux/amd64,linux/arm64 --target runtime`
+completed in 1m35s after the fix, against a host where one of the two
+platforms is necessarily emulated either way (same underlying constraint
+as CI, different emulated architecture). The one stage that legitimately
+still runs under emulation - `base`'s `pdo_mysql` compile - accounted for
+about 21 of those seconds, confirming the frontend build specifically was
+the hang, not emulation in general. Full detail: `docs/CHANGELOG.md`'s
+same-dated entry.
+
 ## 11. Current status and known gaps
 
 **Superseded by §13/§14 below (9 August 2026).** Everything in this
@@ -640,7 +706,7 @@ and [IMPLEMENTATION_SPECIFICATION.md](IMPLEMENTATION_SPECIFICATION.md),
 both fully rewritten for the forward model on the same date.
 
 - The reference-suite breadth question flagged in
-  `ICD_PROTOTYPE_DEVELOPMENT_BRIEF.md` §23.2 is **resolved** (§10.3): all
+  `archived/development_handoff/handoff/ICD_PROTOTYPE_DEVELOPMENT_BRIEF.md` §23.2 is **resolved** (§10.3): all
   four `RULE-MAP-01` suffix bands and both `RULE-STATUS-01` prohibited
   branches are now exercised through complete case-to-evaluator-to-API
   integration, not only unit tests.
@@ -653,7 +719,7 @@ both fully rewritten for the forward model on the same date.
   (§10.5, `app/tests/E2E/*`) rather than the one-off manual script the
   earlier walkthrough evidence in [CHANGELOG.md](CHANGELOG.md) used. This
   closes the last outstanding item from the implementation
-  "definition of done" (`ICD_PROTOTYPE_DEVELOPMENT_BRIEF.md` §25).
+  "definition of done" (`archived/development_handoff/handoff/ICD_PROTOTYPE_DEVELOPMENT_BRIEF.md` §25).
 - A full audit of all 31 `REQ-*` entries
   ([REQUIREMENTS_TRACEABILITY.md](REQUIREMENTS_TRACEABILITY.md)) found no
   undeclared gaps beyond the two items above that are genuinely
@@ -707,7 +773,7 @@ both fully rewritten for the forward model on the same date.
 | `app/src/Http/PatientController.php`/`QuestionController.php`/`EvaluationController.php` | `MODELBASE-0.2` §7 (API boundary), `APIBASE-0.1`, `REQ-INT-01`-`05`, `REQ-RUL-05` |
 | `app/frontend/src/App.jsx` + `components/*.jsx` | `REQ-INT-01`-`05`, `REQ-FBK-01`-`03`, `REQ-SCP-02`, `REQ-UI-01`-`03`, `REQ-GAM-01` |
 | `app/frontend/src/lib/i18n.jsx`/`contentTranslations.js`/`catalogueTranslations.js` | §14.2 — no upstream `REQ-*`/`TEST-*`, presentation-layer only |
-| `prototype_baseline_0_2_design/Dockerfile.bootstrap` + `persistence_candidate/*` | `MODELBASE-0.2`, `DATAMIG-0.2`, `PROTOBASE-0.3` — §13.3 |
+| `prototype_baseline/Dockerfile.bootstrap` + `persistence_candidate/*` | `MODELBASE-0.2`, `DATAMIG-0.2`, `PROTOBASE-0.3` — §13.3 |
 | `app/tests/Unit`/`Integration`/`E2E` | Migrated, step 8 — 77/160/7 tests passing, see §13.4 |
 
 ## 13. Forward redesign: patient/question model (8-9 August 2026)
@@ -940,7 +1006,8 @@ oracle's own `provenance_status` column already carries the honest caveat
 ("derived from the specification, not yet human-audited") wherever this
 test's result is read - nothing about running it early overclaims step 9
 as done. `docs/REQUIREMENTS_TRACEABILITY.md`'s `REQ-VER-08`/`09` rows
-state the exact resulting distinction (exercised vs. audited).
+state the exact resulting distinction (exercised vs. audited) - since
+resolved by step 9 itself, §16 below.
 
 ### 15.3 Three bugs the rewrite only found because it was actually run
 
@@ -972,3 +1039,181 @@ more careful read-through beforehand; they are the specific class of bug
 that only running against real infrastructure surfaces. This is the same
 lesson §13.3 recorded for the persistence-integration gap, recurring one
 layer up the stack.
+
+## 16. Forward redesign step 9: the oracle/source audit, and how it was actually done without the primary sources on hand
+
+§15.2 above deliberately left `REQ-VER-08`/`09` an honest "exercised, not
+yet human-audited" caveat rather than closing it prematurely. This section
+records how that audit was actually carried out, because the obvious
+approach - open `SRC-AT-ICD-SYS-2026`/`SRC-AT-DOC-2026` and check each row
+against the printed page - wasn't available: neither PDF exists as a file
+in this repository (only `archived/development_handoff/sources/core/DIAGLIST2026.xlsx`
+does), and inventing page citations against a source not actually open
+would be exactly the kind of fabricated verification this project's own
+documentation discipline exists to prevent.
+
+**Decision: treat `QSAUDIT-0.1` as the audited proxy for the 125 new rows,
+not re-derive from the primary sources directly.** `chapter3_question_bank_source_audit.md`
+already *is* a human source audit - the project owner and a separate agent
+produced it by reading the two primary documents directly and recording a
+page-number or DIAGLIST-row citation for every one of the 25 questions'
+correct/suboptimal/incorrect/`none_of_above` calls, before any of
+`RCBASE-0.3`, `RULEBASE-0.2`, or the patient/question database existed
+(its own §1 says as much). What step 9 needed to establish was therefore
+narrower than "is this clinically/administratively correct" (already
+settled by `QSAUDIT-0.1`) - it was "does the *oracle CSV* faithfully
+encode what `QSAUDIT-0.1` already established." That's a checkable
+question without the PDFs open: read both documents and compare, question
+by question, code by code. Done for all 25 questions / 125 rows; zero
+discrepancies, including the three deliberate "unspecified ≠ suboptimal"
+counterexamples (`F03`, `N40`, `R40.2`) and both `none_of_above = correct`
+control questions (`Q-004-05`, `Q-005-05`) that exist specifically to
+catch a lazier heuristic (e.g. "`.9` suffix = suboptimal") from slipping
+through.
+
+**The 4 reconstructed `VQ-005..008` rows needed a different method, because
+`QSAUDIT-0.1` doesn't cover them at all** - it audits the 25 new learner
+questions, not the 8 hidden legacy fixtures. Their `provenance_status`
+already said `reconstructed_from_implementation_documentation`, meaning
+they were rebuilt after the fact from the implementation's own case-fact
+definitions rather than carried forward from an original `RCBASE-0.1` row
+(unlike `VQ-001..004`, which are exact carry-forwards and were already
+audited). For these, the audit ran the documented facts
+(`fev1_stable_pct_predicted`, `encounter_setting`, `diagnosis_role`)
+directly through the live `RuleMap::evaluate()`/`RuleStatus::matches()`
+predicates and compared the result to what the CSV claims. This is a
+stronger check than citation-matching, not a weaker fallback: it's a
+mechanical, deterministic replay against the same rule the running
+application actually uses, sourced from `SRC-AT-DOC-2026` printed p.34
+(FEV1 boundaries) and pp.10-11/18 (status-marker restriction) via the
+rules' own docblocks. Two of the three FEV1 values (`VQ-006`'s `35.00`,
+`VQ-007`'s `70.00`) land exactly on a documented boundary, which
+incidentally confirmed the boundary's inclusive/exclusive direction is
+coded the way `RuleMap`'s docblock says, not just that *some* value in
+each band works. `VQ-008`'s status-rule row was additionally cross-checked
+against the already-audited `VQ-003`/`VQ-004` pair (the same rule's other
+two branches) to confirm the predicate's boundary generally, not only this
+one row's outcome.
+
+**What this does and doesn't claim.** All 129 previously-unaudited rows
+now carry a `provenance_status` value ending `..._human_oracle_audit_confirmed_against_qsaudit_0_1`
+or `..._human_oracle_audit_confirmed_via_rule_replay` (`prototype_baseline/verification/reference_responses_0_3_candidate.csv`);
+`docs/REQUIREMENTS_TRACEABILITY.md`'s `REQ-VER-08`/`09` read ✅
+accordingly. This closes the specific gap step 9 existed for. It is still
+not `REQ-VER-05`'s formal freeze-time conformance report (step 10) - and
+if the two primary-source PDFs are ever added to the repository, a direct
+page-level re-check against them would be a strictly-stronger, purely
+additive confirmation, not a correction of anything this pass found.
+
+## 17. Repository housekeeping: rename, archive, and tracing every reference before touching anything
+
+Project-owner request after step 9: audit the repository for stale files,
+rename `prototype_baseline_0_2_design/` to `prototype_baseline/` (it's the
+one live pipeline now, so the design-stage name no longer describes it),
+and archive `prototype_baseline_0_1/` with every reference cleaned. The
+method mattered more than the mechanics here: every `git mv` was preceded
+by a full repository-wide grep for the old path, and every hit was read in
+context and classified - a live functional reference (Dockerfile, CI,
+Compose file, PHP/Python source: must fix, build-breaking if missed), a
+living-document current-state claim (`HANDOFF.md`, `README.md`, this
+document: must fix, misleading if left), or a frozen historical record
+(`docs/CHANGELOG.md`'s past entries, `chapter3_*.md`, dated point-in-time
+snapshot files: leave alone, rewriting history to match a later rename
+would be worse than the staleness it "fixes"). Getting that classification
+right, not the `git mv` itself, was the actual work.
+
+**Decision: `chapter3_*.md` root files are out of scope, on purpose.**
+Several (`chapter3_data_model_and_interaction_baseline.md`,
+`chapter3_test_catalogue.md`, `chapter_3_methods_and_practical_work_specification.md`)
+mention `prototype_baseline_0_1/` by name. These are the upstream,
+versioned specification lineage `CLAUDE.md` already names as such - old
+and new revisions deliberately kept side by side, not stale duplicates
+someone forgot to delete. Editing them to match a later filesystem rename
+would blur the line between "the upstream authority document" and "a
+downstream implementation artefact," which is exactly the line this
+project has been careful to keep intact all session. Left untouched.
+
+**Decision: archive `development_handoff/` and `forward_package_0_6/`
+alongside `prototype_baseline_0_1/`, not just the one directory named in
+the request.** The request's literal scope was `prototype_baseline_0_1/`;
+the audit surfaced two more directories that fit the same "stale, no
+longer in use" description the request itself gave as the general
+criterion. `development_handoff/` was already described in this project's
+own prose (`README.md`'s repository-layout table, before this pass) as
+"archived pre-implementation planning documents" - moving it under
+`archived/` makes that description literally true instead of aspirational.
+`forward_package_0_6/` (9.6MB) was a one-time delivery drop from a
+separate collaborating agent; its useful content (`chapter3_api_and_feedback_contract_0_1.md`
+and its sibling control documents, a `persistence_candidate/` sync) was
+already extracted into the live tree weeks earlier (`docs/CHANGELOG.md`'s
+`APIBASE-0.1` entry) - the copy left behind was pure leftover, not a
+second copy anyone was relying on.
+
+**Decision: also untrack `.venv/` and remove empty `latex/`, found by the
+same audit, not requested by name.** `.venv/` (198MB, including
+platform-specific compiled binaries like `_mysql_connector.cpython-311-darwin.so`)
+was already `.gitignore`d but had been committed before that rule existed
+- `git rm -r --cached` removes it from tracking without touching the
+working copy anyone's actual Python tooling depends on. `latex/` was an
+empty, never-tracked directory with no relationship to the real
+`docs/USER_GUIDE.tex` toolchain - deleted outright, nothing to preserve.
+
+**Three real bugs found by tracing every reference, not invented for this
+exercise - the actual justification for doing a careful audit instead of a
+blind find-and-replace:**
+
+1. `.github/workflows/ci.yml`'s `publish-images` job was still building the
+   published `bsc-thesis-icd10-bootstrap:latest` GHCR image from
+   `prototype_baseline_0_1/Dockerfile.bootstrap` - the pre-migration
+   pipeline - three separate times after `docker-compose.yml` and
+   `prototype_stack/compose.yaml` had already been correctly repointed at
+   the `_0_2` design (§13.3's persistence-integration gap, and again at
+   the CI `backend-integration` job's own separate instance of the same
+   bug class, `docs/CHANGELOG.md`'s "CI's `backend-integration` job fixed
+   a second instance" entry). This would have been a *fourth* instance,
+   caught only because `push` was just re-enabled (§0.5's account in
+   `HANDOFF.md`) and the next push would have actually exercised it.
+2. `.github/workflows/ci.yml`'s `python-checks` job was still running the
+   superseded `_0_1` pipeline's own `prepare_subset.py`/`tests.test_runtime_contract`
+   against `SUBSET-0.1` (13 records), not the active `_0_2` pipeline's
+   `prepare_subset_0_2.py`/`test_runtime_contract_0_2` against `SUBSET-0.2`
+   (99 records) - silently "passing" the entire time by testing a
+   self-consistent but no-longer-relevant thing instead of failing loudly.
+3. The root `Dockerfile`'s `dev` target `COPY`ed
+   `prototype_baseline_0_1/verification/reference_responses_0_2.csv` -
+   correct when originally written (§10.6 above), silently invalidated
+   when step 8 rewired `ReferenceResponseTest.php` to a different oracle
+   file in a different directory, and never re-checked since. The
+   container's copy of `TEST-RC-01` had been unable to find its oracle
+   file since step 8 landed, with nothing surfacing that fact because the
+   containerized test path isn't part of the routine `phpunit` /
+   `docker compose up` verification loop this project actually runs day to
+   day - only a full `docker build --target dev` followed by running the
+   suite *inside* the resulting container would have shown it.
+
+None of these three would have been caught by grepping for the renamed
+directory alone - each required actually reading what depended on the old
+path and asking whether the dependency still made sense, not just whether
+the string still matched. `.dockerignore` had a related, lower-severity
+gap in the same family: it excluded `prototype_baseline_0_1/` (with a
+narrow exception for the one CSV) but never excluded
+`prototype_baseline_0_2_design/` at all, so the entire design-stage tree -
+review spreadsheets, migration CSVs, none of it needed by any image - had
+been part of the Docker build context the whole time, unnoticed because a
+bloated build context fails silently (slower builds), not loudly (broken
+ones).
+
+**Verified, this same pass, against the actual renamed/archived tree, not
+assumed from the diff:** both `Dockerfile` targets and the bootstrap image
+build; a full `docker compose build bootstrap app && docker compose up -d
+--wait app` with a live `GET /api/patients` check; `phpunit --testsuite
+unit` (77/77) and `--testsuite integration` against a fresh throwaway
+MySQL (160/160, all 143 reference-response rows from the renamed CSV
+path); `python -m unittest test_runtime_contract_0_2` (8/8) and
+`test_mysql_persistence_0_2` (6/6); `prepare_subset_0_2.py --check-existing`
+against the new `archived/development_handoff/` source location. The `e2e`
+suite was not re-run - no E2E test file references any moved path, and the
+full-stack check above already exercises the application these tests
+would drive - but a real GitHub-hosted CI run is still the first true
+confirmation of the `ci.yml` fixes specifically, since `workflow_dispatch`
+and `push` are the only ways to actually execute that file.

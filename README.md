@@ -57,12 +57,11 @@ for exact versions, schema, and API contracts.
 
 ```text
 app/                              PHP backend (src/), React frontend (frontend/), tests (tests/)
-prototype_baseline_0_2_design/    active Python data-preparation pipeline + MySQL persistence loader
-prototype_baseline_0_1/           historical/superseded data pipeline, kept for reference
+prototype_baseline/               active Python data-preparation pipeline + MySQL persistence loader
 prototype_stack/                  stack.sh-managed Docker Compose deployment scaffold
 docs/                             living documentation — see docs/README.md for what's what
 chapter3_*.md                     upstream methodological specification (rule/data-model authority)
-development_handoff/              archived pre-implementation planning documents
+archived/                         superseded pipeline, pre-implementation planning docs, a one-time delivery drop — kept for reference, nothing here is live
 Dockerfile, docker-compose.yml    self-contained, publishable Docker bundle (repo root, see below)
 ```
 
@@ -105,9 +104,10 @@ were verified.
 Not frozen. Currently mid-way through a structural forward redesign (see
 [HANDOFF.md](HANDOFF.md) §0 for the full 10-step implementation order and
 exactly where it stands) — the learner-facing application is functional,
-polished, and covered by a genuinely passing automated test suite; a
-pre-freeze human audit of the verification oracle is the remaining piece
-of work before a `1.0` baseline can be considered.
+polished, covered by a genuinely passing automated test suite, and its
+verification oracle is human-oracle-audited against source with zero
+discrepancies. A formal freeze + principal verification run (step 10) is
+the remaining piece of work before a `1.0` baseline can be considered.
 
 ## License
 

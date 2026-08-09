@@ -36,13 +36,13 @@ jobs:
       - name: Install Python dependencies
         run: pip install pandas openpyxl
 
-      - name: Reproduce SUBSET-0.1 from the frozen source (TEST-DAT-01)
-        working-directory: prototype_baseline_0_1
-        run: python scripts/prepare_subset.py ../development_handoff/sources/core/DIAGLIST2026.xlsx --check-existing
+      - name: Reproduce SUBSET-0.2 from the frozen source (TEST-DAT-01)
+        working-directory: prototype_baseline
+        run: python scripts/prepare_subset_0_2.py ../archived/development_handoff/sources/core/DIAGLIST2026.xlsx --check-existing
 
       - name: Runtime contract tests (database-independent)
-        working-directory: prototype_baseline_0_1
-        run: python -m unittest -v tests.test_runtime_contract
+        working-directory: prototype_baseline/persistence_candidate
+        run: python -m unittest -v test_runtime_contract_0_2
 
   php-unit:
     name: PHP unit tests (rule engine, no DB)
@@ -99,15 +99,15 @@ jobs:
         run: pip install mysql-connector-python
 
       - name: Apply schema (MODELBASE-0.2, TEST-DAT-02 precondition)
-        working-directory: prototype_baseline_0_2_design/persistence_candidate
+        working-directory: prototype_baseline/persistence_candidate
         run: python apply_mysql_schema_0_2.py
 
       - name: Load PROTOBASE-0.3 baseline
-        working-directory: prototype_baseline_0_2_design/persistence_candidate
+        working-directory: prototype_baseline/persistence_candidate
         run: python load_mysql_0_2.py
 
       - name: Python persistence tests (TEST-DAT-02)
-        working-directory: prototype_baseline_0_2_design/persistence_candidate
+        working-directory: prototype_baseline/persistence_candidate
         run: python -m unittest -v test_mysql_persistence_0_2
 
       - uses: shivammathur/setup-php@v2
@@ -258,8 +258,8 @@ jobs:
       - name: Build and push bootstrap image (docker-compose.yml bootstrap service)
         uses: docker/build-push-action@v7
         with:
-          context: ./prototype_baseline_0_1
-          file: ./prototype_baseline_0_1/Dockerfile.bootstrap
+          context: ./prototype_baseline
+          file: ./prototype_baseline/Dockerfile.bootstrap
           platforms: linux/amd64,linux/arm64
           push: true
           tags: ghcr.io/${{ github.repository_owner }}/bsc-thesis-icd10-bootstrap:latest

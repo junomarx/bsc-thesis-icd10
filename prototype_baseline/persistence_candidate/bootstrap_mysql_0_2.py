@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Safely bootstrap the MODELBASE-0.2 runtime schema and versioned data.
 
-Mirrors prototype_baseline_0_1/scripts/bootstrap_mysql.py: the schema is
+Mirrors archived/prototype_baseline_0_1/scripts/bootstrap_mysql.py: the schema is
 applied only when the target database contains no tables, an exact runtime
 table set is reused as-is, and any partial/unexpected schema is treated as
 an error instead of being repaired implicitly. Data loading then delegates

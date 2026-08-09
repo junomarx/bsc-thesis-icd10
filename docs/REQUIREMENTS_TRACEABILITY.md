@@ -64,7 +64,7 @@ as a record that the distinction existed and why, not as a live caveat.
 
 | ID | Status | Evidence |
 |---|---|---|
-| `REQ-SCP-01` | ✅ Verified | `prototype_baseline_0_2_design/persistence_candidate/runtime_manifest_0_2.json` records `catalogue_edition: "ICD-10 BMASGPK 2026"`, `diaglist_source_id`, `diaglist_sha256`; `data/patients_0_1.csv` — all 6 patients `synthetic: true`. |
+| `REQ-SCP-01` | ✅ Verified | `prototype_baseline/persistence_candidate/runtime_manifest_0_2.json` records `catalogue_edition: "ICD-10 BMASGPK 2026"`, `diaglist_source_id`, `diaglist_sha256`; `data/patients_0_1.csv` — all 6 patients `synthetic: true`. |
 | `REQ-SCP-02` | ✅ Verified | No diagnosis/CDS/reporting/reimbursement code path exists in `app/src/`; the non-clinical disclaimer renders in `Header.jsx` on every view — confirmed on-screen via this project's Selenium infrastructure against the real running container (2026-08-09). |
 | `REQ-SCP-03` | 📄 Thesis-text scope | Repository-side boundary maintained (`DEVELOPMENT_DOCUMENTATION.md` §2.2); whether the thesis text itself maintains it is not a repository question. |
 
@@ -143,9 +143,9 @@ as a record that the distinction existed and why, not as a live caveat.
 | `REQ-VER-04` | ✅ Verified | Rule/data unit tests (`Unit/*`, 77 tests), persistence/API/evaluation integration (`Integration/*`, 160 tests, live MySQL), an end-to-end learner path (`E2E/*`, 7 tests, real Selenium against the real running stack), and negative/boundary coverage (`malformed_input`/`unsupported_response_kind`/gate failures) all exist and pass for the forward model (step 8, `docs/CHANGELOG.md`). Regression rerun after a material correction is demonstrated by this same audit's own history (§1a). |
 | `REQ-VER-05` | 🕓 Deferred to freeze | The conformance categories exist in `chapter3_test_catalogue.md` §3.2.2; the final report applying them is the step-10 principal verification run. |
 | `REQ-VER-06` | ✅ Verified as ongoing practice; final log is a freeze-phase artefact | Every deviation this session (the bootstrap/deployment-path gap, the `none_of_above` raw-token leak, the patient-rename hash-pin update, etc.) is logged in `docs/CHANGELOG.md` with cause, fix, and re-verification — the mechanism is demonstrably in use. |
-| `REQ-VER-07` | 🕓 Deferred (data exists; not yet placed) | `verification/reference_responses_0_3_candidate.csv` already carries every mandatory field this requirement lists; whether/which cases become main-text worked examples versus appendix-only is a step-9/thesis-writing decision, not yet made. |
-| `REQ-VER-08` | 🕓 Deferred to step 9 (oracle audit) | The oracle exists with the right shape and is now automatically *exercised*: `Integration/ReferenceResponseTest.php` (step 8) runs all 143 rows (125 new forward + 18 historical) against the live evaluator and all currently pass. Every row's own `provenance_status` column still reads `forward_specification_derived_pending_human_oracle_audit`, though - the requirement asks for an *independently predefined* expectation, and "derived from the specification, exercised, not yet human-audited" is a materially stronger state than before step 8 but is not yet that, by the file's own honest labelling. |
-| `REQ-VER-09` | 🕓 Deferred to step 9 (oracle audit) | The 18 historical rows are present in the same candidate file (`legacy_rc_id`/`legacy_case_id` columns populated), mapped onto the 8 hidden `VQ-*` questions, and — unlike before step 8 — are now actually rerun against the live `RULEBASE-0.2` evaluator on every `ReferenceResponseTest` run; all 18 currently hold. What remains is the source-audit half of this requirement (confirming they *should* still hold, not just that they *do*), not the mechanical rerun. |
+| `REQ-VER-07` | 🕓 Deferred (data exists; not yet placed) | `verification/reference_responses_0_3_candidate.csv` already carries every mandatory field this requirement lists, and (as of step 9) every row is human-oracle-confirmed, not just present - the remaining work is purely which cases become main-text worked examples versus appendix-only, a thesis-writing decision, not a technical one. |
+| `REQ-VER-08` | ✅ Verified | Step 9 (`docs/CHANGELOG.md`'s "Step 9" entry) cross-checked all 125 learner-question-domain/`none_of_above` expectations against `chapter3_question_bank_source_audit.md` (`QSAUDIT-0.1`) §4.1-4.6 - an independently-authored, source-cited design document written before and without reference to the evaluator's output, satisfying "created without copying classifier output" directly. Zero discrepancies found across all 25 questions, including the three deliberate counterexamples (`F03`, `N40`, `R40.2`) and both `none_of_above=correct` control questions. Every row's `provenance_status` now reads `forward_specification_derived_human_oracle_audit_confirmed_against_qsaudit_0_1`. |
+| `REQ-VER-09` | ✅ Verified | All 18 historical expectations accounted for: 14 rows (`VQ-001`-`004`, `provenance_status = exact_semantic_carry_forward_from_rcbase_0_1`) were already an exact carry-forward from `RCBASE-0.1`, unchanged; the remaining 4 (`VQ-005`-`008`) were re-verified in step 9 by directly evaluating the documented case facts against the live `RuleMap`/`RuleStatus` predicates (not just citation-matching) and getting an exact match in every case - `provenance_status` now reads `reconstructed_from_implementation_documentation_human_oracle_audit_confirmed_via_rule_replay`. `Integration/ReferenceResponseTest.php` reruns all 18 against the live evaluator on every run; all 18 hold. |
 
 ## 3. What this audit found
 
@@ -156,17 +156,19 @@ inspection, but the automated regression meant to prove it didn't run
 because `app/tests/*` still targeted deleted case-centric classes - are
 resolved: implementation-order step 8 (full test-suite rewrite,
 `docs/CHANGELOG.md`) landed the same day, and all five now read plain ✅
-against a passing test. `REQ-VER-07`/`08`/`09` remain deferred to step 9
-(oracle/source audit) - now with the 143-row candidate oracle actually
-*exercised* on every test run rather than merely present, which is real
-progress, but the human audit against original source pages itself has
-not started.
+against a passing test. `REQ-VER-08`/`09` are likewise now ✅: step 9
+(oracle/source audit, same day) cross-checked all 129 previously-unaudited
+oracle rows against `QSAUDIT-0.1`'s source-cited design table and (for the
+4 rows it doesn't cover) direct rule replay against documented case facts,
+finding zero discrepancies. `REQ-VER-07` remains deferred, but for a
+purely editorial reason now - the oracle content itself is audited and
+ready; what's left is a thesis-writing decision about which cases appear
+in the main text.
 
 **What remains before `REQBASE-1.0`/`PROTOBASE-1.0` can be frozen**
-(catalogue §12): implementation-order steps 9 (oracle audit) and 10
-(freeze + principal verification run), plus the two supervisor-level
-decisions unchanged since the original brief — `OPEN-RQ-01` (final
-research-question wording) and `OPEN-EVAL-01` (whether independent
-domain-expert review is required). None of these are implementation gaps
-in the sense this audit checks for; they are the project's own stated
-next steps.
+(catalogue §12): implementation-order step 10 (freeze + principal
+verification run), plus the two supervisor-level decisions unchanged since
+the original brief — `OPEN-RQ-01` (final research-question wording) and
+`OPEN-EVAL-01` (whether independent domain-expert review is required).
+None of these are implementation gaps in the sense this audit checks for;
+they are the project's own stated next steps.

@@ -8,7 +8,7 @@ See `docs/CHANGELOG.md`'s 2026-08-08/09 entries for the full change history
 this rewrite consolidates.
 
 **Scope:** precise, as-built description of the software in `app/` and its
-relationship to `prototype_baseline_0_2_design/` and `prototype_stack/`.
+relationship to `prototype_baseline/` and `prototype_stack/`.
 This is a reference document — if the code and this document disagree, the
 code is correct and this document is stale; fix the document (see
 [CHANGELOG.md](CHANGELOG.md) discipline in `CLAUDE.md`).
@@ -33,13 +33,14 @@ docker-compose.yml               self-contained publishable bundle (db+bootstrap
                                  +selenium+test behind a `test` Compose profile) — see §6.5.
                                  Distinct from prototype_stack/compose.yaml (the stack.sh-managed
                                  deployment scaffold) — both point their `bootstrap` service at
-                                 prototype_baseline_0_2_design/ (§6.3)
+                                 prototype_baseline/ (§6.3)
 .github/workflows/ci.yml         5 jobs: python-checks, php-unit, backend-integration, e2e,
                                  publish-images (builds+pushes 3 images to GHCR, main only,
-                                 gated on the other 4 passing) — bootstrap-wiring fixed and the
-                                 suite it runs now passes (§7); not yet re-run on GitHub itself
-                                 since the step 8 rewrite, so GHCR's published images are still
-                                 stale (§6.5)
+                                 gated on the other 4 passing) — bootstrap-wiring fixed, the
+                                 suite it runs now passes (§7), and a housekeeping pass fixed
+                                 three latent bugs `publish-images`/`python-checks` had (§6.5);
+                                 no GitHub-hosted run has completed against the fixed workflow
+                                 yet, so GHCR's published images are still stale until one does
 app/
   composer.json / composer.lock PHP dependencies (runtime: none beyond ext-pdo/ext-json; dev:
                                  phpunit/phpunit, php-webdriver/webdriver)
@@ -127,18 +128,19 @@ app/
         Footer.jsx                    version/build date/copyright
         icons.jsx                    hand-authored inline SVGs, no icon-font/library
 
-prototype_baseline_0_1/            historical/superseded Python data pipeline — kept for reference,
-                                    no longer the active bootstrap source (§6.3)
-prototype_baseline_0_2_design/     active Python data pipeline + MODELBASE-0.2 persistence
-                                    candidate, now wired into the real deployment path (§6.3)
+prototype_baseline/                 active Python data pipeline + MODELBASE-0.2 persistence
+                                    candidate, wired into the real deployment path (§6.3)
 prototype_stack/                   Docker Compose scaffold (db, bootstrap, app services)
+archived/                          superseded `_0_1` pipeline, pre-implementation planning docs,
+                                    a one-time delivery drop — nothing here is live; see
+                                    docs/DEVELOPMENT_DOCUMENTATION.md §17 for what moved and why
 ```
 
 ## 2. Data model
 
 ### 2.1 Physical schema
 
-Defined in `prototype_baseline_0_2_design/persistence_candidate/mysql_schema_0_2.sql`;
+Defined in `prototype_baseline/persistence_candidate/mysql_schema_0_2.sql`;
 nine tables, no others. All `InnoDB`, `utf8mb4_unicode_ci`.
 
 | Table | Primary key | Notable columns | FK to |
@@ -575,7 +577,7 @@ frontend build stage's output on top.
 | `ICD_DB_USER` | **yes** | — | Database user |
 | `ICD_DB_PASSWORD` | no | `''` | Database password |
 
-The Python bootstrap (`prototype_baseline_0_2_design/persistence_candidate/`)
+The Python bootstrap (`prototype_baseline/persistence_candidate/`)
 reads the identical five variables — same names, same defaults.
 
 ### 6.2 `Dockerfile` stages (repo root)
@@ -596,18 +598,20 @@ during the forward migration, and it changed twice** — see
 `docs/CHANGELOG.md`'s "steps 2-3 completed for real" entry for the full
 story. The `bootstrap` service in both `docker-compose.yml` and
 `prototype_stack/compose.yaml` now builds from
-`prototype_baseline_0_2_design/Dockerfile.bootstrap`
-(context: `prototype_baseline_0_2_design/`), running
+`prototype_baseline/Dockerfile.bootstrap`
+(context: `prototype_baseline/`), running
 `persistence_candidate/bootstrap_mysql_0_2.py` — which applies
 `mysql_schema_0_2.sql` to an empty database, then runs the idempotent
-`load_mysql_0_2.py` loader. `prototype_baseline_0_1/Dockerfile.bootstrap`
-(the historical `CASEBASE-0.2` pipeline) still exists on disk but is no
-longer referenced by either Compose file.
+`load_mysql_0_2.py` loader. `archived/prototype_baseline_0_1/Dockerfile.bootstrap`
+(the historical `CASEBASE-0.2` pipeline) still exists on disk, kept for
+reference, but is no longer referenced by either Compose file or CI's
+`publish-images` job (a housekeeping-pass fix — it was, until then;
+`docs/DEVELOPMENT_DOCUMENTATION.md` §17).
 
 | Service | Role | Lifecycle |
 |---|---|---|
 | `db` | `mysql:latest`, named volume `mysql_data` | long-running; healthcheck via `mysqladmin ping`; deliberately unpinned below the major version (`docs/DEVELOPMENT_DOCUMENTATION.md` §10.1) |
-| `bootstrap` | built from `prototype_baseline_0_2_design/Dockerfile.bootstrap` | one-shot (`restart: "no"`); applies schema on an empty DB, then runs the idempotent loader; reports `inserted` on first run, `no_op` on every identical re-run |
+| `bootstrap` | built from `prototype_baseline/Dockerfile.bootstrap` | one-shot (`restart: "no"`); applies schema on an empty DB, then runs the idempotent loader; reports `inserted` on first run, `no_op` on every identical re-run |
 | `app` | built from `Dockerfile` (repo root) | long-running; published on `${APP_HTTP_PORT:-5860}` |
 
 **A real gap this rewrite exists partly to close on paper:** every
@@ -657,12 +661,14 @@ suite was verified directly against equivalent live infrastructure
 instead; see `docs/CHANGELOG.md`'s "Step 8" entry). Published image tags
 (`.github/workflows/ci.yml`'s `publish-images` job, `main` only, gated on
 the other four jobs passing) have **not** been rebuilt against the forward
-model as of this rewrite — CI's `push` trigger is deliberately disabled
-(`workflow_dispatch` only), and no manual run has completed since the
-migration. Anyone pulling `ghcr.io/junomarx/bsc-thesis-icd10:latest` today
+model as of this rewrite — the last completed GitHub-hosted run predates
+both the `backend-integration` bootstrap-wiring fix and the step 8 test
+rewrite. CI's `push` trigger (to `main`) was re-enabled 9 August 2026, so
+the next push will be the first real end-to-end confirmation. Anyone
+pulling `ghcr.io/junomarx/bsc-thesis-icd10:latest` before that completes
 gets the pre-migration case-centric image; `docker compose build bootstrap
-app` (native source build) is the only way to run the current forward
-model, until CI is manually triggered and republishes.
+app` (native source build) is the reliable way to run the current forward
+model until then.
 
 ## 7. Test inventory (file → coverage), rewritten for the forward model (step 8)
 
@@ -697,15 +703,19 @@ re-verified while writing this section, not carried over from memory:
 | `TEST-E2E-02` | `E2E/VerificationOnlyQuestionVisibilityTest.php` (renamed from `VerificationOnlyCaseVisibilityTest.php`) |
 | *(none — frontend-only)* | `E2E/ProgressBadgeTest.php`: the `sessionStorage` per-patient completion badge (§5.4) has no backend equivalent, so it has no upstream `TEST-*` identifier |
 
-**Provenance caveat carried by `TEST-RC-01` specifically:** 125 of its 143
-rows are *exercised*, not yet *human-audited* against the original
-Austrian source pages — every row's `provenance_status` column says so
-explicitly (`forward_specification_derived_pending_human_oracle_audit`).
-A passing `TEST-RC-01` run is evidence the implementation matches the
-specification as currently understood; it is not yet step 9's frozen
-conformance claim. See `ReferenceResponseTest.php`'s own docblock and
-`docs/REQUIREMENTS_TRACEABILITY.md` (`REQ-VER-08`/`09`) for the exact
-distinction.
+**Provenance carried by `TEST-RC-01` specifically:** all 143 rows are now
+human-oracle-audited (implementation-order step 9, `docs/CHANGELOG.md`'s
+"Step 9" entry) - 125 against `chapter3_question_bank_source_audit.md`
+(`QSAUDIT-0.1`) §4.1-4.6's source-cited table, 4 reconstructed legacy rows
+(`VQ-005..008`) by direct rule replay against their documented case facts.
+Zero discrepancies. `provenance_status` reflects this
+(`..._human_oracle_audit_confirmed_against_qsaudit_0_1` /
+`..._human_oracle_audit_confirmed_via_rule_replay`). A passing `TEST-RC-01`
+run is still not step 10's frozen conformance claim (`REQ-VER-05`) - the
+file keeps its `_candidate` name until that freeze happens - but the
+audit gap step 9 existed to close is closed. See `ReferenceResponseTest.php`'s
+own docblock and `docs/REQUIREMENTS_TRACEABILITY.md` (`REQ-VER-08`/`09`)
+for the exact distinction.
 
 ## 8. Exact tool/version pins observed in this implementation
 

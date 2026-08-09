@@ -7,21 +7,31 @@
 #
 # Node is used only in this build stage to compile the React frontend; the
 # runtime image below runs no permanent Node service (brief, Section 17).
-FROM node:22-alpine AS frontend-build
+# `--platform=$BUILDPLATFORM` pins this stage (and the two Composer stages
+# below) to run natively on the builder regardless of which target
+# platform(s) the final image is built for. Their output — static JS/CSS/
+# HTML, and a pure-PHP vendor tree with no compiled extensions — is not
+# architecture-specific, so building it under QEMU emulation for a second
+# target arch buys nothing and costs a lot: Vite's esbuild (a native Go
+# binary) is a well-known hang/pathological-slowness case under QEMU
+# user-mode emulation, turning a 20-second build into a stuck multi-hour
+# one. Only `base`/`dev`/`runtime` below need a real per-arch build, since
+# `base` compiles the native `pdo_mysql` extension.
+FROM --platform=$BUILDPLATFORM node:22-alpine AS frontend-build
 WORKDIR /app/frontend
 COPY app/frontend/package.json app/frontend/package-lock.json* ./
 RUN npm ci
 COPY app/frontend/ ./
 RUN npm run build
 
-FROM composer:2 AS vendor
+FROM --platform=$BUILDPLATFORM composer:2 AS vendor
 WORKDIR /app
 COPY app/composer.json app/composer.lock* ./
 RUN composer install --no-dev --no-interaction --optimize-autoloader --no-scripts --no-progress
 
 # Same install, but keeping dev dependencies (phpunit/phpunit,
 # php-webdriver/webdriver) — only the `dev` target below uses this.
-FROM composer:2 AS vendor-dev
+FROM --platform=$BUILDPLATFORM composer:2 AS vendor-dev
 WORKDIR /app
 COPY app/composer.json app/composer.lock* ./
 RUN composer install --no-interaction --no-scripts --no-progress
@@ -51,11 +61,11 @@ COPY app/tests ./tests
 COPY app/composer.json app/composer.lock* app/phpunit.xml ./
 # ReferenceResponseTest.php locates the RC-* oracle via a path relative to
 # its own file (repo-root-relative, matching the host checkout layout); the
-# container has no sibling prototype_baseline_0_1/ directory otherwise, so
-# only the one oracle CSV the test harness actually reads is placed at the
+# container has no sibling prototype_baseline/ directory otherwise, so only
+# the one oracle CSV the test harness actually reads is placed at the
 # equivalent path here (never the Python pipeline itself, which stays out
 # of this image).
-COPY prototype_baseline_0_1/verification/reference_responses_0_2.csv /var/www/prototype_baseline_0_1/verification/reference_responses_0_2.csv
+COPY prototype_baseline/verification/reference_responses_0_3_candidate.csv /var/www/prototype_baseline/verification/reference_responses_0_3_candidate.csv
 
 # Lean deployment image: no dev dependencies, no test files. Last stage, so
 # a bare `docker build` (no --target) safely defaults to this one — the
