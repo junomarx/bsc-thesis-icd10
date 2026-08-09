@@ -18,7 +18,7 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [master]
   # pull_request:
   workflow_dispatch: # manual trigger retained alongside push; PRs still opt out to avoid CI spam
 
