@@ -105,7 +105,7 @@ jobs:
         working-directory: prototype_baseline/persistence_candidate
         run: python apply_mysql_schema_0_2.py
 
-      - name: Load PROTOBASE-0.3 baseline
+      - name: Load PROTOBASE-1.0 baseline
         working-directory: prototype_baseline/persistence_candidate
         run: python load_mysql_0_2.py
 

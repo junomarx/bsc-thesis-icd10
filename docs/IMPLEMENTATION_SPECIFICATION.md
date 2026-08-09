@@ -675,6 +675,15 @@ reference, but is no longer referenced by either Compose file or CI's
 `publish-images` job (a housekeeping-pass fix — it was, until then;
 `docs/DEVELOPMENT_DOCUMENTATION.md` §17).
 
+`prototype_baseline/Dockerfile.bootstrap`'s own base image
+(`python:3.12-slim-bookworm`) is pinned by manifest-list digest on
+`master` as well, since the `PROTOBASE-1.0` freeze's post-tag correction
+(§8; `docs/DEVELOPMENT_DOCUMENTATION.md` §19.4) — it was missed in the
+original pinning pass because it is one Dockerfile-reference-hop removed
+from `docker-compose.yml`/the root `Dockerfile`/`ci.yml`, not named
+directly in any of them. `develop`'s copy stays on the floating tag, same
+split as everything else in §6.2.
+
 | Service | Role | Lifecycle |
 |---|---|---|
 | `db` | `mysql` — pinned to a manifest-list digest on `master` as of the `PROTOBASE-1.0` freeze (§8); `develop` keeps `mysql:latest`, named volume `mysql_data` | long-running; healthcheck via `mysqladmin ping`; the underlying policy is still deliberately unpinned below the major version (`docs/DEVELOPMENT_DOCUMENTATION.md` §10.1) — the digest pin freezes *which* version currently satisfies that policy, not the policy itself; re-resolving after an intentional unfreeze would still follow it |
@@ -813,11 +822,28 @@ every image below on its floating tag for ongoing development.**
 | PHPUnit | 11.5.x | `app/composer.lock` |
 | php-webdriver/webdriver | 1.16.0 | `app/composer.lock` |
 | Selenium/browser (ad hoc verification only, not the app) | `selenium/standalone-chrome` (amd64, CI/E2E default) pinned by manifest-list digest `sha256:9569014786466376d3e5cf8a7758562368cd9637f783dcd3abdb2eaf3a0d5cd7`; `seleniarm/standalone-chromium` (arm64, local dev default) pinned by `sha256:d644a5f679e83e63344cee11c08fc2c7bf4acf43217434a8621a2bc85f7473a5` | `app/tests/E2E/docker-compose.yml`, `.github/workflows/ci.yml` |
+| Python (bootstrap image) | 3.12.13 | `python:3.12-slim-bookworm`, pinned by manifest-list digest `sha256:4766d8b510c428e595d74b9cc5bbb2fae8e26316fffb4adc89908d79aacd58a2` in `prototype_baseline/Dockerfile.bootstrap` — added in the post-`dev-freeze` correction (§6.3, `docs/CONFORMANCE_REPORT.md` §9), not part of the original six |
 
 **`docs/environment_manifest_0_1.json`** records the exact resolved
 version and manifest-list digest for every image above (frozen status),
 the `REQ-CFG-01` execution-environment evidence the `PROTOBASE-1.0` freeze
-run bound in `docs/CONFORMANCE_REPORT.md` §2.
+run bound in `docs/CONFORMANCE_REPORT.md` §2/§9.
+
+**Not pinned, deliberately, and not equivalent to the table above:**
+`docker-compose.yml`'s own default image references —
+`ghcr.io/junomarx/bsc-thesis-icd10:latest`, `:dev`, and
+`bsc-thesis-icd10-bootstrap:latest` — stay on mutable tags, because they
+are this repository's *own* published output, not a third-party
+dependency; their identity is the git commit they were built from, not a
+version to pin. The practical consequence: **`docker compose pull`
+against those defaults does not reproduce this frozen result** once
+`master` moves past the frozen commit, because `.github/workflows/ci.yml`'s
+`publish-images` job overwrites `:latest`/`:dev` on every subsequent push.
+The only reproducible path to the exact `PROTOBASE-1.0` state is
+`docker compose build` from the pinned `Dockerfile`/`Dockerfile.bootstrap`
+at the frozen/tagged commit, not a pull of the published tags. See
+`docs/environment_manifest_0_1.json`'s `deliberately_not_recorded` note
+and `docs/CONFORMANCE_REPORT.md` §9.
 
 ## 9. Explicit non-implementations
 

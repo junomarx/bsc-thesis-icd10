@@ -1531,3 +1531,69 @@ and `TESTBASE-1.0` (the `TESTBASE-0.1` version-number gap noted since
 supervisor decision, the second a documentation gap for the thesis author
 to close, neither a technical finding this run made. `OPEN-RQ-01` and
 `OPEN-EVAL-01` remain exactly as unresolved as before.
+
+### 19.4 Post-tag correction: the pinning pass had a seventh image it never looked for
+
+Project-owner review of `dev-freeze` (after it was already tagged and
+pushed) asked the exact right question: does the "fully pinned" claim
+actually cover every third-party base image, including the ones not
+referenced directly from `docker-compose.yml`/the root `Dockerfile`/
+`ci.yml`? It didn't. `prototype_baseline/Dockerfile.bootstrap` - a second,
+separate Dockerfile, one reference-hop away (`docker-compose.yml`'s
+`bootstrap` service points at it by `context`/`dockerfile`, not by
+`image:`) - still had `FROM python:3.12-slim-bookworm` on a floating tag.
+§19.1's pinning pass enumerated exactly six images because those were the
+ones visible from a direct grep of `docker-compose.yml`/
+`prototype_stack/compose.yaml`/the root `Dockerfile`/`ci.yml`; it never
+asked "does anything *those* files build from reference a base image of
+its own." That is the actual lesson worth keeping visible here, in the
+same spirit as §13.3/§15.3's "found only by actually running it, not
+grepping for it" pattern: **enumerating a pinning scope by grepping the
+files you already know about will miss a dependency that's one indirection
+away.** The correct check is to trace every `build:`/`dockerfile:`
+reference recursively, not just the `image:` lines.
+
+**The fix:** resolved `python:3.12-slim-bookworm`'s manifest-list digest
+and exact version the same way as the original six (`docker buildx
+imagetools inspect`, then actually running the resolved image to read its
+own version string); pinned it in `Dockerfile.bootstrap` on `master`,
+left `develop`'s copy floating (§19.2's split applies identically); added
+it as a seventh entry to `docs/environment_manifest_0_1.json`; re-ran the
+full check battery from `docs/CONFORMANCE_REPORT.md` §4 against the
+corrected commit, captured as a freshly regenerated `freeze_evidence.zip`
+(not reused from before the fix). Two smaller stale references the
+candidate-designation promotion (§19.3) had missed were fixed alongside:
+`.dockerignore`'s re-inclusion rule still named the pre-rename oracle CSV
+(confirmed harmless in practice via an actual `--no-cache` build before
+touching it, not assumed), and a cosmetic CI step name.
+
+**Why a new tag, not moving `dev-freeze`:** the same reasoning already
+established for why amending the frozen commit itself would be wrong
+applies to its tag. `dev-freeze` was already pushed and already cited by
+exact name in `docs/CONFORMANCE_REPORT.md` §1 and this document's own
+§19.1-19.3; re-pointing it at a different commit would silently rewrite
+what every one of those citations means, and would erase the very fact
+that a gap existed and was found - which is itself worth being able to
+show. A new, second tag on the corrected commit keeps `dev-freeze` as an
+honest record of the first (incomplete) pinning pass and makes the
+correction a visible, separate point in history, consistent with how
+`docs/CONFORMANCE_REPORT.md` §9 is an addendum rather than a rewrite of
+§1-§8.
+
+**Reproducibility scope, stated explicitly per project-owner instruction:**
+pinning the seven third-party base images does not, by itself, make
+`docker compose pull && docker compose up` reproduce this exact frozen
+result indefinitely. The three project-owned images
+(`ghcr.io/junomarx/bsc-thesis-icd10:latest`/`:dev`,
+`bsc-thesis-icd10-bootstrap:latest`) are published under mutable tags that
+`.github/workflows/ci.yml`'s `publish-images` job overwrites on every
+subsequent push to `master` - correct and intentional for the
+"just pull and run the current app" convenience use case
+(`docker-compose.yml`'s own stated purpose), but it means a `pull`
+performed after a later push fetches that later commit's build, not the
+one this freeze evaluated. The only reproducible path to the exact
+`PROTOBASE-1.0` result is building from source at the frozen/tagged
+commit. This was already true before today's correction; it is now stated
+explicitly rather than left implicit, in
+`docs/environment_manifest_0_1.json`'s `deliberately_not_recorded` note
+and `docs/CONFORMANCE_REPORT.md` §9.

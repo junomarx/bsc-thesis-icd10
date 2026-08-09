@@ -13,6 +13,71 @@ Reference `REQ-*`/`RULE-*`/`TEST-*` identifiers where a change implements or
 affects one. Every entry should let a reader answer "what changed, why, and
 was it actually tested" without opening the diff.
 
+## 2026-08-09 — Freeze correction: a seventh base image the pinning pass missed
+
+Project-owner review of the just-tagged `dev-freeze` found a real gap:
+`prototype_baseline/Dockerfile.bootstrap` — a second Dockerfile, one
+reference-hop removed from `docker-compose.yml`/the root `Dockerfile`/
+`.github/workflows/ci.yml` (those files point at it via `build:`/
+`dockerfile:`, not `image:`) — still had `FROM python:3.12-slim-bookworm`
+on a floating tag. The "every third-party base image pinned" claim in the
+entry below, `HANDOFF.md` §0.11, and `docs/CONFORMANCE_REPORT.md` §2 was
+six-out-of-seven, because the pinning pass enumerated its scope by
+grepping the three files it already knew about rather than tracing every
+`build:` reference recursively. Full account:
+`docs/DEVELOPMENT_DOCUMENTATION.md` §19.4, `docs/CONFORMANCE_REPORT.md` §9
+(an addendum — §1-§8 describing the `dev-freeze` run are preserved
+unedited, per this project's standing practice of correcting forward
+rather than rewriting an already-tagged, already-cited record).
+
+### Changed
+
+- `prototype_baseline/Dockerfile.bootstrap`: `FROM python:3.12-slim-bookworm`
+  → pinned by manifest-list digest
+  `sha256:4766d8b510c428e595d74b9cc5bbb2fae8e26316fffb4adc89908d79aacd58a2`
+  (Python 3.12.13, covers `linux/amd64` + `linux/arm64/v8`) on `master`;
+  `develop`'s copy stays floating, same split as the other six images.
+- `docs/environment_manifest_0_1.json`: added `python:3.12-slim-bookworm`
+  as a seventh entry; added a `correction_note` explaining the gap; the
+  `deliberately_not_recorded` note now states explicitly that the three
+  project-owned GHCR tags (`bsc-thesis-icd10:latest`/`:dev`,
+  `bsc-thesis-icd10-bootstrap:latest`) are mutable and do **not**
+  reproduce this frozen result once pulled after a later push — only a
+  source build from the pinned commit does.
+- `docs/IMPLEMENTATION_SPECIFICATION.md` §6.3/§8: added the seventh image
+  row; added an explicit "not pinned, deliberately, and not equivalent"
+  note for the three mutable project-owned tags.
+
+### Fixed
+
+- `.dockerignore`: the narrow re-inclusion rule for the oracle CSV still
+  named the pre-rename `reference_responses_0_3_candidate.csv`. Confirmed
+  harmless in practice — the broader `!prototype_baseline/verification/`
+  rule already re-included the renamed file, verified with an actual
+  `docker build --no-cache --target dev`, not assumed — but fixed to the
+  current filename regardless.
+- `.github/workflows/ci.yml`: cosmetic step name `Load PROTOBASE-0.3
+  baseline` → `Load PROTOBASE-1.0 baseline` (display label only, no
+  functional effect — the step's `run:` command was already correct).
+
+### Verified
+
+- `docker build -f prototype_baseline/Dockerfile.bootstrap`: clean build
+  from the pinned digest; `python --version` inside the built image
+  reports `3.12.13`.
+- Full check battery (`docs/CONFORMANCE_REPORT.md` §4) re-run in full
+  against the corrected commit — see that section's addendum for the
+  result and the regenerated `freeze_evidence.zip`.
+
+### Deviations
+
+- `dev-freeze` (commit `7147b30`) is **not** moved to the corrected
+  commit and is **not** deleted — it remains an honest record of the
+  first, incomplete pinning pass. A new, second immutable tag marks the
+  corrected commit instead, per the same reasoning already established
+  this session for why amending an already-pushed, already-cited commit
+  would misrepresent history rather than fix it.
+
 ## 2026-08-09 — Step 10: the formal development freeze — `PROTOBASE-1.0`, zero defects
 
 Project-owner's five-point freeze instruction, executed in full: pin the

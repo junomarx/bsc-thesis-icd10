@@ -19,7 +19,7 @@ prototype_baseline/
 # host-checkout-relative path (see Dockerfile) — nothing else in this
 # directory (the Python pipeline itself) is copied into any image.
 !prototype_baseline/verification/
-!prototype_baseline/verification/reference_responses_0_3_candidate.csv
+!prototype_baseline/verification/reference_responses_0_3.csv
 prototype_stack/
 
 app/vendor/
