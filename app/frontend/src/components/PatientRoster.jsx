@@ -1,4 +1,3 @@
-import Orientation from './Orientation.jsx'
 import PatientCard from './PatientCard.jsx'
 import { useLocale } from '../lib/i18n.jsx'
 
@@ -14,7 +13,6 @@ export default function PatientRoster({ patients, completedPatientIds, onSelect,
 
   return (
     <section>
-      <Orientation />
       <h2>{t('roster.heading')}</h2>
       {loading && <p>{t('roster.loading')}</p>}
       {error && <p className="error">{t('roster.error', { message: error })}</p>}

@@ -304,22 +304,26 @@ version of their conclusions).
   outside itself.
 - **Gamification layer — client-side only, deliberately small.** The
   project owner's stretch-goal instruction called a lightweight sense of
-  progress "essential... but not an elaborate concept." Implemented as a
-  single `localStorage` record (`lib/progress.js`) of each case's last
-  classification, surfaced as a per-case-card badge and a "`n` of `m`
-  attempted" summary — no score, no streak counter, no leaderboard, no
-  backend/session/schema change of any kind (§5.4 of the implementation
-  specification). This is the one place the project explicitly tracks
-  something resembling "learner attempt history," and it does so entirely
-  in the browser, preserving the hard limit the project owner set
-  alongside the request: the backend, rule engine, and data layer were not
-  to be touched by any of this work.
-- **First-visit tutorial, not a permanent tour.** A four-step modal
-  (`components/Tutorial.jsx`) mirroring `docs/USER_GUIDE.tex`'s "Using the
-  prototype" narrative, shown once per browser (`localStorage` flag) and
-  re-openable via a persistent header button rather than forced on every
-  visit — the same "state it once, make it findable, don't nag"
-  reasoning already applied to the scope disclaimer above.
+  progress "essential... but not an elaborate concept." In the current
+  patient/question model this is a `sessionStorage` set of completed
+  patient IDs, surfaced as patient-card badges and an aggregate completion
+  line — no score, streak, leaderboard, backend call, or schema change.
+  The earlier case-centric `localStorage`/`lib/progress.js` implementation
+  was deleted with that model; §14.3 records why the current session-local
+  design satisfies both `REQ-UI-02` and `REQ-INT-05`.
+- **First-visit tutorial, not a permanent roster panel.** The case-centric
+  app once had a `Tutorial.jsx`, but that component was deleted during the
+  patient/question migration. Step 7 initially satisfied `REQ-UI-01` with
+  a default-expanded `Orientation.jsx` block on the roster; in practice it
+  occupied substantial space on every visit and only toggled one large
+  body of text. The current `components/Tutorial.jsx` is a new implementation:
+  four focused Back/Next steps (patient → dossier → answer → feedback),
+  shown automatically only when a versioned `localStorage` flag is absent
+  and manually reopenable from the persistent header on every view. It
+  traps focus, closes on Escape, restores trigger focus, and is covered by
+  Selenium against the real first-visit path. This keeps the orientation
+  content available while following the same "state it once, make it
+  findable, don't nag" reasoning applied elsewhere.
 
 ## 8. Backend/API design principles
 
@@ -774,7 +778,7 @@ both fully rewritten for the forward model on the same date.
 | `app/frontend/src/App.jsx` + `components/*.jsx` | `REQ-INT-01`-`05`, `REQ-FBK-01`-`03`, `REQ-SCP-02`, `REQ-UI-01`-`03`, `REQ-GAM-01` |
 | `app/frontend/src/lib/i18n.jsx`/`contentTranslations.js`/`catalogueTranslations.js` | §14.2 — no upstream `REQ-*`/`TEST-*`, presentation-layer only |
 | `prototype_baseline/Dockerfile.bootstrap` + `persistence_candidate/*` | `MODELBASE-0.2`, `DATAMIG-0.2`, `PROTOBASE-0.3` — §13.3 |
-| `app/tests/Unit`/`Integration`/`E2E` | Migrated, step 8 — 77/160/7 tests passing, see §13.4 |
+| `app/tests/Unit`/`Integration`/`E2E` | Migrated in step 8; current counts 77/160/8 after the tutorial regression — see §13.4 and the latest changelog entry |
 
 ## 13. Forward redesign: patient/question model (8-9 August 2026)
 
@@ -885,6 +889,14 @@ built; code-option display-order permutation (an explicit "may", not a
 "shall") and a literal separate "Home" screen (materially the same
 requirement as satisfied by the roster-mounted orientation block, at the
 cost of navigation-state complexity a second view would add) were not.
+
+**Later refinement:** the roster-mounted orientation block described above
+was the implementation at the end of step 7, not the final current UI. A
+subsequent project-owner review found that its default-expanded, full-size
+presentation behaved like permanent documentation rather than a tutorial.
+It was therefore replaced by §7's new first-visit-only interactive modal;
+this changes presentation and onboarding state only, not the learner
+lifecycle, evaluator, or `REQ-UI-01` content.
 
 ### 14.2 Two-directional content translation, kept out of the database
 

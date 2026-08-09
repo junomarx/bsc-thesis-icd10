@@ -1,10 +1,11 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { evaluate, getPatient, getQuestion, listPatients } from './api.js'
 import Footer from './components/Footer.jsx'
 import Header from './components/Header.jsx'
 import PatientRoster from './components/PatientRoster.jsx'
 import PatientReview from './components/PatientReview.jsx'
 import QuestionView from './components/QuestionView.jsx'
+import Tutorial from './components/Tutorial.jsx'
 import { shuffledOrder } from './lib/playthrough.js'
 import './App.css'
 
@@ -12,6 +13,7 @@ import './App.css'
 // explicitly "session-local" - sessionStorage (cleared when the browser
 // session ends), never a server-side attempt history (REQ-INT-05).
 const COMPLETED_STORAGE_KEY = 'icd10-prototype:completed-patients'
+const TUTORIAL_STORAGE_KEY = 'icd10-prototype:tutorial-seen-v1'
 
 function readCompletedPatientIds() {
   try {
@@ -23,11 +25,20 @@ function readCompletedPatientIds() {
   }
 }
 
+function isFirstTutorialVisit() {
+  try {
+    return localStorage.getItem(TUTORIAL_STORAGE_KEY) !== 'true'
+  } catch {
+    return true
+  }
+}
+
 export default function App() {
   const [patients, setPatients] = useState([])
   const [loadingPatients, setLoadingPatients] = useState(true)
   const [patientsError, setPatientsError] = useState(null)
   const [completedPatientIds, setCompletedPatientIds] = useState(() => readCompletedPatientIds())
+  const [tutorialOpen, setTutorialOpen] = useState(() => isFirstTutorialVisit())
 
   const [view, setView] = useState('roster')
   const [activePatient, setActivePatient] = useState(null)
@@ -121,9 +132,18 @@ export default function App() {
     }
   }
 
+  const closeTutorial = useCallback(() => {
+    try {
+      localStorage.setItem(TUTORIAL_STORAGE_KEY, 'true')
+    } catch {
+      // private-browsing/quota: the tutorial remains usable for this page
+    }
+    setTutorialOpen(false)
+  }, [])
+
   return (
     <>
-      <Header />
+      <Header onOpenTutorial={() => setTutorialOpen(true)} tutorialOpen={tutorialOpen} />
       {view === 'roster' && (
         <PatientRoster
           patients={patients}
@@ -159,6 +179,7 @@ export default function App() {
         />
       )}
       <Footer />
+      {tutorialOpen && <Tutorial onClose={closeTutorial} />}
     </>
   )
 }

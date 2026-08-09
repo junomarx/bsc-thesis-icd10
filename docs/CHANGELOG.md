@@ -13,6 +13,65 @@ Reference `REQ-*`/`RULE-*`/`TEST-*` identifiers where a change implements or
 affects one. Every entry should let a reader answer "what changed, why, and
 was it actually tested" without opening the diff.
 
+## 2026-08-09 — Default-expanded orientation replaced with a first-visit interactive tutorial
+
+Project-owner request: the current patient/question frontend's
+`Orientation.jsx` rendered a full-size, default-expanded "How this works"
+panel every time the roster opened. It explained the app, but did not guide
+the learner through it as a tutorial and repeatedly occupied the roster's
+most prominent space. The owner also clarified that documentation references
+to an earlier `Tutorial.jsx` belonged to the deleted case-centric iteration;
+the live implementation before this change was `Orientation.jsx`.
+
+### Added
+
+- A new patient/question-model `components/Tutorial.jsx`: four focused
+  Back/Next steps covering patient choice, dossier review, one-response
+  submission, and feedback/review, with a visible step indicator and the
+  app's icon + text three-class legend on the final step. This is a new
+  implementation, not restoration of the deleted case-centric component.
+- First-visit persistence in `App.jsx` through the versioned browser-only
+  key `icd10-prototype:tutorial-seen-v1`. An absent key auto-opens the
+  tutorial; close, skip, Escape, and finish all mark it seen so later page
+  loads remain unobstructed. Clearing site storage intentionally makes the
+  next load a first visit again.
+- A persistent bilingual "How this works" / "So funktioniert es" control
+  in `Header.jsx`, allowing manual replay from the roster, an active
+  question, or patient review.
+- Accessibility behavior: modal semantics, initial focus, Tab/Shift+Tab
+  focus trap, Escape dismissal, background-scroll lock, and focus return
+  to the manual trigger.
+- `app/tests/E2E/TutorialTest.php`, frontend-only Selenium coverage of the
+  auto-show, four-step Back/Next flow, persistence across reload, manual
+  reopening, Escape, and trigger-focus restoration.
+
+### Changed
+
+- `SeleniumTestCase::openRoster()` now dismisses the real tutorial when it
+  appears in a fresh WebDriver profile. There is no test-only application
+  switch: ordinary workflow tests exercise the same first-visit boundary a
+  learner receives before proceeding.
+- The EN/DE dictionary, CSS, user guide, implementation/development
+  documentation, requirements traceability, and E2E README now describe
+  the current tutorial and browser-storage behavior.
+
+### Removed
+
+- `components/Orientation.jsx` and its always-expanded roster panel.
+
+### Verified
+
+- `npm run lint`: completes with only the pre-existing
+  `react(only-export-components)` Fast Refresh warning in `lib/i18n.jsx`.
+- `npm run build`: PASS (Vite 8.2.1, 33 modules transformed).
+- `php app/vendor/bin/phpunit -c app/phpunit.xml --testsuite e2e` against
+  the rebuilt real Docker application plus Selenium/Chromium: **8/8
+  passing, 46 assertions**.
+- `php app/vendor/bin/phpunit -c app/phpunit.xml --testsuite unit`:
+  **77/77 passing, 117 assertions**.
+- `php -l` on the changed Selenium base and new tutorial test, plus
+  `git diff --check`: PASS.
+
 ## 2026-08-09 — Submit-answer button made mobile-friendly
 
 Project-owner feedback with an annotated screenshot: the submit button sat

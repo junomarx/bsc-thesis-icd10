@@ -16,8 +16,9 @@ use PHPUnit\Framework\TestCase;
  * path through a real browser via Selenium, against whatever is running at
  * ICD_E2E_BASE_URL. See tests/E2E/README.md for how to bring up Selenium
  * and the application stack before running this suite. Rewritten for the
- * forward patient/question model (MODELBASE-0.2) - the case-centric
- * `.case-list`/tutorial-modal markup this drove no longer exists.
+ * forward patient/question model (MODELBASE-0.2). The first-visit tutorial
+ * is deliberately exercised rather than disabled in test mode; ordinary
+ * workflow helpers dismiss it before interacting with the roster.
  */
 abstract class SeleniumTestCase extends TestCase
 {
@@ -42,7 +43,7 @@ abstract class SeleniumTestCase extends TestCase
         static::$driver->quit();
     }
 
-    protected function openRoster(): void
+    protected function openRoster(bool $dismissTutorial = true): void
     {
         static::$driver->get(static::$baseUrl);
         // The <ul class="patient-list"> container renders immediately, even
@@ -50,6 +51,23 @@ abstract class SeleniumTestCase extends TestCase
         // just its (possibly still-empty) container.
         $this->wait()->until(WebDriverExpectedCondition::presenceOfElementLocated(
             WebDriverBy::className('patient-card'),
+        ));
+
+        if ($dismissTutorial) {
+            $this->dismissTutorialIfPresent();
+        }
+    }
+
+    protected function dismissTutorialIfPresent(): void
+    {
+        $tutorials = static::$driver->findElements(WebDriverBy::className('tutorial-dialog'));
+        if ($tutorials === []) {
+            return;
+        }
+
+        static::$driver->findElement(WebDriverBy::cssSelector('[data-testid="tutorial-skip"]'))->click();
+        $this->wait()->until(WebDriverExpectedCondition::invisibilityOfElementLocated(
+            WebDriverBy::className('tutorial-dialog'),
         ));
     }
 

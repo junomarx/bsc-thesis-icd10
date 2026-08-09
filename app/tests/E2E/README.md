@@ -1,8 +1,16 @@
-# TEST-E2E-01 / TEST-E2E-02: browser-driven end-to-end tests
+# Browser-driven end-to-end tests
 
 Selenium-based (project decision, see `docs/CHANGELOG.md` 2026-08-07 —
 Playwright is not used). Drives a real Chrome browser against a real
 running application stack; nothing here is mocked.
+
+The suite contains the formal `TEST-E2E-01` learner workflow and
+`TEST-E2E-02` verification-only boundary plus frontend-only regressions for
+patient completion and the first-visit tutorial. A fresh WebDriver profile
+has no tutorial-seen flag, so ordinary workflow helpers dismiss the real
+modal before continuing; `TutorialTest` separately verifies the complete
+first-visit/manual-replay lifecycle. There is no test-only switch that
+suppresses production onboarding behavior.
 
 ## 1. Start the application stack
 
@@ -49,7 +57,7 @@ Override these if the defaults don't match your setup:
 |---|---|---|
 | `ICD_E2E_SELENIUM_URL` | `http://127.0.0.1:4444` | Where the PHP test process talks to the Selenium/WebDriver server |
 | `ICD_E2E_BROWSER_BASE_URL` | `http://host.docker.internal:5860` | Where the *browser* (running inside the Selenium container) navigates to reach the app |
-| `ICD_E2E_BASE_URL` | `http://127.0.0.1:5860` | Where the *PHP test process* sends direct HTTP calls (the `CASE-004`/`CASE-008` reachability check) |
+| `ICD_E2E_BASE_URL` | `http://127.0.0.1:5860` | Where the *PHP test process* sends direct HTTP calls for the hidden `VQ-*` reachability checks |
 
 `host.docker.internal` works out of the box on Docker Desktop (macOS/Windows);
 on Linux the `docker-compose.yml` here adds the `host-gateway` mapping so it

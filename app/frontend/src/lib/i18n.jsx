@@ -12,19 +12,35 @@ const STRINGS = {
     'app.disclaimer':
       'Synthetic teaching patients only. This tool does not diagnose patients, does not provide clinical decision support, and is not used for official coding, reporting, or reimbursement.',
     'language.label': 'Language',
-    'orientation.toggleShow': 'How this works',
-    'orientation.toggleHide': 'Hide "How this works"',
-    'orientation.purpose':
-      'This is an educational Austrian ICD-10 coding demonstrator. It does not diagnose patients, and it is not a clinical decision-support tool.',
-    'orientation.workflow':
-      'Choose a synthetic patient below. Each patient has several independent coding tasks. Answer one task at a time; after you submit, you immediately see the result and an explanation before moving to the next task.',
-    'orientation.legendHeading': 'What the three results mean',
-    'orientation.legend.correct':
-      'Your code matches a response the source material explicitly supports for this task.',
-    'orientation.legend.suboptimal':
-      'Your code is an accepted response, but a more specific supported code exists for the documented facts.',
-    'orientation.legend.incorrect':
-      "Your code conflicts with a documented fact, or its severity/timing/status isn't supported by the record.",
+    'tutorial.open': 'How this works',
+    'tutorial.close': 'Close tutorial',
+    'tutorial.eyebrow': 'Interactive tutorial',
+    'tutorial.title': 'Learn the workflow in four steps',
+    'tutorial.stepCount': 'Step {current} of {total}',
+    'tutorial.progressLabel': 'Tutorial progress',
+    'tutorial.skip': 'Skip tutorial',
+    'tutorial.back': 'Back',
+    'tutorial.next': 'Next',
+    'tutorial.finish': 'Choose a patient',
+    'tutorial.step1.title': 'Choose a patient',
+    'tutorial.step1.body':
+      'Start from the patient cards behind this tutorial. Every patient contains several independent coding questions, and every card is available from the beginning.',
+    'tutorial.step1.cue': 'The Foundational and Involved labels are guidance, not locked levels.',
+    'tutorial.step2.title': 'Review the patient record',
+    'tutorial.step2.body':
+      'Inside a question, open “Show patient info” to review the summary and documented context. You can reopen this dossier at any time without losing your selection.',
+    'tutorial.step2.cue': 'Pay attention to whether information comes from a record, a patient report, or a current examination.',
+    'tutorial.step3.title': 'Answer one question at a time',
+    'tutorial.step3.body':
+      'Use the question counter, choose one ICD-10 code or “None of the above”, then submit. The answer is locked after evaluation so the feedback always refers to the choice you made.',
+    'tutorial.step3.cue': 'Question order is reshuffled for each playthrough; the questions and answer options themselves do not change.',
+    'tutorial.step4.title': 'Use the feedback, then continue',
+    'tutorial.step4.body':
+      'Read the result and explanation before moving on. After the final question, the review screen summarizes the patient without turning the three result classes into a score.',
+    'tutorial.step4.cue': 'Technical details are available when you want to inspect the rule and criterion behind a result.',
+    'tutorial.legend.correct': 'the selected response is explicitly supported.',
+    'tutorial.legend.suboptimal': 'a more specific supported response is available.',
+    'tutorial.legend.incorrect': 'the response conflicts with the documented facts or rules.',
     'roster.allCompleted': 'All 6 patients completed for this session.',
     'roster.resetProgress': 'Reset progress',
     'roster.resetProgressConfirm': 'Clear the completion marks for all patients in this session?',
@@ -83,19 +99,35 @@ const STRINGS = {
     'app.disclaimer':
       'Ausschließlich synthetische Lehrfälle. Dieses Werkzeug stellt keine Diagnosen, bietet keine klinische Entscheidungsunterstützung und wird nicht für die offizielle Kodierung, Meldung oder Abrechnung verwendet.',
     'language.label': 'Sprache',
-    'orientation.toggleShow': 'So funktioniert es',
-    'orientation.toggleHide': '„So funktioniert es“ ausblenden',
-    'orientation.purpose':
-      'Dies ist ein Lehrdemonstrator zur österreichischen ICD-10-Kodierung. Es stellt keine Diagnosen und ist kein klinisches Entscheidungsunterstützungswerkzeug.',
-    'orientation.workflow':
-      'Wählen Sie unten eine synthetische Patient:in. Jede Patient:in hat mehrere unabhängige Kodieraufgaben. Bearbeiten Sie eine Aufgabe nach der anderen; nach dem Absenden sehen Sie sofort das Ergebnis und eine Erklärung, bevor es zur nächsten Aufgabe weitergeht.',
-    'orientation.legendHeading': 'Was die drei Ergebnisse bedeuten',
-    'orientation.legend.correct':
-      'Ihr Code entspricht einer Antwort, die von der Quelle für diese Aufgabe ausdrücklich unterstützt wird.',
-    'orientation.legend.suboptimal':
-      'Ihr Code wird akzeptiert, es existiert jedoch ein spezifischerer, durch die dokumentierten Fakten unterstützter Code.',
-    'orientation.legend.incorrect':
-      'Ihr Code widerspricht einer dokumentierten Tatsache, oder sein Schweregrad/Zeitbezug/Status wird durch den Befund nicht unterstützt.',
+    'tutorial.open': 'So funktioniert es',
+    'tutorial.close': 'Tutorial schließen',
+    'tutorial.eyebrow': 'Interaktives Tutorial',
+    'tutorial.title': 'Den Ablauf in vier Schritten kennenlernen',
+    'tutorial.stepCount': 'Schritt {current} von {total}',
+    'tutorial.progressLabel': 'Tutorial-Fortschritt',
+    'tutorial.skip': 'Tutorial überspringen',
+    'tutorial.back': 'Zurück',
+    'tutorial.next': 'Weiter',
+    'tutorial.finish': 'Patient:in auswählen',
+    'tutorial.step1.title': 'Patient:in auswählen',
+    'tutorial.step1.body':
+      'Beginnen Sie mit den Patient:innenkarten hinter diesem Tutorial. Jede Person enthält mehrere unabhängige Kodierfragen, und alle Karten sind von Anfang an verfügbar.',
+    'tutorial.step1.cue': 'Die Hinweise „Grundlegend“ und „Anspruchsvoll“ dienen nur zur Orientierung und sperren nichts.',
+    'tutorial.step2.title': 'Patient:innenakte prüfen',
+    'tutorial.step2.body':
+      'Öffnen Sie in einer Frage „Patient:inneninfo anzeigen“, um Zusammenfassung und dokumentierten Kontext zu prüfen. Die Akte lässt sich jederzeit erneut öffnen, ohne Ihre Auswahl zu verlieren.',
+    'tutorial.step2.cue': 'Achten Sie darauf, ob Informationen aus einer Akte, einer Eigenangabe oder einer aktuellen Untersuchung stammen.',
+    'tutorial.step3.title': 'Eine Frage nach der anderen beantworten',
+    'tutorial.step3.body':
+      'Orientieren Sie sich an der Fragenanzeige, wählen Sie einen ICD-10-Code oder „Keine der genannten“ und senden Sie die Antwort ab. Nach der Bewertung ist die Auswahl gesperrt, damit sich das Feedback eindeutig auf Ihre Entscheidung bezieht.',
+    'tutorial.step3.cue': 'Die Reihenfolge wird bei jedem Durchlauf neu gemischt; Fragen und Antwortmöglichkeiten selbst bleiben unverändert.',
+    'tutorial.step4.title': 'Feedback nutzen und fortfahren',
+    'tutorial.step4.body':
+      'Lesen Sie Ergebnis und Erklärung, bevor Sie fortfahren. Nach der letzten Frage fasst die Abschlussansicht den Fall zusammen, ohne aus den drei Ergebnisklassen eine Punktzahl zu bilden.',
+    'tutorial.step4.cue': 'Bei Bedarf zeigen die technischen Details die entscheidende Regel und das Kriterium eines Ergebnisses.',
+    'tutorial.legend.correct': 'die gewählte Antwort wird ausdrücklich unterstützt.',
+    'tutorial.legend.suboptimal': 'eine spezifischere unterstützte Antwort ist verfügbar.',
+    'tutorial.legend.incorrect': 'die Antwort widerspricht den dokumentierten Fakten oder Regeln.',
     'roster.allCompleted': 'Alle 6 Patient:innen in dieser Sitzung abgeschlossen.',
     'roster.resetProgress': 'Fortschritt zurücksetzen',
     'roster.resetProgressConfirm': 'Abschluss-Markierungen für alle Patient:innen in dieser Sitzung löschen?',
