@@ -39,8 +39,9 @@ docker-compose.yml               self-contained publishable bundle (db+bootstrap
                                  gated on the other 4 passing) — bootstrap-wiring fixed, the
                                  suite it runs now passes (§7), and a housekeeping pass fixed
                                  three latent bugs `publish-images`/`python-checks` had (§6.5);
-                                 no GitHub-hosted run has completed against the fixed workflow
-                                 yet, so GHCR's published images are still stale until one does
+                                 confirmed live: a real GitHub-hosted run completed all 5 jobs
+                                 successfully (run 31314862118, 2026-08-09 13:04-13:09 UTC),
+                                 so GHCR's three published tags are current, not stale (§6.5)
 app/
   composer.json / composer.lock PHP dependencies (runtime: none beyond ext-pdo/ext-json; dev:
                                  phpunit/phpunit, php-webdriver/webdriver)
@@ -720,15 +721,16 @@ form has not itself been separately re-run since the step 8 rewrite (each
 suite was verified directly against equivalent live infrastructure
 instead; see `docs/CHANGELOG.md`'s "Step 8" entry). Published image tags
 (`.github/workflows/ci.yml`'s `publish-images` job, `main` only, gated on
-the other four jobs passing) have **not** been rebuilt against the forward
-model as of this rewrite — the last completed GitHub-hosted run predates
-both the `backend-integration` bootstrap-wiring fix and the step 8 test
-rewrite. CI's `push` trigger (to `main`) was re-enabled 9 August 2026, so
-the next push will be the first real end-to-end confirmation. Anyone
-pulling `ghcr.io/junomarx/bsc-thesis-icd10:latest` before that completes
-gets the pre-migration case-centric image; `docker compose build bootstrap
-app` (native source build) is the reliable way to run the current forward
-model until then.
+the other four jobs passing) **have** been rebuilt against the forward
+model: a real GitHub-hosted run (31314862118, 2026-08-09 13:04-13:09 UTC,
+against commit `acb2ca6`) completed all 5 jobs successfully, including a
+multi-arch (`linux/amd64,linux/arm64`) build of all three images - the
+same run that confirmed §10.8's `--platform=$BUILDPLATFORM` fix for a
+build that had previously hung for 1.5+ hours (`docs/DEVELOPMENT_DOCUMENTATION.md`
+§10.8). Anyone pulling `ghcr.io/junomarx/bsc-thesis-icd10:latest` now gets
+the current forward model; `docker compose build bootstrap app` (native
+source build) remains a valid alternative but is no longer the only
+reliable path.
 
 ## 7. Test inventory (file → coverage), rewritten for the forward model (step 8)
 
@@ -766,18 +768,24 @@ re-verified while writing this section, not carried over from memory:
 | *(none — frontend-only)* | `E2E/ThemeTest.php`: deterministic light start, dark-mode application across the roster/tutorial, browser-storage persistence across reload, and switching back to light (§5.4) |
 
 **Provenance carried by `TEST-RC-01` specifically:** all 143 rows are now
-human-oracle-audited (implementation-order step 9, `docs/CHANGELOG.md`'s
-"Step 9" entry) - 125 against `chapter3_question_bank_source_audit.md`
-(`QSAUDIT-0.1`) §4.1-4.6's source-cited table, 4 reconstructed legacy rows
-(`VQ-005..008`) by direct rule replay against their documented case facts.
-Zero discrepancies. `provenance_status` reflects this
-(`..._human_oracle_audit_confirmed_against_qsaudit_0_1` /
-`..._human_oracle_audit_confirmed_via_rule_replay`). A passing `TEST-RC-01`
-run is still not step 10's frozen conformance claim (`REQ-VER-05`) - the
-file keeps its `_candidate` name until that freeze happens - but the
-audit gap step 9 existed to close is closed. See `ReferenceResponseTest.php`'s
-own docblock and `docs/REQUIREMENTS_TRACEABILITY.md` (`REQ-VER-08`/`09`)
-for the exact distinction.
+confirmed against genuine source, not reconstruction alone. 125 learner rows
+were audited (implementation-order step 9, `docs/CHANGELOG.md`'s "Step 9"
+entry) against `chapter3_question_bank_source_audit.md` (`QSAUDIT-0.1`)
+§4.1-4.6's source-cited table, zero discrepancies. The 4 legacy rows
+(`VQ-005..008`) were first re-verified in step 9 by direct rule replay
+against their documented case facts, then reconciled for real: the
+archived raw `RCBASE-0.2` file
+(`archived/prototype_baseline_0_1/verification/reference_responses_0_2.csv`)
+was located and diffed field by field against all 4 rows - exact match on
+every field, no reconstruction gap remains. `provenance_status` reflects
+this (`..._human_oracle_audit_confirmed_against_qsaudit_0_1` for the 125
+learner rows, `exact_semantic_carry_forward_confirmed_against_rcbase_0_2`
+for the 4 legacy rows). A passing `TEST-RC-01` run is still not step 10's
+frozen conformance claim (`REQ-VER-05`) - the file keeps its `_candidate`
+name until that freeze happens - but no historical-fixture reconciliation
+gap remains open. See `ReferenceResponseTest.php`'s own docblock and
+`docs/REQUIREMENTS_TRACEABILITY.md` (`REQ-VER-08`/`09`) for the exact
+distinction.
 
 ## 8. Exact tool/version pins observed in this implementation
 

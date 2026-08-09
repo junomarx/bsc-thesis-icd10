@@ -116,7 +116,7 @@
   }
   \vfill
   \begin{tabular}{@{}ll@{}}
-    \textbf{Guide revision} & 0.5 \\
+    \textbf{Guide revision} & 0.6 \\
     \textbf{Last updated} & 9 August 2026 \\
     \textbf{Prototype data} & BMASGPK 2026 working baseline (6 patients, 25 questions) \\
     \textbf{Repository} & \href{https://github.com/junomarx/bsc-thesis-icd10}{github.com/junomarx/bsc-thesis-icd10}
@@ -181,21 +181,6 @@ Both commands should print version information. If Docker reports that it
 cannot connect to the daemon, open Docker Desktop or start the Docker service.
 
 \subsection{Install and start with the published images}
-
-\warningbox{The published images currently predate this guide's learner workflow}{
-  \texttt{docker compose pull} fetches the last images published by the
-  project's CI pipeline, which has not been re-run since the six-patient/
-  25-question model described in Section~\ref{sec:learner-workflow} was
-  implemented. Following the two commands below as written will currently
-  start the \emph{previous} case-based prototype, not the one this guide
-  describes. Until the images are republished, use
-  Section~\ref{sec:local-build}'s native local build instead ---
-  \texttt{docker compose build bootstrap app} followed by
-  \texttt{docker compose up -d --wait app} --- which builds directly from
-  the checked-out source and is guaranteed to match this guide. This
-  warning will be removed once a fresh publish confirms the pulled images
-  are current again.
-}
 
 Open a terminal and run:
 
@@ -487,7 +472,7 @@ when you need a clean copy of the baseline.
 
 The committed PHPUnit suite (\texttt{app/tests/}) targets the current
 six-patient/25-question model described in this guide: 77 unit tests, 160
-integration tests (against a live MySQL baseline), and 8 browser-driven
+integration tests (against a live MySQL baseline), and 9 browser-driven
 end-to-end tests, all passing as of the last verified run (see
 \path{docs/CHANGELOG.md} for exact counts and how they were verified).
 
@@ -598,7 +583,11 @@ these ports; they belong only to the optional Selenium service.
         browser so those three interface preferences survive a reload.
         None contains a learner response or is sent to the server.
   \item The database volume holds the versioned prototype catalogue,
-        patient, question, rule-support, and reference-response baseline.
+        patient, and question data, including the rule-support facts each
+        question is evaluated against. The independent reference-response
+        oracle is retained exclusively as test-harness data. It is not
+        imported into the runtime database and is unavailable to the
+        production application path.
   \item The implemented catalogue is a small, traceable subset of the Austrian
         ICD-10 BMASGPK 2026 material, not the entire catalogue.
   \item Results express the prototype's declared rules and question

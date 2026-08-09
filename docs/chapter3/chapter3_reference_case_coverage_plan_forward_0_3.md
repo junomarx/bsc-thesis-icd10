@@ -36,10 +36,10 @@ All 18 `RCBASE-0.2` obligations remain regression requirements under `REQ-VER-09
 | Legacy group | Rows | Provenance status |
 |---|---:|---|
 | `RC-001-*` through `RC-004-*` | 14 | exact semantic carry-forward from the available `RCBASE-0.1`; implementation documentation states these rows were unchanged apart from `0.2` baseline identifiers |
-| `RC-005-01` through `RC-008-01` | 4 | provisional reconstruction from the implementation `CHANGELOG.md` and `DEVELOPMENT_DOCUMENTATION.md` |
-| **Legacy total** | **18** | pre-freeze reconciliation required for the four reconstructed rows |
+| `RC-005-01` through `RC-008-01` | 4 | exact semantic carry-forward, confirmed against the raw archived `RCBASE-0.2` file (`archived/prototype_baseline_0_1/verification/reference_responses_0_2.csv`) by direct field-by-field diff — every field matches exactly |
+| **Legacy total** | **18** | reconciled; no pre-freeze diff remains outstanding for any of the 18 rows |
 
-The four reconstructed additions preserve the documented integration obligations:
+The four legacy additions preserve the documented integration obligations:
 
 | Legacy case | Decisive condition | Response | Expected result |
 |---|---|---|---|
@@ -48,7 +48,7 @@ The four reconstructed additions preserve the documented integration obligations
 | `CASE-007` | J44.0; stable-phase FEV1 exactly 70% | `J44.03` | `correct` / `RULE-CORRECT-01` |
 | `CASE-008` | inpatient main diagnosis; `Z01.6` carries `Kennzeichen = !` | `Z01.6` | `incorrect` / `RULE-STATUS-01` |
 
-The original raw `CASEBASE-0.2`/`RCBASE-0.2` files must be diffed against these four provisional rows when they become available. Until that comparison, the reconstruction is sufficient for development continuity but is not described as byte-identical historical data.
+The original raw `RCBASE-0.2` file has been located (`archived/prototype_baseline_0_1/verification/reference_responses_0_2.csv`, the genuine pre-redesign 18-row oracle, not a reconstruction) and diffed against these four rows field by field: `submitted_code`, `expected_class`, `determining_rule`, `pattern_id`, `criterion`, `improvement_code`, `required_explanation_elements`, and `source_locator` all match exactly for `RC-005-01` through `RC-008-01`. This is now described as byte-identical historical data, not a development-continuity approximation.
 
 ## 4. Candidate `RCBASE-0.3` coverage
 
@@ -79,11 +79,11 @@ The legacy rows deliberately retain the source-specific determining rules rather
 
 Runtime authoring files contain semantic relation inputs such as `relation_kind`, `reason_key` and explicit fact links, but contain no `expected_class`, expected determining rule, expected criterion or `RC-*` verdict. The candidate oracle resides under `verification/` and must not be imported into the runtime database.
 
-The 125 learner expectations are specification-derived and are marked `forward_specification_derived_pending_human_oracle_audit`. This is sufficient to predefine expected software behaviour, but it is not independent clinical validation. Before final freeze, the following gates remain:
+The 125 learner expectations are specification-derived; each is marked `forward_specification_derived_human_oracle_audit_confirmed_against_qsaudit_0_1`, reflecting the source/human audit gate below, now closed. Of the four gates originally listed here, three are closed and one remains:
 
-1. source/human audit of the 125 newly defined learner expectations and their explanation requirements;
-2. comparison of the four provisionally reconstructed legacy additions with the original `0.2` CSVs;
-3. implementation of `MODELBASE-0.2` and `RULEBASE-0.2` without giving runtime code access to `RCBASE-0.3`;
-4. execution of the frozen oracle against the frozen application revision, with observed results stored separately from expected results.
+1. ~~source/human audit of the 125 newly defined learner expectations and their explanation requirements~~ — closed: cross-checked against `chapter3_question_bank_source_audit.md` (`QSAUDIT-0.1`) §4.1-4.6, zero discrepancies (implementation-order step 9);
+2. ~~comparison of the four reconstructed legacy additions with the original `0.2` CSVs~~ — closed: diffed against the raw archived `RCBASE-0.2` file, exact match (§3 above);
+3. implementation of `MODELBASE-0.2` and `RULEBASE-0.2` without giving runtime code access to `RCBASE-0.3` — closed structurally and continuously enforced (`TEST-ARC-01`), not a one-time gate;
+4. **remaining:** execution of the frozen oracle against the frozen application revision, with observed results stored separately from expected results — this is implementation-order step 10 (freeze + principal verification run), not yet started.
 
 The present structural validator checks completeness, class counts, response-kind coverage, legacy accounting and runtime/oracle field separation. A successful structural check is not application verification.

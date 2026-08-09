@@ -58,8 +58,8 @@
   },
   "legacy_reconciliation": {
     "exact_semantic_carry_forward_rows": 14,
-    "provisional_documentation_reconstruction_rows": 4,
-    "reconciliation_required_before_freeze": true
+    "exact_semantic_carry_forward_confirmed_against_rcbase_0_2_rows": 4,
+    "reconciliation_required_before_freeze": false
   },
   "implementation_claim": "none",
   "verification_claim": "none; local validation covers authoring/data-contract/oracle-completeness invariants only"

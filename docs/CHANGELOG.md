@@ -13,6 +13,203 @@ Reference `REQ-*`/`RULE-*`/`TEST-*` identifiers where a change implements or
 affects one. Every entry should let a reader answer "what changed, why, and
 was it actually tested" without opening the diff.
 
+## 2026-08-09 — Legacy-fixture reconciliation: the raw RCBASE-0.2 file was archived, not lost
+
+Project-owner instruction: several current-state materials still called
+`VQ-005..008` "reconstructed" or "provisional," which was obsolete. Step 9
+(this file's earlier "Step 9" entry) had confirmed these four rows by
+running their documented facts through the live `RuleMap`/`RuleStatus`
+predicates, because every design-phase document describing them said the
+raw `RCBASE-0.2` file was unavailable - and step 9 didn't independently
+re-check that premise before relying on it. It was wrong: the genuine,
+original 18-row `RCBASE-0.2` file (no `provenance_status` column,
+predating the concept - not a reconstruction) had been sitting at
+`archived/prototype_baseline_0_1/verification/reference_responses_0_2.csv`
+the whole time, archived during the same-dated housekeeping pass without
+anyone connecting it back to this older, unrelated-seeming claim. This
+entry is the genuine reconciliation, not a rewrite of step 9's - step 9's
+own entry below is left as it was; the rule-replay confirmation it
+describes was real evidence and remains true, just no longer the
+strongest evidence available for these four rows. Full rationale:
+`docs/DEVELOPMENT_DOCUMENTATION.md` §18.
+
+### Verified
+
+- Read `archived/prototype_baseline_0_1/verification/reference_responses_0_2.csv`
+  directly and diffed its `RC-005-01` through `RC-008-01` rows against the
+  current oracle's `VQ-005..008` rows, field by field: `submitted_code`,
+  `expected_class`, `determining_rule`, `pattern_id`, `criterion`,
+  `improvement_code`, `required_explanation_elements`, `source_locator`.
+  Every field matches exactly, for all four rows.
+- Compared the four `prompt` fields in `verification_questions_legacy_0_1.csv`
+  against the genuine historical `short_description` text in
+  `archived/prototype_baseline_0_1/data/cases_0_2.csv`: `VQ-005`/`006`/`007`
+  were each missing their original boundary-clause parenthetical (e.g.
+  "(below the 35% suffix boundary)"); `VQ-008` had been substantively
+  reworded, not merely trimmed.
+- `validate_forward_verification.py` (before this pass's fix): confirmed
+  failing with `AssertionError` on its hardcoded provenance check - it had
+  been silently broken since step 9 (which changed the provenance string
+  this script's assertion checks for, but never re-ran the script itself,
+  since nothing in CI or the test suites invokes it).
+- `validate_forward_verification.py` (after the fix): PASS.
+- `validate_materialized_design.py`: PASS, unaffected (checks different
+  invariants, no provenance assertions).
+- `python -m unittest test_runtime_contract_0_2`/`test_mysql_persistence_0_2`
+  against a fresh throwaway MySQL: both green, after regenerating the
+  `runtime_manifest_0_2.json` digest for `verification_questions_legacy_0_1.csv`
+  (its `prompt` text changed).
+- `php vendor/bin/phpunit --testsuite integration`: 160/160, including all
+  143 reference-response rows read from the edited oracle CSV.
+
+### Changed
+
+- `prototype_baseline/verification/reference_responses_0_3_candidate.csv`:
+  `provenance_status` for `RC-005-01`-`RC-008-01` →
+  `exact_semantic_carry_forward_confirmed_against_rcbase_0_2`.
+- `prototype_baseline/data/verification_questions_legacy_0_1.csv`: the
+  four `prompt` fields replaced with the exact historical wording (see
+  Verified above); `source_audit_ref` updated to match the new
+  provenance string.
+- `prototype_baseline/persistence_candidate/runtime_manifest_0_2.json`:
+  regenerated SHA-256 for `data/verification_questions_legacy_0_1.csv`.
+- `prototype_baseline/verification/oracle_manifest_0_3_candidate.json`:
+  `raw_rcbase_0_2_diff_required_before_freeze` → `false`;
+  `legacy_provenance`'s `reconstructed_from_implementation_documentation`
+  key → `exact_semantic_carry_forward_confirmed_against_rcbase_0_2`;
+  `learner_expectation_status` also brought current (it still read the
+  pre-step-9 `..._pending_human_oracle_audit` value - a separate, smaller
+  drift from step 9 never propagating to this manifest, closed here since
+  this manifest was already being regenerated); `oracle_sha256`
+  regenerated; `date` bumped.
+- `prototype_baseline/design_materialization_manifest.json`:
+  `reconciliation_required_before_freeze` → `false`;
+  `provisional_documentation_reconstruction_rows` key renamed to
+  `exact_semantic_carry_forward_confirmed_against_rcbase_0_2_rows`.
+- `prototype_baseline/forward_verification_digests.json`: regenerated
+  digests for both changed files; `generated_on` bumped.
+- `prototype_baseline/validate_forward_verification.py`: fixed the
+  hardcoded provenance assertion and its `legacy_rc_id` set-comparison to
+  match current values; updated its summary print line.
+- `prototype_baseline/README.md`: "must be diffed... before a final
+  freeze" language replaced with the confirmation and its evidence.
+- `docs/chapter3/chapter3_reference_case_coverage_plan_forward_0_3.md`
+  (`CASEPLAN-0.3`): §3's provenance table and narrative, and §5's
+  four-gates list, updated to close the two items this reconciliation and
+  step 9 respectively resolved - only step 10's freeze/execution gate
+  remains open.
+- `docs/REQUIREMENTS_TRACEABILITY.md` (`REQ-VER-09`),
+  `docs/IMPLEMENTATION_SPECIFICATION.md` (§7's `TEST-RC-01` provenance
+  note), `app/tests/Integration/ReferenceResponseTest.php` (docblock),
+  `HANDOFF.md` (new §0.9, step-9 table row, revision note): all updated
+  to describe the reconciled state.
+
+### Deviations
+
+- None. This closes the historical-fixture reconciliation question
+  entirely - `RCBASE-0.3` has no remaining reconciliation gap across any
+  of its 143 rows. What remains before a `1.0` baseline is step 10
+  (freeze + principal verification run) and the two pre-existing
+  supervisor decisions, not further substantive feature or data work.
+
+## 2026-08-09 — Documentation drift sweep: six flagged discrepancies, plus what they led to
+
+Project-owner flagged six specific documentation-drift items directly
+(none affecting the implementation itself). Investigating each led to
+finding and fixing three more of the same class, including a
+user-visible `\warningbox` in the guide itself claiming stale GHCR
+images - which turned out to already be false, since CI's first real
+green run (this file's "CI's first real GitHub-hosted run" entry) had
+already republished current images.
+
+### Fixed
+
+- `docs/USER_GUIDE.tex`: E2E test count corrected 8 → 9 (`ThemeTest`/
+  `TutorialTest` were added after the count was last written down).
+- `docs/USER_GUIDE.tex`: removed the claim that the runtime database
+  holds a "reference-response baseline" - this directly contradicts
+  `TEST-ARC-01`/`ArchitectureIsolationTest`'s whole point (the oracle is
+  structurally excluded from the runtime DB, `DEVELOPMENT_DOCUMENTATION.md`
+  §5.5). Replaced with an accurate description of what the DB actually
+  holds and an explicit statement of the oracle-isolation property.
+  **Same-day follow-up correction:** the first replacement wording ("it
+  exists only in the source checkout") was itself imprecise - the oracle
+  CSV is also `COPY`'d into the `dev`/test Docker image for
+  `ReferenceResponseTest` (`Dockerfile`, `docs/DEVELOPMENT_DOCUMENTATION.md`
+  §10.6), so "checkout only" overclaimed. Reworded to the property that's
+  actually true regardless of image: "retained exclusively as test-harness
+  data... not imported into the runtime database and... unavailable to
+  the production application path."
+- `docs/README.md`: two table cells describing the test suite as "not yet
+  migrated" and requirements as "evidenced by inspection rather than an
+  automated test" - both true before step 8, false since. Reworded to
+  match current reality (test inventory as a specification section;
+  deferrals now genuinely rare and freeze/thesis-writing-specific).
+- `docs/DEVELOPMENT_DOCUMENTATION.md`: §5 and §6 (architectural/data-model
+  decisions) described the original one-case/one-question implementation
+  in unqualified present tense - `RULEBASE-0.1`, `CaseFacts`,
+  `CaseRepository`, `SUBSET-0.1` counts - with no signal they predate the
+  forward redesign. Added explicit historical banners to both, noting
+  which underlying decisions still hold today under different names
+  (`Precedence` as its own class, flat explanation payloads, exception-
+  based gap handling, three-level oracle isolation) versus which specific
+  facts do not. Fixed a stale `CaseController`-strips-`is_acceptable` line
+  in §7 to describe the actual current mechanism (`QuestionController`
+  never selects `question_code_domain` in the first place). Rewrote §9's
+  testing-methodology table (still-current tool names had drifted to the
+  `_0_1`-era Python scripts and `CaseFacts` fixtures; the "eighteen `RC-*`
+  rows" line hadn't been updated for the 143-row oracle). Fixed the
+  document's own top-of-file `Scope` line (`PROTOBASE-0.2` → `0.3`).
+- `docs/DEVELOPMENT_DOCUMENTATION.md` §12: a traceability row labelled
+  `app/src/Rules/*.php` "(9 classes)" while listing ten `RULE-*`
+  identifiers (`docs/REQUIREMENTS_TRACEABILITY.md` carries no such count
+  anywhere and needed no change). Verified directly against
+  `app/src/Rules/`: 10 actual rule-predicate classes (excluding the two
+  result value objects `GateResult`/`MapResult` and `Precedence`, which
+  has its own row) - the identifier list was right, the class count
+  wasn't. Fixed to "(10 classes)".
+- `docs/IMPLEMENTATION_SPECIFICATION.md` §1 and §6.5: both still described
+  `publish-images` as not yet confirmed against the forward model. Checked
+  the live GitHub Actions API rather than assuming either way: run
+  `31314862118` (2026-08-09 13:04-13:09 UTC, commit `acb2ca6`) completed
+  all 5 jobs successfully. Updated both to state this as fact, with the
+  run ID for anyone who wants to check it themselves.
+- **Found while checking the above, not originally flagged:** `docs/USER_GUIDE.tex`
+  carried a full `\warningbox` telling users to build locally because
+  published images "predate this guide's learner workflow" - the same
+  claim, just never updated after CI went green. Removed; `docker compose
+  pull` is confirmed current (see this file's CI entry). `README.md`'s
+  quick-start and `HANDOFF.md` (§2's Docker bullet, §3, §4) carried the
+  identical claim in three more places - all updated together, not
+  independently, so they can't drift apart again from the same root cause.
+
+### Verified
+
+- Actual current `phpunit --testsuite e2e --list-tests`: 9 tests, matching
+  the corrected guide count.
+- Read `app/src/Http/QuestionController.php` directly rather than trusting
+  the old description: confirmed `render()` builds `options` from
+  `question_option` only, never touches `question_code_domain`.
+- `ls app/src/Rules/`: 13 files; 10 are rule-predicate classes
+  (`Rule*.php`), 2 are result value objects, 1 (`Precedence.php`) has its
+  own separate traceability row - confirms 10, not 9.
+- GitHub Actions REST API, one check: run `31314862118`'s job list, all 5
+  `success`, `publish-images` completed `13:06:08`-`13:09:18Z`.
+- Real `docker compose pull && docker compose up -d --wait app` against
+  the actual published tags (not assumed from the CI report):
+  `GET /api/patients` returns all 6 correctly-renamed patients.
+- `latexmk -pdf -interaction=nonstopmode -halt-on-error USER_GUIDE.tex`:
+  clean compile, 11 pages, no errors. Guide revision bumped 0.5 → 0.6 for
+  this pass's factual corrections.
+
+### Deviations
+
+- None of the six originally-flagged items affected the implementation
+  itself, matching how they were reported - all were documentation-only
+  corrections. The three additional fixes found while investigating
+  (the `\warningbox` and its two siblings) are the same class of issue,
+  not new implementation work either.
+
 ## 2026-08-09 — Tutorial closes from the outside backdrop
 
 Project-owner follow-up: the tutorial should be dismissible with the mouse

@@ -1,7 +1,12 @@
 # Development documentation
 
 **Scope:** the implementation phase of the Austrian ICD-10 educational
-prototype (`PROTOBASE-0.2`, superseding `PROTOBASE-0.1`, and its downstream application layer).
+prototype, from the original one-case/one-question build
+(`PROTOBASE-0.1`/`0.2`) through the 8-9 August 2026 forward redesign to a
+patient/question model (`PROTOBASE-0.3`, current) and its downstream
+application layer. Sections 5-6 and 9 describe the original implementation
+and predate the redesign — each is marked; the current architecture is
+`IMPLEMENTATION_SPECIFICATION.md` plus §13-17 below.
 **Companion documents:** [IMPLEMENTATION_SPECIFICATION.md](IMPLEMENTATION_SPECIFICATION.md)
 (what was built, precisely) and [CHANGELOG.md](CHANGELOG.md) (when it changed).
 **Upstream authority:** the `chapter3_*.md` control artefacts at the
@@ -95,6 +100,20 @@ to use that fixed stack, not *whether* to use it.
 | Browser-driven testing | **Selenium**, going forward (see §10.3) | Initial end-to-end verification (documented in [CHANGELOG.md](CHANGELOG.md)) used Playwright; the project owner subsequently specified Selenium as the standing choice for all future system/integration/regression browser tests. Playwright's dev-dependency and browser cache were removed once that was clear, rather than left as unused, contradictory tooling. |
 
 ## 5. Architectural decisions
+
+**Historical — describes the original one-case/one-question implementation
+(`RULEBASE-0.1`, `SUBSET-0.1`, `RCBASE-0.2`, `CaseFacts`), predates the 8-9
+August 2026 forward redesign (§13).** Kept verbatim because the *decisions*
+below mostly still hold in the current codebase, only under different
+names: `Precedence` is still its own class (now over an array of graded
+matches, not a bool); explanations are still a flat keyed array; a
+specification gap is still an exception, not a return value
+(`SpecificationGapException` is unchanged); the oracle is still isolated at
+all three levels described in §5.5, now against `RULEBASE-0.2`/`RCBASE-0.3`
+and `mysql_schema_0_2.sql`. Concrete class names, counts, and file paths
+below are the *original* ones and will not `grep`-match the current
+`app/src/` — see `IMPLEMENTATION_SPECIFICATION.md` for what actually exists
+today.
 
 ### 5.1 Layering
 
@@ -203,7 +222,15 @@ inspection alone.
 
 ## 6. Data model implementation decisions
 
-The physical schema (`prototype_baseline_0_1/mysql_schema.sql`) is a direct,
+**Historical — describes the original `MODELBASE-0.1` schema and its
+`CaseFacts`/`CaseRepository` realization, fully superseded by
+`MODELBASE-0.2`'s 9-table normalized schema (§13, `IMPLEMENTATION_SPECIFICATION.md`
+§2).** The underlying principle (one repository per table, returning
+immutable value objects so a rule predicate cannot silently depend on an
+unpromoted column) is unchanged in the current `Repository/*`/`Model/*`
+classes; the specific table/class names below are not.
+
+The physical schema (`archived/prototype_baseline_0_1/mysql_schema.sql`) is a direct,
 1:1 realization of `MODELBASE-0.1`'s four logical entities — no additional
 tables, no denormalization, no caching layer. PHP-side, each table has
 exactly one repository (`BaselineRepository`, `CatalogueRepository`,
@@ -282,10 +309,14 @@ version of their conclusions).
   mechanism (larger touch targets, hover/selected states, a "no matches"
   message) rather than a network-backed component, since the underlying
   reasoning (six codes, already fetched) didn't change.
-- **No accepted-set information ever reaches the client.** `CaseController`
-  strips `is_acceptable` before responding; the frontend never has enough
-  information to reveal the answer key through, e.g., inspecting the
-  network tab. This is a direct, UI-side extension of the runtime/oracle
+- **No accepted-set information ever reaches the client.** `QuestionController::render()`
+  builds its `options` array from `question_option` (the displayed set)
+  only; it never touches `question_code_domain`'s `relation_kind` rows (the
+  accepted/less-specific/conflict vocabulary a question is actually
+  evaluated against), so there is no accepted-set field to strip in the
+  first place — the frontend never has enough information to reveal the
+  answer key through, e.g., inspecting the network tab. This is a direct,
+  UI-side extension of the runtime/oracle
   separation principle in §5.5 — the *learner's browser* is treated as
   no more trusted than the verification harness. The gamification layer
   below reads only the already-received `evaluate()` response and writes
@@ -375,19 +406,24 @@ of the testing approach.
 
 | Layer | Tool | What it exercises | Needs a database? |
 |---|---|---|---|
-| Data/source structural checks | Python `unittest` (`prepare_subset.py --check-existing`, `validate_baseline.py`) | Frozen-source checksum, deterministic subset reproduction, oracle/runtime-model consistency | No |
-| Persistence integration | Python `unittest` (`tests/test_mysql_persistence.py`) | Live schema shape, row counts, FK enforcement, oracle-column absence | Yes (live MySQL) |
-| Rule-engine unit tests | PHPUnit (`app/tests/Unit/*`) | Every `RULE-*` predicate and `Precedence` in isolation, against hand-built `CaseFacts` fixtures | No |
-| Backend integration tests | PHPUnit (`app/tests/Integration/*`) | Repositories + evaluator + API together, including all 18 `RC-*` rows, determinism, and oracle isolation | Yes (live MySQL) |
-| End-to-end / browser | Selenium via `php-webdriver/webdriver` (`app/tests/E2E/*`; Playwright was used once for the initial pass, then retired — §10.4/§10.5) | The actual React → PHP → MySQL path a learner would exercise | Yes (full stack + Selenium) |
+| Data/source structural checks | Python `unittest` (`prototype_baseline/scripts/prepare_subset_0_2.py --check-existing`, `persistence_candidate/test_runtime_contract_0_2.py`) | Frozen-source checksum, deterministic subset reproduction, oracle/runtime-model consistency | No |
+| Persistence integration | Python `unittest` (`prototype_baseline/persistence_candidate/test_mysql_persistence_0_2.py`) | Live schema shape, row counts, FK enforcement, oracle-column absence | Yes (live MySQL) |
+| Rule-engine unit tests | PHPUnit (`app/tests/Unit/*`, 77 tests) | Every `RULE-*` predicate and `Precedence` in isolation, against hand-built `CodingQuestion`/`QuestionFacts` fixtures (`Fixtures.php`) | No |
+| Backend integration tests | PHPUnit (`app/tests/Integration/*`, 160 tests) | Repositories + evaluator + API together, including all 143 `RC-*` rows, determinism, and oracle isolation | Yes (live MySQL) |
+| End-to-end / browser | Selenium via `php-webdriver/webdriver` (`app/tests/E2E/*`, 9 tests; Playwright was used once for the initial pass, then retired — §10.4/§10.5) | The actual React → PHP → MySQL path a learner would exercise | Yes (full stack + Selenium) |
 | Container/orchestration | `docker compose build` / `up` / the bootstrap service's own test invocation | That the images build, the services start in the right order, and the bootstrap pipeline behaves idempotently against a *freshly created* compose-managed database | Yes (via Compose) |
 
+Exact pass counts as of the last verified run: `IMPLEMENTATION_SPECIFICATION.md`
+§7; dates and the runs that produced them: `CHANGELOG.md`.
+
 A deliberate methodological point carried over from the upstream test
-catalogue (`chapter3_test_catalogue.md` §2): the eighteen `RC-*` reference
-rows are not "just more unit tests." `ReferenceResponseTest.php` sends only
-`case_id` and `submitted_code` through the real HTTP-shaped controller and
-compares against an oracle it reads once at test-collection time — it
-never becomes a runtime dependency of the application it is testing.
+catalogue (`chapter3_test_catalogue.md` §2): the 143 `RC-*` reference rows
+(125 new forward-model expectations plus 18 historical regression rows,
+`docs/CHANGELOG.md`'s "Step 8"/"Step 9" entries) are not "just more unit
+tests." `ReferenceResponseTest.php` sends only `question_id` and a tagged
+response through the real HTTP-shaped controller and compares against an
+oracle it reads once at test-collection time — it never becomes a runtime
+dependency of the application it is testing.
 
 ## 10. Deviations, and why they are safe
 
@@ -785,7 +821,7 @@ both fully rewritten for the forward model on the same date.
 
 | Architectural element | Upstream identifiers it realizes |
 |---|---|
-| `app/src/Rules/*.php` (9 classes) | `RULE-GATE-01`, `RULE-MAP-01`, `RULE-STATUS-01`, `RULE-DEPTH-01`, `RULE-EVID-01`, `RULE-SPEC-01`, `RULE-REL-HARD-01`, `RULE-REL-SPEC-01`, `RULE-NOA-01`, `RULE-CORRECT-01` |
+| `app/src/Rules/*.php` (10 classes) | `RULE-GATE-01`, `RULE-MAP-01`, `RULE-STATUS-01`, `RULE-DEPTH-01`, `RULE-EVID-01`, `RULE-SPEC-01`, `RULE-REL-HARD-01`, `RULE-REL-SPEC-01`, `RULE-NOA-01`, `RULE-CORRECT-01` |
 | `app/src/Rules/Precedence.php` + `Evaluation/Evaluator.php` | `RULE-PREC-01` (extended: 4-slot hard priority, 2-slot graded priority) |
 | `app/src/Repository/PatientRepository.php`/`QuestionRepository.php` + `mysql_schema_0_2.sql` | `MODELBASE-0.2` §6-7, `REQ-DAT-*`, `REQ-MOD-01`-`06` |
 | `app/src/Http/PatientController.php`/`QuestionController.php`/`EvaluationController.php` | `MODELBASE-0.2` §7 (API boundary), `APIBASE-0.1`, `REQ-INT-01`-`05`, `REQ-RUL-05` |
@@ -1123,13 +1159,97 @@ one row's outcome.
 
 **What this does and doesn't claim.** All 129 previously-unaudited rows
 now carry a `provenance_status` value ending `..._human_oracle_audit_confirmed_against_qsaudit_0_1`
-or `..._human_oracle_audit_confirmed_via_rule_replay` (`prototype_baseline/verification/reference_responses_0_3_candidate.csv`);
-`docs/REQUIREMENTS_TRACEABILITY.md`'s `REQ-VER-08`/`09` read ✅
-accordingly. This closes the specific gap step 9 existed for. It is still
-not `REQ-VER-05`'s formal freeze-time conformance report (step 10) - and
-if the two primary-source PDFs are ever added to the repository, a direct
-page-level re-check against them would be a strictly-stronger, purely
-additive confirmation, not a correction of anything this pass found.
+or (at the time this section was written) `..._human_oracle_audit_confirmed_via_rule_replay`
+for the 4 legacy rows - **since superseded by a genuine diff against the
+raw historical oracle, §18 below; the rule-replay confirmation was real
+evidence, not weakened by what came after, but it's no longer the
+strongest evidence available for those 4 rows.** This closed the specific
+gap step 9 existed for. It is still not `REQ-VER-05`'s formal freeze-time
+conformance report (step 10) - and if the two primary-source PDFs are ever
+added to the repository, a direct page-level re-check against them would
+be a strictly-stronger, purely additive confirmation for the 125 learner
+rows, not a correction of anything this pass found.
+
+## 18. The four "reconstructed" legacy rows were never actually unreconciled - the raw file was archived, not lost
+
+Step 9 (§16 above) confirmed `VQ-005..008` by rule replay because
+`QSAUDIT-0.1` doesn't cover the legacy fixtures and the raw `RCBASE-0.2`
+file was believed unavailable - every design-phase document describing
+these four rows (`prototype_baseline/README.md`, the `migration/` bridge
+files, `chapter3_reference_case_coverage_plan_forward_0_3.md`) said so
+explicitly, and step 9 didn't independently re-check that premise before
+relying on it. It was wrong. The genuine, original 18-row `RCBASE-0.2`
+file - not a reconstruction, no `provenance_status` column, predating the
+concept - was sitting the whole time at
+`archived/prototype_baseline_0_1/verification/reference_responses_0_2.csv`,
+archived during the step-9-adjacent repository housekeeping pass (§17)
+without anyone connecting it back to the "must be diffed... when it
+becomes available" language written before that housekeeping happened.
+
+**The check, once someone actually looked:** read the archived file
+directly and compared its `RC-005-01` through `RC-008-01` rows against
+the current oracle's `VQ-005..008` rows, field by field -
+`submitted_code`, `expected_class`, `determining_rule`, `pattern_id`,
+`criterion`, `improvement_code`, `required_explanation_elements`,
+`source_locator`. Every field matches exactly, for all four rows. This is
+a stronger claim than step 9's rule replay (which confirms the *rule
+predicate* produces the claimed result from the documented facts, not
+that the *facts and claimed result together* match an independent
+historical record) - both are now true for all four rows, from two
+different angles.
+
+**Changed as a result**, all confirmed via direct inspection, not assumed
+from this section's own claim:
+
+- `prototype_baseline/verification/reference_responses_0_3_candidate.csv`:
+  `provenance_status` for the 4 legacy rows →
+  `exact_semantic_carry_forward_confirmed_against_rcbase_0_2`.
+- `prototype_baseline/data/verification_questions_legacy_0_1.csv`: the
+  four `prompt` fields were themselves drifted from the genuine historical
+  `short_description` text (`archived/prototype_baseline_0_1/data/cases_0_2.csv`)
+  - missing boundary-clause parentheticals for `VQ-005..007`, and `VQ-008`
+  was substantively reworded, not merely trimmed. Replaced with the exact
+  historical wording.
+- `prototype_baseline/verification/oracle_manifest_0_3_candidate.json`:
+  `raw_rcbase_0_2_diff_required_before_freeze` → `false`;
+  `legacy_provenance`'s `reconstructed_from_implementation_documentation`
+  key replaced with `exact_semantic_carry_forward_confirmed_against_rcbase_0_2`;
+  `oracle_sha256` regenerated (the CSV content changed).
+- `prototype_baseline/design_materialization_manifest.json`:
+  `reconciliation_required_before_freeze` → `false`; the equivalent key
+  renamed to match.
+- `prototype_baseline/forward_verification_digests.json`: both affected
+  file digests regenerated.
+- `prototype_baseline/validate_forward_verification.py`: **was silently
+  broken since step 9** - its hardcoded provenance assertion still checked
+  for the bare string `reconstructed_from_implementation_documentation`,
+  which step 9 had already replaced with a longer suffixed value; the
+  assertion had been failing since step 9 and nobody had re-run this
+  standalone validator to notice, since nothing in CI or the test suites
+  invokes it. Fixed to match current values; confirmed passing.
+- `chapter3_reference_case_coverage_plan_forward_0_3.md` (the coverage
+  plan `CASEPLAN-0.3`): removed the "must be diffed... when available"
+  language and the four-gates list's now-closed items.
+- `prototype_baseline/README.md`, `docs/REQUIREMENTS_TRACEABILITY.md`
+  (`REQ-VER-09`), `docs/IMPLEMENTATION_SPECIFICATION.md` §7,
+  `ReferenceResponseTest.php`'s own docblock: updated to match.
+
+**Verified, this same pass:** `validate_forward_verification.py` PASS;
+`test_runtime_contract_0_2.py` and `test_mysql_persistence_0_2.py` against
+a fresh throwaway MySQL, both green; `phpunit --testsuite integration`
+160/160 including all 143 reference-response rows from the edited CSV.
+
+**The lesson, stated plainly because it's the second time this exact
+shape of mistake happened this project (§13.3's persistence-integration
+gap is the first):** a design-phase document's own claim about what's
+"unavailable" or "pending" has a shelf life. §17's housekeeping pass moved
+files around in service of a completely different goal (repository
+cleanliness) and, as a side effect, made a previously-unavailable source
+file locally checkable - and nothing about that pass's own scope prompted
+anyone to re-open the older, unrelated-seeming claim it happened to
+resolve. The general form: before repeating a stale document's claim that
+something can't be checked, check whether it can be checked *now*, not
+whether the document says it could be checked *then*.
 
 ## 17. Repository housekeeping: rename, archive, and tracing every reference before touching anything
 

@@ -27,7 +27,7 @@ score. The interface is available in English and German.
 ```bash
 git clone https://github.com/junomarx/bsc-thesis-icd10.git
 cd bsc-thesis-icd10
-docker compose build bootstrap app   # see the note below on why "build", not "pull", right now
+docker compose pull
 docker compose up -d --wait app
 ```
 
@@ -38,13 +38,10 @@ curl http://127.0.0.1:5860/api/health     # {"status":"ok"}
 curl http://127.0.0.1:5860/api/patients   # the 6 synthetic patients
 ```
 
-> **Use `docker compose build`, not `docker compose pull`, for now.** The
-> project's published container images predate a recent structural
-> redesign (case-centric → patient/question model) and have not yet been
-> republished. `docker compose pull` will currently start the *previous*
-> version of the prototype. Building locally from this checkout always
-> matches what's actually in the repository. Full install/troubleshooting
-> guide: [docs/USER_GUIDE.pdf](docs/USER_GUIDE.pdf).
+Full install/troubleshooting guide: [docs/USER_GUIDE.pdf](docs/USER_GUIDE.pdf).
+Building locally instead (`docker compose build bootstrap app`) also works
+and always matches whatever is in your checkout, including uncommitted
+changes.
 
 ## Stack
 

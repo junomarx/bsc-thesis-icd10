@@ -81,10 +81,10 @@ provenance = Counter(r["provenance_status"] for r in legacy_oracle)
 assert provenance == Counter(
     {
         "exact_semantic_carry_forward_from_rcbase_0_1": 14,
-        "reconstructed_from_implementation_documentation": 4,
+        "exact_semantic_carry_forward_confirmed_against_rcbase_0_2": 4,
     }
 )
-assert {r["legacy_rc_id"] for r in legacy_oracle if r["provenance_status"] == "reconstructed_from_implementation_documentation"} == {
+assert {r["legacy_rc_id"] for r in legacy_oracle if r["provenance_status"] == "exact_semantic_carry_forward_confirmed_against_rcbase_0_2"} == {
     "RC-005-01",
     "RC-006-01",
     "RC-007-01",
@@ -123,7 +123,7 @@ for runtime_file in list(DATA.glob("*.csv")):
 
 print("Forward verification-design contract: PASS")
 print("  learner expectations: 125 (100 code + 25 none_of_above)")
-print("  legacy expectations: 18 (14 exact semantic carry-forward + 4 documented reconstruction)")
+print("  legacy expectations: 18 (14 exact semantic carry-forward from RCBASE-0.1 + 4 confirmed by direct diff against the archived raw RCBASE-0.2 file)")
 print("  candidate oracle: 143 rows; classes 33 correct / 20 suboptimal / 90 incorrect")
 print("  runtime/oracle field separation: PASS")
 print("  NOTE: this is design-data validation, not application verification")

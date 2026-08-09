@@ -41,11 +41,11 @@
     "data/patients_0_1.csv": "41167062cc7d03ba1873ff58040361d8975a40022eb5ffef995b16e4d9ef2727",
     "data/patient_context_items_0_1.csv": "72bd52d4d0a3c791b7ac1ed3b3abefce1e34955cbdd47b38647697b596e33c5a",
     "data/questions_0_1.csv": "9b836a4809c0c43eba1cf5fae5cbc6969795d6160038a0078334816914986a2a",
-    "data/verification_questions_legacy_0_1.csv": "a4481b7e1c20a9c305680dbe674a8588c79d2c87488d3a9790fa402ad4bdb474",
+    "data/verification_questions_legacy_0_1.csv": "9764d4a407fc337ba90540d787fbcd62c02c41786f20fc5264e2e6b5b5937630",
     "data/question_facts_0_1.csv": "03b852892fec73d1769ec19a42d21e135bb006d1a75cadca11752ec3a653eba6",
     "data/verification_question_facts_legacy_0_1.csv": "1f5067d5bc92b0664d3c0966c7f52ae6b3f1dcac383abb6421150ba060d0976e",
     "data/question_code_domain_0_1.csv": "af270a1312fa8b7aa90934eeffb348b643703e292f0438f28085397ecf85049a",
-    "data/verification_question_code_domain_legacy_0_1.csv": "443af27a1602e899acd750bcce73d778f5e2bdbc54409d21c5bd48d5d160f57a",
+    "data/verification_question_code_domain_legacy_0_1.csv": "7040e6b911c0b7ecdb77fb3c93ac64c5a867c4b683837af523dcaacd3b280f4a",
     "data/question_relation_facts_0_1.csv": "e41da67d9ee155033516de5a6665da1db49a8a1798a7383e9d0d71770eb74993",
     "data/verification_question_relation_facts_legacy_0_1.csv": "5c579245d60abb7386f5703e811233400e7eca6fbdbc4b3477862247240eeb15",
     "data/question_options_0_1.csv": "a2a64a017084a636e6e6b53257ca64ec4b7eaa4554e4d40df70a9fadeac4c5a3"

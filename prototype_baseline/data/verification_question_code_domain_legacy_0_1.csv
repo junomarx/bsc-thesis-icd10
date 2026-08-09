@@ -13,7 +13,7 @@ QUESTIONBASE-0.1,VQ-002,SUBSET-0.2,J44.13,source_rule_resolved,,,exact_semantic_
 QUESTIONBASE-0.1,VQ-002,SUBSET-0.2,J44.19,source_rule_resolved,,,exact_semantic_carry_forward_from_rcbase_0_1; RC-002-06
 QUESTIONBASE-0.1,VQ-003,SUBSET-0.2,Z01.6,accepted_reference,,,exact_semantic_carry_forward_from_rcbase_0_1; RC-003-01
 QUESTIONBASE-0.1,VQ-004,SUBSET-0.2,Z01.6,source_rule_resolved,,,exact_semantic_carry_forward_from_rcbase_0_1; RC-004-01
-QUESTIONBASE-0.1,VQ-005,SUBSET-0.2,J44.00,accepted_reference,,,reconstructed_from_implementation_documentation; RC-005-01
-QUESTIONBASE-0.1,VQ-006,SUBSET-0.2,J44.11,accepted_reference,,,reconstructed_from_implementation_documentation; RC-006-01
-QUESTIONBASE-0.1,VQ-007,SUBSET-0.2,J44.03,accepted_reference,,,reconstructed_from_implementation_documentation; RC-007-01
-QUESTIONBASE-0.1,VQ-008,SUBSET-0.2,Z01.6,source_rule_resolved,,,reconstructed_from_implementation_documentation; RC-008-01
+QUESTIONBASE-0.1,VQ-005,SUBSET-0.2,J44.00,accepted_reference,,,exact_semantic_carry_forward_confirmed_against_rcbase_0_2; RC-005-01
+QUESTIONBASE-0.1,VQ-006,SUBSET-0.2,J44.11,accepted_reference,,,exact_semantic_carry_forward_confirmed_against_rcbase_0_2; RC-006-01
+QUESTIONBASE-0.1,VQ-007,SUBSET-0.2,J44.03,accepted_reference,,,exact_semantic_carry_forward_confirmed_against_rcbase_0_2; RC-007-01
+QUESTIONBASE-0.1,VQ-008,SUBSET-0.2,Z01.6,source_rule_resolved,,,exact_semantic_carry_forward_confirmed_against_rcbase_0_2; RC-008-01
