@@ -17,26 +17,35 @@
 # user-mode emulation, turning a 20-second build into a stuck multi-hour
 # one. Only `base`/`dev`/`runtime` below need a real per-arch build, since
 # `base` compiles the native `pdo_mysql` extension.
-FROM --platform=$BUILDPLATFORM node:22-alpine AS frontend-build
+#
+# Every base image below is pinned to a manifest-list digest, not a
+# floating tag, as of the PROTOBASE-1.0 development freeze
+# (docs/DEVELOPMENT_DOCUMENTATION.md §10.9/§10.10; exact resolved versions
+# in docs/environment_manifest_0_1.json). Before the freeze these were
+# deliberately left floating for development convenience (§10.1); the
+# freeze is exactly the one point at which REQ-CFG-01 requires pinning
+# the execution environment, so this is that pin, applied once, not
+# duplicated back to floating afterward.
+FROM --platform=$BUILDPLATFORM node:22-alpine@sha256:c610fcdfb1d5b4740dd70c284ed3cb16bb857e0f7166196e36a5501df7a3aa32 AS frontend-build
 WORKDIR /app/frontend
 COPY app/frontend/package.json app/frontend/package-lock.json* ./
 RUN npm ci
 COPY app/frontend/ ./
 RUN npm run build
 
-FROM --platform=$BUILDPLATFORM composer:2 AS vendor
+FROM --platform=$BUILDPLATFORM composer:2@sha256:4d71c3c2109c61d5415544264b59ad4087e4c5b7244481723664138fd36d5040 AS vendor
 WORKDIR /app
 COPY app/composer.json app/composer.lock* ./
 RUN composer install --no-dev --no-interaction --optimize-autoloader --no-scripts --no-progress
 
 # Same install, but keeping dev dependencies (phpunit/phpunit,
 # php-webdriver/webdriver) — only the `dev` target below uses this.
-FROM --platform=$BUILDPLATFORM composer:2 AS vendor-dev
+FROM --platform=$BUILDPLATFORM composer:2@sha256:4d71c3c2109c61d5415544264b59ad4087e4c5b7244481723664138fd36d5040 AS vendor-dev
 WORKDIR /app
 COPY app/composer.json app/composer.lock* ./
 RUN composer install --no-interaction --no-scripts --no-progress
 
-FROM php:8.4-apache AS base
+FROM php:8.4-apache@sha256:5f8050825b2f3de4efb0d81149c86643a9ee9c0a74ed4595ca2ad69ebfeb35fb AS base
 RUN docker-php-ext-install pdo_mysql \
     && a2enmod rewrite \
     && rm -f /etc/apache2/sites-enabled/000-default.conf

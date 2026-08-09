@@ -2,11 +2,16 @@ name: icd-learning-prototype
 
 services:
   db:
-    # Deliberately unpinned below the major version: MySQL's exact minor/patch
-    # is not treated as a criterion the prototype depends on (only CHECK
-    # constraint support, i.e. MySQL >= 8.0.16, actually matters). An exact
-    # version is pinned only at the eventual REQ-CFG-01 evaluation freeze.
-    image: mysql:latest
+    # Pinned to a manifest-list digest as of the PROTOBASE-1.0 development
+    # freeze (docs/environment_manifest_0_1.json; resolved to MySQL
+    # 26.7.0). Was deliberately unpinned below the major version during
+    # development - MySQL's exact minor/patch was never a criterion the
+    # prototype depended on (only CHECK constraint support, i.e. MySQL >=
+    # 8.0.16, actually matters) - because REQ-CFG-01 only requires pinning
+    # the execution environment once, at the eventual evaluation freeze.
+    # This is that pin. Ongoing development against a floating tag
+    # continues on the `develop` branch's copy of this file, not here.
+    image: mysql@sha256:66aec17cd21a956029b83f083b813073859e8355dc1a00e55df6ba02f0e32345
     environment:
       MYSQL_DATABASE: ${ICD_DB_NAME:?ICD_DB_NAME is required}
       MYSQL_USER: ${ICD_DB_USER:?ICD_DB_USER is required}

@@ -23,9 +23,16 @@
 
 name: bsc-thesis-icd10
 
+# Every third-party base/service image below is pinned to a manifest-list
+# digest as of the PROTOBASE-1.0 development freeze
+# (docs/DEVELOPMENT_DOCUMENTATION.md §10.9/§10.10; resolved versions in
+# docs/environment_manifest_0_1.json). Ongoing development against
+# floating tags continues on the `develop` branch's copy of this file, not
+# here - `main` is the frozen evaluation baseline.
+
 services:
   db:
-    image: mysql:latest
+    image: mysql@sha256:66aec17cd21a956029b83f083b813073859e8355dc1a00e55df6ba02f0e32345
     environment:
       MYSQL_DATABASE: ${ICD_DB_NAME:-icd_learning}
       MYSQL_USER: ${ICD_DB_USER:-icd_app}
@@ -84,7 +91,7 @@ services:
 
   selenium:
     profiles: ["test"]
-    image: ${SELENIUM_IMAGE:-seleniarm/standalone-chromium:latest}
+    image: ${SELENIUM_IMAGE:-seleniarm/standalone-chromium@sha256:d644a5f679e83e63344cee11c08fc2c7bf4acf43217434a8621a2bc85f7473a5}
     shm_size: 2gb
     ports:
       - "${SELENIUM_WEBDRIVER_PORT:-4444}:4444"

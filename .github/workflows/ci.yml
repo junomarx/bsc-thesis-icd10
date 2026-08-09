@@ -69,7 +69,10 @@ jobs:
     runs-on: ubuntu-latest
     services:
       mysql:
-        image: mysql:latest
+        # Pinned as of the PROTOBASE-1.0 development freeze - see
+        # docs/environment_manifest_0_1.json. The `develop` branch's copy
+        # of this file keeps the floating tag for ongoing development CI.
+        image: mysql@sha256:66aec17cd21a956029b83f083b813073859e8355dc1a00e55df6ba02f0e32345
         env:
           MYSQL_ROOT_PASSWORD: root
           MYSQL_DATABASE: icd_ci
@@ -170,7 +173,9 @@ jobs:
       - name: Start Selenium (official amd64 image - GitHub-hosted runners are amd64)
         working-directory: app/tests/E2E
         env:
-          SELENIUM_IMAGE: selenium/standalone-chrome:latest
+          # Pinned as of the PROTOBASE-1.0 development freeze - see
+          # docs/environment_manifest_0_1.json.
+          SELENIUM_IMAGE: selenium/standalone-chrome@sha256:9569014786466376d3e5cf8a7758562368cd9637f783dcd3abdb2eaf3a0d5cd7
         run: docker compose up -d
 
       - name: Wait for Selenium grid

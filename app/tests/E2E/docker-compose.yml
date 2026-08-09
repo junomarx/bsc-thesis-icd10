@@ -19,9 +19,11 @@ services:
     # WebDriver protocol, irrelevant to what these tests assert). Default is
     # the arm64 image (this project's development host is Apple Silicon);
     # CI (GitHub-hosted ubuntu-latest runners, amd64) overrides
-    # SELENIUM_IMAGE to the official selenium/standalone-chrome:latest —
-    # see .github/workflows/ci.yml.
-    image: ${SELENIUM_IMAGE:-seleniarm/standalone-chromium:latest}
+    # SELENIUM_IMAGE to the official selenium/standalone-chrome image — see
+    # .github/workflows/ci.yml. Both pinned to a manifest-list digest as of
+    # the PROTOBASE-1.0 development freeze (docs/environment_manifest_0_1.json);
+    # the `develop` branch's copy of this file keeps floating tags.
+    image: ${SELENIUM_IMAGE:-seleniarm/standalone-chromium@sha256:d644a5f679e83e63344cee11c08fc2c7bf4acf43217434a8621a2bc85f7473a5}
     shm_size: 2gb
     ports:
       - "4444:4444" # WebDriver endpoint
