@@ -113,5 +113,5 @@ remain outside this freeze's scope.
 
 ## License
 
-Bachelor-thesis academic artefact. No open-source license is granted; see
+Bachelor-thesis academic artefact made public under MIT license; see
 the repository owner for reuse terms.
